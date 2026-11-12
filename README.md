@@ -1,36 +1,103 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# The Augmented Architect Website 2.0
 
-## Getting Started
+Local, responsive Next.js 16 website built with TypeScript, Tailwind CSS 4 and the App Router. The approved reference is `public/reference/homepage-reference.png`.
 
-First, run the development server:
+## Architecture boundaries
 
-```bash
+The intended deployment platform is Vercel. Deployment is outside the current scope.
+
+This repository remains an independent website shell. Do not install Supabase, merge it with the existing Augment application or security kernel, or add agent infrastructure as part of this build. Preserve the approved visual design and homepage scope.
+
+Presentation components, typed content, routes and metadata are separate. Future integrations can be added through server-only modules and App Router route handlers when explicitly requested, without coupling the visual components to external services. No integration scaffolding is needed now.
+
+## Development
+
+```sh
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000. Run `npm run lint` and `npm run build` for validation. Use `npm start` to serve a completed production build.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Edit the content
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Website shell text, navigation labels, button labels, preview labels, accessibility labels, page copy and SEO titles/descriptions are in **`src/content/site.ts`**. Insights copy and article content are in the dedicated files under `src/content/` described below. Its `SiteContent` type checks the structure. Edit quoted strings and keep the property names intact.
 
-## Learn More
+- `hero`, `services`, `value`, `showcase`: homepage copy.
+- `navigation`, `consultation`: navigation and consultation links.
+- `pages`: the five destination pages, including booking/contact placeholder notices.
+- `footer`: the reference's palette footer.
+- `seo`: page-specific metadata.
+- `url`: the website origin used for canonical URLs, sitemap and robots. Currently `http://localhost:3000`; replace with the confirmed public origin before any future publication.
 
-To learn more about Next.js, take a look at the following resources:
+## Files and structure
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- `src/components/`: modular header, brand, hero, services, business value, product showcase, footer, floating consultation button and SVG icons.
+- `src/app/page.tsx`: homepage composition.
+- `src/app/{ai-solutions,salesforce,about,contact,book}/page.tsx`: explicit, statically generated `/ai-solutions`, `/salesforce`, `/about`, `/contact` and `/book` pages. Other slugs return 404.
+- `src/app/layout.tsx`: shared page shell and metadata defaults.
+- `src/app/globals.css`: palette, typography, layout and responsive rules.
+- `src/lib/metadata.ts`: metadata shared by each page.
+- `src/app/sitemap.ts`, `src/app/robots.ts`: search engine routes.
+- `src/app/icon.svg`: placeholder brand favicon.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+The hero illustration, brand mark and product previews are HTML/CSS/SVG placeholders. No screenshot is used as the page background. Replace these with independently supplied brand/artwork assets when available. Product previews are explicitly illustrative. Booking, contact submission and live demos are not connected. No database, external APIs or deployment are configured.
 
-## Deploy on Vercel
+## Insights and article publishing
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Insights lives at `/insights`, with category pages at `/insights/philosophy`, `/insights/ai-architecture` and `/insights/salesforce`. Edit introductions, category descriptions, the Philosophy page, empty states and navigation labels for this section in **`src/content/insights.ts`**. The main header link remains in `src/content/site.ts`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The article registry starts empty. There are no placeholder articles, inferred publication dates or invented author profiles.
+
+### Add an article
+
+1. Create a TypeScript content file such as `src/content/articles/your-article.ts`. Use the `Article` type from `./types`:
+
+   ```ts
+   import type { Article } from './types';
+
+   export const article: Article = {
+     slug: 'your-article-slug',
+     title: 'Your approved article title',
+     category: 'philosophy',
+     summary: 'Your approved article summary for listings.',
+     seoDescription: 'Your approved search and social description.',
+     status: 'draft',
+     content: [
+       { type: 'paragraph', text: 'Your approved article text.' },
+     ],
+   };
+   ```
+
+2. Import that object in `src/content/articles/index.ts` and add it to `articles`:
+
+   ```ts
+   import type { Article } from './types';
+   import { article } from './your-article';
+
+   export const articles: readonly Article[] = [article];
+   ```
+
+3. Choose the category: `philosophy`, `ai-architecture`, or `salesforce`. Slugs must be unique across drafts and published articles, lowercase, and hyphenated. Keep slugs stable once published.
+4. Set `status: 'published'` only when the content is ready. Drafts have no public detail page, category card, related-article entry or sitemap entry.
+5. Add `publishedDate: 'YYYY-MM-DD'` only when you have an explicitly supplied publication date. Omit the property otherwise. No date or date metadata is generated by default.
+6. Run `npm run lint`, `node --test tests/insights.test.mjs` and `npm run build`. Content changes require a new build for production; no new React page component is needed.
+
+Supported content blocks are `paragraph` and `heading` (each with `text`), `quote` (with `text`), and `list` (with `items` and optional `ordered: true`). Text is rendered as text, not raw HTML. Blocks use article-level headings consistently under the page title.
+
+Registry order is the editorial listing order. Related articles use up to three other published articles in the same category. Unique article metadata, canonical URLs, Article Open Graph data, JSON-LD and sitemap entries are generated automatically. Structured data identifies the website as publisher without inventing an author. Set the existing `site.url` to the confirmed production origin before future publication.
+
+The Next.js Cache Components configuration requires a build-time parameter even when the registry is empty. The article route uses a private `__empty__` validation sentinel that resolves to the not-found page; it is never listed or included in the sitemap.
+
+### Insights implementation files
+
+- `src/content/insights.ts`: editable section and category copy, including Philosophy.
+- `src/content/articles/types.ts`, `src/content/articles/index.ts`: typed file-based publishing registry.
+- `src/lib/articles.ts`: validation, published-article selection, related articles and date formatting.
+- `src/lib/article-seo.ts`: article structured data.
+- `src/lib/metadata.ts`: shared metadata utility, extended for articles while retaining existing shell metadata.
+- `src/components/insights/`: reusable category navigation, category page, article cards, article lists and content renderer.
+- `src/app/insights/`: landing page, category routes, dynamic article route, article not-found state and scoped section stylesheet.
+- `tests/insights.test.mjs`: publishing and rendering checks using isolated test data, without adding articles to the site.
+
+The existing header and sitemap include the new section. Homepage sections and their copy are unchanged. No external services or dependencies were added.
