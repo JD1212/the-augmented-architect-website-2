@@ -4,7 +4,7 @@ Local, responsive Next.js 16 website built with TypeScript, Tailwind CSS 4 and t
 
 ## Architecture boundaries
 
-The intended deployment platform is Vercel. Deployment is outside the current scope.
+The deployment platform is the existing Vercel project `the-augmented-architect-website-2` under JD Burkholder's projects. Website 2.0 remains independent of the existing public domain and other applications.
 
 This repository remains an independent website shell. Do not install Supabase, merge it with the existing Augment application or security kernel, or add agent infrastructure as part of this build. Preserve the approved visual design and homepage scope.
 
@@ -25,10 +25,9 @@ Website shell text, navigation labels, button labels, preview labels, accessibil
 
 - `hero`, `services`, `value`, `showcase`: homepage copy.
 - `navigation`, `consultation`: navigation and consultation links.
-- `pages`: the five destination pages, including booking/contact placeholder notices.
-- `footer`: the reference's palette footer.
+- `pages`: the original route inventory. Service and secondary-page presentation copy now lives in the typed files described below.
 - `seo`: page-specific metadata.
-- `url`: the website origin used for canonical URLs, sitemap and robots. Currently `http://localhost:3000`; replace with the confirmed public origin before any future publication.
+- `url`: the production origin used for canonical URLs, sitemap and robots: `https://the-augmented-architect-website-2.vercel.app`.
 
 ## Files and structure
 
@@ -41,7 +40,7 @@ Website shell text, navigation labels, button labels, preview labels, accessibil
 - `src/app/sitemap.ts`, `src/app/robots.ts`: search engine routes.
 - `src/app/icon.svg`: placeholder brand favicon.
 
-The hero illustration, brand mark and product previews are HTML/CSS/SVG placeholders. No screenshot is used as the page background. Replace these with independently supplied brand/artwork assets when available. Product previews are explicitly illustrative. Booking, contact submission and live demos are not connected. No database, external APIs or deployment are configured.
+The hero uses dedicated, text-free conceptual workstation artwork. The showcase uses labeled conceptual architecture diagrams, and the brand mark remains a placeholder. No screenshot is simulated as production UI. Replace the conceptual showcase visuals with independently supplied application captures when available. Booking, contact submission and live demos are not connected. No database or external APIs are configured.
 
 ## Insights and article publishing
 
@@ -100,4 +99,29 @@ The Next.js Cache Components configuration requires a build-time parameter even 
 - `src/app/insights/`: landing page, category routes, dynamic article route, article not-found state and scoped section stylesheet.
 - `tests/insights.test.mjs`: publishing and rendering checks using isolated test data, without adding articles to the site.
 
-The existing header and sitemap include the new section. Homepage sections and their copy are unchanged. No external services or dependencies were added.
+The existing header and sitemap include the new section. The visual refinement adds homepage previews of the Philosophy and Insights content without changing the publishing architecture. No external services or dependencies were added.
+
+
+## Visual design and service pages
+
+The shared design system now covers the homepage, full AI Solutions and Salesforce service pages, and the About/Contact/Booking pages. The public palette display and generic home links have been removed. The desktop floating consultation button is omitted; the mobile action avoids duplicating a visible main consultation CTA.
+
+Edit the expanded homepage, diagrams, showcase, footer and secondary pages in `src/content/experience.ts`. Edit service-page content in `src/content/service-pages.ts`. Core positioning and navigation remain in `src/content/site.ts`. All content remains local and typed.
+
+See [the design and asset guide](docs/design-refinement.md) for the visual rules, missing assets, and instructions for adding authentic application screenshots without altering their UI colors.
+
+## GitHub and Vercel deployment workflow
+
+Local code → Git commit → Push to GitHub → Automatic Vercel deployment.
+
+- Repository: `https://github.com/JD1212/the-augmented-architect-website-2`.
+- Production branch: `main`.
+- Existing Vercel project: `the-augmented-architect-website-2`, under JD Burkholder's projects.
+- Production URL: `https://the-augmented-architect-website-2.vercel.app`.
+- Framework preset: Next.js. Use the existing Git integration; do not create another project or deploy a separate CLI upload.
+
+Before pushing, run `npm run lint`, `node --test tests/*.test.mjs`, and `npm run build`. Review the staged files: keep `.env*`, private keys, `.next/`, `node_modules/`, and `.vercel/` out of Git. Commit the intended changes, then push to `origin/main` without force-pushing.
+
+Pushes to `main` are production releases. Feature-branch pushes can generate preview deployments through the same Git integration. After a push, confirm Vercel reaches Ready for the exact GitHub commit, inspect build logs, and smoke-test the deployed pages, hero image, navigation and mobile layout. There is no separate hosted test job configured; the automated tests must be run before pushing.
+
+Cloudflare DNS, `theaugmentedarchitect.com`, the old Augmented Architect project, Supabase and the Augment kernel are outside this deployment workflow. No public-domain connection or transfer is part of this release.
