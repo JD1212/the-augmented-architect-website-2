@@ -8,8 +8,8 @@
 .insights-category-grid, .insights-article-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 30px; }
 .insights-category-grid { grid-auto-rows: 1fr; }
 .insights-category-grid > li, .insights-article-grid > li { min-width: 0; }
-.insights-category-card { display: flex; flex-direction: column; height: 100%; min-height: 240px; padding: 28px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; transition: box-shadow .15s; }
-.insights-category-card:hover, .insights-article-card:hover { box-shadow: 0 0 0 2px var(--blue); }
+.insights-category-card { display: flex; flex-direction: column; height: 100%; min-height: 240px; padding: 28px; background: var(--surface); border: 1px solid var(--card-border); border-radius: 12px; transition: box-shadow .15s; }
+.insights-category-card:hover, .insights-article-card:hover { box-shadow: 0 0 0 1px var(--card-hover-border), 0 6px 16px #163e5d0a; }
 .insights-category-card h2 { font-size: 25px; line-height: 1.2; margin-bottom: 14px; }
 .insights-category-card p { color: var(--charcoal); font-size: 16px; line-height: 1.6; }
 .insights-category-card .arrow { color: var(--blue); align-self: flex-end; margin-top: auto; padding-top: 26px; }
@@ -23,7 +23,7 @@
 .insights-articles > h2 { font-size: 28px; line-height: 1.3; margin-bottom: 22px; }
 .insights-empty-state { padding: 28px; background: var(--gray); border-radius: 15px; color: var(--charcoal); line-height: 1.6; }
 .insights-empty-state p:first-child { font-weight: 700; color: var(--graphite); margin-bottom: 6px; }
-.insights-article-card { height: 100%; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); transition: box-shadow .15s; }
+.insights-article-card { height: 100%; border: 1px solid var(--card-border); border-radius: 12px; background: var(--surface); transition: box-shadow .15s; }
 .insights-article-card > a { padding: 28px; height: 100%; display: flex; flex-direction: column; align-items: start; gap: 14px; overflow-wrap: anywhere; }
 .insights-article-card h3 { font-size: 23px; line-height: 1.3; }
 .insights-card-summary { color: var(--charcoal); line-height: 1.6; }

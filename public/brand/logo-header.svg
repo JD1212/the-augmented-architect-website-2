@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1230 192" width="1230" height="192" role="img" aria-label="The Augmented Architect"><defs>
+    <linearGradient id="navy" x1=".2" y1="0" x2=".8" y2="1" gradientUnits="objectBoundingBox"><stop stop-color="#115584"/><stop offset="1" stop-color="#021B2D"/></linearGradient>
+    <linearGradient id="back" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#062B46"/><stop offset="1" stop-color="#001422"/></linearGradient>
+    <linearGradient id="cyan" x1=".25" y1="1" x2=".85" y2="0"><stop stop-color="#126294"/><stop offset=".48" stop-color="#64B8D6"/><stop offset="1" stop-color="#00E3EE"/></linearGradient>
+    <linearGradient id="blue" x1=".1" y1="0" x2=".9" y2="1"><stop stop-color="#168CD0"/><stop offset="1" stop-color="#06365B"/></linearGradient>
+    <linearGradient id="bar" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#164D70"/><stop offset="1" stop-color="#398CB7"/></linearGradient>
+  </defs><g>
+  <path fill="url(#back)" d="M179 0 292 192H230L147 55Z"/>
+  <path fill="url(#navy)" d="M0 192 124 0H179L59 192Z"/>
+  <path fill="url(#bar)" d="M249 107H316L338 144H227Z"/>
+  <path fill="url(#cyan)" d="M68 192 126 92H218L270 0H316L229 144H154L124 192Z"/>
+  <path fill="url(#blue)" d="M316 0 426 192H365L287 53Z"/>
+</g><g fill="#031B2C" font-family="Arial, Helvetica, sans-serif"><text x="464" y="56" font-size="66" font-weight="500" textLength="764" lengthAdjust="spacingAndGlyphs">THE AUGMENTED</text><text x="464" y="172" font-size="106" font-weight="750" textLength="764" lengthAdjust="spacingAndGlyphs">ARCHITECT</text></g></svg>

@@ -1,0 +1,17 @@
+.brand { display: inline-flex; align-items: center; gap: 10px; color: var(--brand-navy); vertical-align: middle; }
+.mark { display: block; width: 68px; height: auto; flex-shrink: 0; }
+.wordmark { display: flex; flex-direction: column; gap: 3px; white-space: nowrap; line-height: 1.2; }
+.wordmark > span:first-child { font-size: 10.5px; letter-spacing: .22em; font-weight: 550; }
+.wordmark > span:last-child { font-size: 15px; letter-spacing: .19em; font-weight: 780; }
+.inverse { color: var(--ivory); }
+.inverse .mark { width: 82px; }
+.inverse .wordmark > span:first-child { font-size: 11px; }
+.inverse .wordmark > span:last-child { font-size: 16.5px; }
+@media (max-width: 540px) {
+  .brand { gap: 9px; }
+  .mark { width: 48px; }
+  .wordmark { gap: 2px; }
+  .wordmark > span:first-child { font-size: 8px; }
+  .wordmark > span:last-child { font-size: 12.5px; }
+  .inverse .mark { width: 68px; }
+}

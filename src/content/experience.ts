@@ -39,12 +39,10 @@ export const diagrams: Record<'business' | 'agents' | 'salesforce', DiagramSpec>
 
 export const experience = {
   hero: {
-    annotation: 'Business first. Built to evolve.',
     detail: 'Architecture · Integration · Intelligence',
     artwork: {
-      src: '/images/hero-workstation.png', width: 1536, height: 1024,
-      alt: 'Conceptual graphite workstation and laptop connected by softly illuminated blue data paths.',
-      caption: 'Conceptual artwork',
+      src: '/reference/Glowing AI Workflow Network.png', width: 1672, height: 941,
+      alt: 'Glowing blue and cyan network connecting AI agents, workflows, security, business teams, and automation with subtle gold accents.',
     },
   },
   services: { eyebrow: 'TWO DISCIPLINES. ONE CONNECTED FOUNDATION.', title: 'Good architecture makes everything work better.', labels: ['AI & INTEGRATION', 'SALESFORCE'] },
@@ -52,8 +50,7 @@ export const experience = {
   showcase: {
     eyebrow: 'FROM ARCHITECTURE TO EXPERIENCE',
     link: { label: 'Discuss a walkthrough', href: '/contact' },
-    assetNotice: 'Architecture examples shown. Independent application screenshots have not yet been supplied.',
-    screenshotPending: 'Application screenshot pending',
+    assetNotice: 'Illustrative architecture examples.',
     examples: [
       { number: '01', title: 'Connected business systems', description: 'A shared foundation for people, data, workflows, and intelligent agents.', diagram: 'business', image: null },
       { number: '02', title: 'Business agents, with context', description: 'Agent experiences designed around business processes, permissions, and oversight.', diagram: 'agents', image: null },

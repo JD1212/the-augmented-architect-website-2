@@ -38,9 +38,9 @@ Website shell text, navigation labels, button labels, preview labels, accessibil
 - `src/app/globals.css`: palette, typography, layout and responsive rules.
 - `src/lib/metadata.ts`: metadata shared by each page.
 - `src/app/sitemap.ts`, `src/app/robots.ts`: search engine routes.
-- `src/app/icon.svg`: placeholder brand favicon.
+- `src/app/icon.svg`, `src/app/favicon.ico`, `src/app/apple-icon.png`: approved AA identity in browser and touch icons.
 
-The hero uses dedicated, text-free conceptual workstation artwork. The showcase uses labeled conceptual architecture diagrams, and the brand mark remains a placeholder. No screenshot is simulated as production UI. Replace the conceptual showcase visuals with independently supplied application captures when available. Booking, contact submission and live demos are not connected. No database or external APIs are configured.
+The hero uses the approved `Glowing AI Workflow Network.png` artwork. The showcase uses labeled conceptual architecture diagrams. The header, footer and favicons use the new geometric interlocking AA identity. No screenshot is simulated as production UI. Replace the conceptual showcase visuals with independently supplied application captures when available. Booking, contact submission and live demos are not connected. No database or external APIs are configured.
 
 ## Insights and article publishing
 
@@ -125,3 +125,8 @@ Before pushing, run `npm run lint`, `node --test tests/*.test.mjs`, and `npm run
 Pushes to `main` are production releases. Feature-branch pushes can generate preview deployments through the same Git integration. After a push, confirm Vercel reaches Ready for the exact GitHub commit, inspect build logs, and smoke-test the deployed pages, hero image, navigation and mobile layout. There is no separate hosted test job configured; the automated tests must be run before pushing.
 
 Cloudflare DNS, `theaugmentedarchitect.com`, the old Augmented Architect project, Supabase and the Augment kernel are outside this deployment workflow. No public-domain connection or transfer is part of this release.
+
+
+## Brand identity
+
+See [the brand identity guide](docs/brand-identity.md) for the transparent SVG monograms, header/footer lockups, favicons, and reproducible asset exports. The live wordmark remains editable HTML in the existing content configuration. Shared brand tokens live in `globals.css`, while logo layout is scoped to `brand.module.css`.

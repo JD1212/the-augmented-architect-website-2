@@ -4,11 +4,11 @@ This refinement is scoped to the homepage Hero component. The header, logo, othe
 
 ## Asset and provenance
 
-- Project asset: `public/images/hero-workstation.png` (1536 × 1024 PNG).
-- Created with the built-in `image_gen` tool, using the imagegen skill. This is conceptual workstation artwork, not a screenshot of a live product.
+- Current project asset: `public/reference/Glowing AI Workflow Network.png` (1672 × 941 PNG), supplied by the user. The original pixels and colors are preserved; CSS masks feather the perimeter and responsive object positioning crops excess background without stretching the image.
+- The earlier generated workstation illustration remains at `public/images/hero-workstation.png` but is no longer used in the homepage hero. Its generation prompt is retained below for provenance.
 - The approved composite reference informed the composition. No part of that screenshot is rendered as page content.
-- All labels, copy, CTAs, alt text and captions are editable HTML/content fields. The artwork contains no text or logos.
-- Asset settings, alt text and caption: `experience.hero.artwork` in `src/content/experience.ts`.
+- All marketing copy and CTA labels remain editable HTML/content fields. The approved artwork has descriptive alt text, with no visible artwork caption.
+- Asset settings and alt text: `experience.hero.artwork` in `src/content/experience.ts`.
 - Core headline, copy and CTA labels/destinations remain in `src/content/site.ts`.
 
 ## CSS architecture
@@ -21,7 +21,7 @@ No inline style objects, animated effects, new global component overrides, depen
 
 The existing custom Tailwind loader in `next.config.ts` now excludes `.module.css` files so Next.js can compile scoped class exports natively. Its behavior for existing global stylesheets is unchanged; this is a local build compatibility adjustment, not a hosting-setting change.
 
-## Generation prompt
+## Previous workstation generation prompt (archived)
 
 > Use case: stylized-concept. Asset type: dedicated homepage hero illustration for an enterprise software architecture consultancy, NOT an application screenshot.
 > Create premium art-directed photorealistic 3D workstation artwork. A beautiful graphite and brushed-metal ultrawide desktop monitor on a thin sculptural stand, with an elegant slim laptop partly in front on the lower left, sitting on an ivory architectural desktop that disappears into an atmospheric warm ivory studio background. Three-quarter view, restrained editorial product photography with sophisticated real materials and believable soft shadows. The monitor is the main object, occupying the center-right. The laptop is smaller, lower foreground, with convincing physical depth. The monitor display contains a sophisticated abstract blue-and-ivory connected data fabric: fine softly luminous curves and architectural light paths, tiny restrained nodes and layered translucent planes, expressive of intelligent connected enterprise systems. It must NOT be a conventional dashboard, box-and-arrow flowchart, or an actual product UI. No readable content on either display. A few very subtle pale-blue connection paths extend into the space between devices with calm luminous highlights, not excessive neon. Background is spacious, softly lit, warm ivory (#F5F2EA), with a faint steel-blue atmospheric wash behind the hardware. Graphite #252B31, steel blue #597C9E and cool gray #E5E9ED. Left and bottom edges of the entire scene must dissolve naturally into clean warm ivory, no enclosing box, no frame, no hard background rectangle. All devices fully contained inside the image, with approximately 12% negative space around edges so nothing important will crop on a responsive website. Frame wide landscape 3:2, hardware fills approximately 75% of frame, front desk level near lower fifth. Soft daylight from upper left, subtle pale-blue reflections and realistic material depth. This is bespoke sophisticated technology consultancy artwork, not generic AI stock art.

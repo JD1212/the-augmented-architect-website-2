@@ -5,7 +5,7 @@ type SiteContent = {
   name: string; brandLines: string[]; monogram: string; url: string;
   navigation: SiteLink[]; consultation: SiteLink;
   accessibility: { skip: string; navigation: string; menu: string; home: string };
-  hero: { eyebrow: string; title: string; description: string; secondary: SiteLink };
+  hero: { eyebrow: string; title: string; description: string; secondary: SiteLink; philosophy: SiteLink };
   services: { title: string; description: string; href: string; icon: IconName }[];
   value: { title: string; description: string; outcomes: { label: string; icon: IconName }[] };
   showcase: { title: string; description: string };
@@ -19,7 +19,13 @@ export const site: SiteContent = {
   navigation: [{ label: 'AI Solutions', href: '/ai-solutions' }, { label: 'Salesforce', href: '/salesforce' }, { label: 'Insights', href: '/insights' }, { label: 'About', href: '/about' }, { label: 'Contact', href: '/contact' }],
   consultation: { label: 'Book a Consultation', href: '/book' },
   accessibility: { skip: 'Skip to content', navigation: 'Main navigation', menu: 'Menu', home: 'The Augmented Architect home' },
-  hero: { eyebrow: 'BUSINESS  •  SALESFORCE  •  AI AGENTS', title: 'Architecture for the AI future.', description: 'We build connected business systems, intelligent agents, and modern Salesforce foundations that help your team move faster, work smarter, and create lasting value.', secondary: { label: 'Explore Our Solutions', href: '/#services' } },
+  hero: {
+    eyebrow: 'SOFTWARE ARCHITECTURE · AI SOLUTIONS · SALESFORCE',
+    title: 'Architecture for the AI future.',
+    description: "The future of business isn't a collection of disconnected AI tools. It's people, data, software, and intelligent agents working together. We help you design and build that foundation—using the right technology for your business, without locking you into yesterday's solutions.",
+    secondary: { label: 'Explore Our Solutions', href: '/#services' },
+    philosophy: { label: 'Our philosophy', href: '/insights/philosophy' },
+  },
   services: [
     { title: 'Connected Business Systems', description: 'Build the foundation for AI-ready growth with integrations, workflows, and a unified customer context.', href: '/ai-solutions', icon: 'layers' },
     { title: 'Salesforce Modernization', description: "Clean up messy orgs, simplify flows and triggers, and prepare Salesforce for AI and what's next.", href: '/salesforce', icon: 'cloud' },

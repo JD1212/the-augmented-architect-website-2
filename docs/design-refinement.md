@@ -30,7 +30,7 @@ To finish the authentic application showcase, supply:
 
 1. An approved screenshot of the actual connected-business/application overview, preferably at least 1600px wide.
 2. An approved screenshot of the actual agent workspace or agent experience, preferably at least 1600px wide.
-3. The original approved logo/brand mark as SVG, or a transparent high-resolution PNG, to replace the existing monogram placeholder.
+The approved logo suite has since been supplied and recreated as clean vectors. See `docs/brand-identity.md`; no replacement logo is currently missing.
 
 Application captures should be approved for public display and exclude credentials or private customer information. Preserve their original UI colors. The website currently presents labeled conceptual diagrams instead of simulated production UI.
 
@@ -47,7 +47,7 @@ image: {
 },
 ```
 
-The renderer automatically replaces the architecture diagram and screenshot-pending label with the image. It uses `next/image`, preserves the image's aspect ratio, and applies no color filters or tint overlays. Supply actual dimensions and accurate alt text.
+The renderer automatically replaces the architecture diagram with the image. It uses `next/image`, preserves the image's aspect ratio, and applies no color filters or tint overlays. Supply actual dimensions and accurate alt text.
 
 ## Review and validation
 
