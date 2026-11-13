@@ -5,6 +5,7 @@ import { ArchitectureDiagram } from '@/components/architecture-diagram';
 import { Icon, Arrow } from '@/components/icon';
 import { ConceptViewer } from './concept-viewer';
 import { TechnologyComparison } from './technology-comparison';
+import { BusinessFirstSection } from './business-first-section';
 import styles from './ai-solutions.module.css';
 
 export function AiSolutionsPage() {
@@ -14,6 +15,8 @@ export function AiSolutionsPage() {
     <section className="section" aria-labelledby="ai-problems-heading"><div className="container"><div className={styles.problemHeading}><p className="eyebrow">{content.problems.eyebrow}</p><h2 id="ai-problems-heading">{content.problems.title}</h2></div><div className="problem-grid">{content.problems.items.map((item, index) => <article key={item.title}><span className="step-number">{String(index + 1).padStart(2, '0')}</span><h3>{item.title}</h3><p>{item.description}</p></article>)}</div></div></section>
 
     <section id="capabilities" className={`section capabilities-section ${styles.capabilities}`} aria-labelledby="ai-capabilities-heading"><div className="container"><div className="section-heading split-heading"><div><p className="eyebrow">{content.capabilities.eyebrow}</p><h2 id="ai-capabilities-heading">{content.capabilities.title}</h2></div><p>{content.capabilities.description}</p></div><div className={`capability-grid ${styles.capabilityGrid}`}>{content.capabilities.items.map(item => <article key={item.title}><span className="icon-box"><Icon name={item.icon} /></span><h3>{item.title}</h3><p>{item.description}</p></article>)}</div></div></section>
+
+    <BusinessFirstSection />
 
     <TechnologyComparison content={content.technology} />
 
