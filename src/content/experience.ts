@@ -84,7 +84,7 @@ export const experience = {
     },
   } satisfies ProductShowcaseContent,
   philosophy: {
-    eyebrow: 'OUR PHILOSOPHY', title: 'Build for change, not for a particular technology.',
+    eyebrow: 'OUR PHILOSOPHY', title: 'Build for change, not for a particular technology.', emphasis: 'Build for change',
     description: 'The right architecture gives your business options. We build modular, maintainable foundations that can evolve as your needs—and the technology—change.',
     link: { label: 'How we think about architecture', href: '/insights/philosophy' },
     principles: ['Business needs before platform choices', 'Modular systems with clear responsibilities', 'AI with shared context and appropriate governance'],

@@ -25,6 +25,13 @@
   --icon-background: linear-gradient(140deg, color-mix(in srgb, var(--brand-cyan) 9%, var(--surface)), color-mix(in srgb, var(--brand-violet) 6%, var(--surface)));
   --showcase-surface: linear-gradient(140deg, #344959, #2B3542);
   --showcase-border: color-mix(in srgb, var(--brand-cyan) 18%, #8295a547);
+  /* Shared, understated homepage surface treatments. */
+  --shale: #DCE4E8;
+  --tint-slate: color-mix(in srgb, var(--blue) 12%, var(--surface));
+  --tint-cyan: color-mix(in srgb, var(--brand-cyan) 7%, var(--surface));
+  --tint-periwinkle: color-mix(in srgb, var(--brand-violet) 11%, var(--surface));
+  --shadow-subtle: 0 3px 12px #597c9e12;
+  --shadow-subtle-hover: 0 7px 18px #597c9e1a;
   /* Scout surfaces share the site font, spacing and focus tokens. */
   --assistant-panel: #DCE4E8;
   --assistant-ink: #1D2830;

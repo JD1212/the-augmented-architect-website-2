@@ -7,7 +7,7 @@ type SiteContent = {
   accessibility: { skip: string; navigation: string; menu: string; home: string };
   hero: { eyebrow: string; title: string; description: string; secondary: SiteLink; philosophy: SiteLink };
   services: { title: string; description: string; href: string; icon: IconName }[];
-  value: { title: string; description: string; outcomes: { label: string; icon: IconName }[] };
+  value: { title: string; emphasis: string; description: string; outcomes: { label: string; icon: IconName }[] };
   showcase: { title: string; description: string };
   pages: Record<'ai-solutions' | 'salesforce' | 'about' | 'contact' | 'book', DetailPage>;
   seo: Record<'home' | 'ai-solutions' | 'salesforce' | 'about' | 'contact' | 'book', { title: string; description: string }>;
@@ -30,7 +30,7 @@ export const site: SiteContent = {
     { title: 'Connected Business Systems', description: 'Build the foundation for AI-ready growth with integrations, workflows, and a unified customer context.', href: '/ai-solutions', icon: 'layers' },
     { title: 'Salesforce Modernization', description: "Clean up messy orgs, simplify flows and triggers, and prepare Salesforce for AI and what's next.", href: '/salesforce', icon: 'cloud' },
   ],
-  value: { title: 'Turn technology into measurable business value.', description: 'We help organizations design and deliver practical, scalable solutions that connect people, data, and AI—so you can operate more efficiently, serve customers better, and grow with confidence.', outcomes: [{ label: 'Faster execution', icon: 'bolt' }, { label: 'More connected systems', icon: 'layers' }, { label: 'Lasting business impact', icon: 'chart' }] },
+  value: { title: 'Turn technology into measurable business value.', emphasis: 'measurable business value', description: 'We help organizations design and deliver practical, scalable solutions that connect people, data, and AI—so you can operate more efficiently, serve customers better, and grow with confidence.', outcomes: [{ label: 'Faster execution', icon: 'bolt' }, { label: 'More connected systems', icon: 'layers' }, { label: 'Lasting business impact', icon: 'chart' }] },
   showcase: { title: 'See the systems in action.', description: 'A closer look at the platforms and agent experiences we design, build, and integrate for our clients.' },
   pages: {
     'ai-solutions': { title: 'Connected Business Systems', description: 'Build the foundation for AI-ready growth with integrations, workflows, and a unified customer context.', notice: 'These are illustrative design previews. A live product demo is not yet available.' },

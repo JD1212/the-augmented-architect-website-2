@@ -1,0 +1,35 @@
+.emphasis { color: var(--blue); }
+.philosophy { background: var(--ivory); }
+.value :global(.section-heading) { margin-bottom: 34px; }
+.valueDescription { position: relative; isolation: isolate; }
+.valueDescription::before { content: ''; position: absolute; z-index: -1; inset: -12px -16px; background: color-mix(in srgb, var(--shale) 34%, transparent); border: 1px solid color-mix(in srgb, var(--blue) 9%, transparent); border-radius: 9px; }
+.tiles { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 14px; }
+.tiles > li { display: flex; align-items: center; gap: 15px; padding: 16px 18px; min-width: 0; border: 1px solid var(--card-border); border-radius: 8px; background: color-mix(in srgb, var(--surface) 88%, var(--shale)); box-shadow: var(--shadow-subtle); font-size: 14px; font-weight: 550; line-height: 1.6; transition: transform .18s, border-color .18s, box-shadow .18s; }
+.tiles svg { width: 28px; height: 28px; color: var(--blue); }
+.philosophyHeading { position: relative; padding-left: 18px; }
+.philosophyHeading::before { content: ''; position: absolute; left: 0; top: .13em; bottom: .12em; width: 2px; background: color-mix(in srgb, var(--brand-cyan) 65%, var(--blue)); }
+.principles { margin-top: 27px; padding-inline: 20px; border-block: var(--border-subtle); background: color-mix(in srgb, var(--blue) 4%, var(--ivory)); }
+.principles li { display: grid; grid-template-columns: 24px minmax(0,1fr); align-items: baseline; gap: 14px; padding-block: 16px; font-size: 13px; line-height: 1.75; }
+.principles li + li { border-top: var(--border-subtle); }
+.principles li > span:first-child { color: var(--focus-ring); font-family: var(--font-code); font-size: 11px; letter-spacing: .04em; }
+.insightsCards .insightCard { position: relative; background: var(--insight-tint); border-color: color-mix(in srgb, var(--insight-accent) 25%, transparent); box-shadow: var(--shadow-subtle); transition: transform .18s, border-color .18s, box-shadow .18s; }
+.insightCard::before { content: ''; position: absolute; height: 2px; top: -1px; left: 22px; right: 22px; background: var(--insight-accent); }
+.insightCard[data-category='philosophy'] { --insight-tint: var(--tint-slate); --insight-accent: var(--blue); }
+.insightCard[data-category='ai-architecture'] { --insight-tint: var(--tint-cyan); --insight-accent: color-mix(in srgb, var(--brand-cyan) 65%, var(--blue)); }
+.insightCard[data-category='salesforce'] { --insight-tint: var(--tint-periwinkle); --insight-accent: color-mix(in srgb, var(--brand-violet) 70%, var(--blue)); }
+@media (hover: hover) {
+  .tiles > li:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--blue) 48%, transparent); box-shadow: var(--shadow-subtle-hover); }
+  .insightsCards .insightCard:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--insight-accent) 65%, transparent); box-shadow: var(--shadow-subtle-hover); }
+}
+@media (max-width: 800px) { .tiles > li { padding: 14px; font-size: 12px; gap: 11px; } }
+@media (max-width: 540px) {
+  .value :global(.section-heading) { margin-bottom: 30px; }
+  .valueDescription::before { inset: -10px -10px; }
+  .tiles { gap: 9px; }
+  .tiles > li { flex-direction: column; align-items: start; padding: 13px 9px; font-size: 11px; gap: 10px; }
+  .tiles svg { width: 24px; height: 24px; }
+  .principles { padding-inline: 15px; }
+  .principles li { padding-block: 14px; gap: 10px; font-size: 12px; }
+  .philosophyHeading { padding-left: 15px; }
+}
+@media (prefers-reduced-motion: reduce) { .tiles > li:hover, .insightsCards .insightCard:hover { transform: none; } }
