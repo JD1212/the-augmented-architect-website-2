@@ -1,0 +1,39 @@
+.page { overflow: clip; }
+.hero { display:grid; grid-template-columns:1.4fr 1fr; gap:72px; align-items:center; padding-block:28px 40px; }
+.hero h1 { max-width:800px; }
+.lead { max-width:620px; margin-top:20px; color:var(--charcoal); font-size:15px; line-height:1.8; }
+.heroAside { padding:38px; background:linear-gradient(140deg,#e1e8e9,#f0eee5); border:1px solid var(--line); border-radius:12px; position:relative; }
+.heroAside::before { content:""; position:absolute; top:0; left:38px; width:60px; height:3px; background:var(--brand-cyan); }
+.kicker,.captureTag { font:10px var(--font-code); letter-spacing:.12em; color:#395f76; }
+.heroAside > p { font-size:27px; line-height:1.4; margin:24px 0; letter-spacing:-.03em; }
+.heroAside dl > div { padding:16px 0; border-top:1px solid var(--line); }
+.heroAside dt { font-weight:650; }.heroAside dd { color:var(--charcoal); font-size:14px; margin:5px 0 0; }
+.problems,.capabilities { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:28px; margin:38px 0; }
+.problems h3,.capabilities h3 { margin:16px 0 10px; font-size:19px; }.problems p,.capabilities p { color:var(--charcoal); font-size:14px; line-height:1.8; }
+.architecture,.develop { background:var(--graphite); color:var(--ivory); }
+.architecture h2,.architecture h3,.develop h2 { color:var(--ivory); }
+.architecture :global(.section-heading) > p { color:#c6d3db; }
+.architecture :global(.eyebrow),.develop :global(.eyebrow) { color:#a2c2d9; }
+.diagram { border:1px solid #87a7ba55; border-radius:12px; background:radial-gradient(ellipse at top,#44617a55,transparent 65%),#202b33; padding:28px; }
+.diagramTop { display:flex; justify-content:space-between; gap:16px; font:10px var(--font-code); letter-spacing:.08em; color:#a2c2d9; }
+.pipeline { max-width:830px; margin:32px auto; text-align:center; }
+.node,.registry { display:grid; gap:12px; border:1px solid #9ab4c466; padding:24px; border-radius:9px; }.node { max-width:440px; margin:auto; }.registry { background:#3c566855; }
+.node small,.registry small { color:#9ac6d4; font:10px var(--font-code); }.node code { font-size:12px; color:#b9d6e1; }
+.registry strong { font-size:24px; }.registry p { font-size:13px; color:#cad7de; }
+.connector { display:block; margin:12px; color:var(--brand-cyan); }
+.actions { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; list-style:none; padding:0; }
+.actions li { display:grid; gap:12px; padding:22px 12px; border:1px solid #94b3c655; border-radius:8px; }.actions span { color:#7ce6ee; font:13px var(--font-code); }.actions small { color:#bdcbd4; }.actions strong { font-size:14px; }
+.diagram figcaption,.boundary { color:#c6d3db; font-size:13px; line-height:1.8; }
+.packagePair { display:grid; grid-template-columns:1fr 1fr; gap:40px; margin:32px 0; }.packagePair h3 { margin-bottom:12px; }.packagePair p { color:#c6d3db; line-height:1.8; }
+.viewer { border:1px solid var(--line); border-radius:12px; overflow:hidden; background:var(--surface); }
+.captureChoices { display:flex; flex-wrap:wrap; gap:6px; padding:14px; border-bottom:1px solid var(--line); }.captureChoices button { padding:11px 14px; border:1px solid transparent; border-radius:6px; font-size:13px; cursor:pointer; }.captureChoices button[aria-pressed=true] { background:var(--graphite); color:var(--ivory); }
+.captureCaption { padding:24px 28px; }.captureCaption h3 { margin-bottom:10px; }.captureCaption p { color:var(--charcoal); line-height:1.7; }
+.pending { min-height:320px; display:flex; flex-direction:column; justify-content:center; align-items:flex-start; gap:18px; padding:40px; background:linear-gradient(140deg,#edf0ed,#e4ebed); border-block:1px solid var(--line); }.pending > p:first-of-type { font-size:29px; letter-spacing:-.025em; }.pending p { max-width:650px; line-height:1.7; }.pending details { font-size:13px; }.pending summary { cursor:pointer; }.pending details p { margin-top:12px; }
+.viewerNote,.small { font-size:13px; color:var(--charcoal); line-height:1.8; }.viewerNote { padding:18px 28px; }
+.scrollPanel,.expandedPanel { overflow:auto; overscroll-behavior:contain; touch-action:pan-x pan-y pinch-zoom; }.scrollPanel { max-height:700px; }.captureImage { display:block; width:100%; min-width:1000px; height:auto; max-width:none; }.expand { margin:16px 28px; padding:10px 16px; border:1px solid var(--line); border-radius:6px; cursor:pointer; }
+.dialog { max-width:none; width:96vw; height:92dvh; max-height:none; padding:0; border:1px solid var(--line); border-radius:12px; background:var(--ivory); }.dialog::backdrop { background:#15232bba; }.dialog header { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:18px 24px; }.dialog button { padding:10px 16px; cursor:pointer; border:1px solid var(--line); border-radius:5px; }.zoom { display:flex; align-items:center; gap:15px; padding:10px 24px 18px; }.expandedPanel { height:calc(100% - 135px); }
+.tinted { background:var(--tint-slate); }.editorial { display:grid; grid-template-columns:1fr 1fr; gap:70px; }.editorial p { line-height:1.85; }.editorial h2 { margin-bottom:25px; }.sequence { list-style:none; padding:0; margin:28px 0; }.sequence li { padding:17px 0; border-top:1px solid var(--line); }.sequence span { display:inline-block; width:60px; color:#395f76; font:13px var(--font-code); }
+.files { background:#1d2830; border:1px solid #88a9bd55; border-radius:10px; padding:30px; }.files > span { color:#a4ccd9; font:10px var(--font-code); }.files ul { list-style:none; margin:24px 0; padding:0; }.files li { padding:12px 0; border-bottom:1px solid #a2bdcc33; font-size:14px; }.files p { font-size:13px; color:#bdcdd5; }
+@media(max-width:1000px) { .hero { gap:30px; grid-template-columns:1.3fr 1fr; }.heroAside { padding:26px; }.problems,.capabilities { grid-template-columns:1fr 1fr; }.editorial { gap:35px; } }
+@media(max-width:700px) { .hero,.editorial,.packagePair { grid-template-columns:1fr; gap:28px; }.hero { padding-block:0 24px; }.heroAside > p { font-size:24px; }.problems,.capabilities { grid-template-columns:1fr; gap:18px; }.diagram { padding:18px; }.diagramTop { font-size:8px; }.actions { grid-template-columns:1fr; }.registry strong { font-size:21px; }.pending { padding:26px; }.pending > p:first-of-type { font-size:25px; }.captureCaption { padding:22px; }.captureChoices button { font-size:12px; }.dialog header { padding:12px; }.zoom { padding:10px 12px; font-size:12px; } }
+
