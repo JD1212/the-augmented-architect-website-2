@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import { Suspense, useCallback, useRef, useState } from 'react';
 import { assistantContent as copy } from '@/content/assistant';
 import { AssistantAvatar } from './AssistantAvatar';
 import { AssistantPanel } from './AssistantPanel';
@@ -9,6 +9,10 @@ import { useAssistantIntroduction } from './useAssistantIntroduction';
 import styles from './assistant.module.css';
 
 export function AssistantLauncher() {
+  return <Suspense fallback={null}><ScoutLauncher /></Suspense>;
+}
+
+function ScoutLauncher() {
   const ready = useAssistantEntrance();
   const [open, setOpen] = useState(false);
   const openPanel = useCallback(() => setOpen(true), []);

@@ -22,6 +22,8 @@ export const aiTechnologies = {
   distinction: 'These groups describe typical architectural roles, with overlap: visual platforms can run agents and custom code, and code-first frameworks can offer visual tooling. The right choice depends on the process, the team, and the operating environment.',
   bestForLabel: 'Best for',
   detailsLabel: 'Explore technology',
+  previewAction: 'Click to view details',
+  externalLinkHint: 'opens in a new tab',
   closeLabel: 'Close technology details',
   sourceLabel: 'Official documentation',
   exampleLabel: 'Illustrative business use case',

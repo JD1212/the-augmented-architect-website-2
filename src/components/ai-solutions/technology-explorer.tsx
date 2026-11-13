@@ -6,7 +6,7 @@ import type { Technology } from '@/content/ai-technologies';
 import type { ComparisonContent } from './technology-comparison';
 import styles from './technology-comparison.module.css';
 
-type Copy = Pick<ComparisonContent, 'bestForLabel' | 'detailsLabel' | 'closeLabel' | 'sourceLabel' | 'exampleLabel' | 'headings'>;
+type Copy = Pick<ComparisonContent, 'bestForLabel' | 'detailsLabel' | 'closeLabel' | 'sourceLabel' | 'exampleLabel' | 'headings' | 'previewAction' | 'externalLinkHint'>;
 
 function TechnologyLogo({ technology }: { technology: Technology }) {
   return <span className={`${styles.logo} ${technology.logo?.dark ? styles.darkLogo : ''}`}>
@@ -14,9 +14,9 @@ function TechnologyLogo({ technology }: { technology: Technology }) {
   </span>;
 }
 
-function TechnologyPreview({ technology, id }: { technology: Technology; id: string }) {
+function TechnologyPreview({ technology, id, action }: { technology: Technology; id: string; action: string }) {
   return <span role="tooltip" id={id} className={styles.preview}>
-    <strong>{technology.name}</strong><span className={styles.category}>{technology.category}</span><span>{technology.strength}</span>
+    <strong>{technology.name}</strong><span className={styles.category}>{technology.category}</span><span>{technology.strength}</span><span className={styles.previewAction}>{action}<span aria-hidden="true"> ↗</span></span>
   </span>;
 }
 
@@ -45,7 +45,7 @@ function TechnologyCard({ technology, copy, dialogOpen, selected, onSelect }: { 
       <span className={styles.bestFor}><strong>{copy.bestForLabel}</strong>{technology.bestFor}</span>
       <span className={styles.cardAction}>{copy.detailsLabel}<span aria-hidden="true">↗</span></span>
     </button>
-    {preview && <TechnologyPreview technology={technology} id={previewId} />}
+    {preview && <TechnologyPreview technology={technology} id={previewId} action={copy.previewAction} />}
   </li>;
 }
 
@@ -79,7 +79,7 @@ function TechnologyDialog({ technology, copy, triggerRef, onClose }: { technolog
       {(Object.keys(copy.headings) as (keyof Technology['details'])[]).map(key => <section key={key} className={key === 'example' ? styles.example : styles.detailSection}>
         <h3>{copy.headings[key]}</h3>{key === 'example' && <p className={styles.exampleLabel}>{copy.exampleLabel}</p>}<p>{technology.details[key]}</p>
       </section>)}
-      <section className={styles.documentation}><h3>{copy.sourceLabel}</h3><a href={technology.href}>{technology.name}<span aria-hidden="true"> ↗</span></a></section>
+      <section className={styles.documentation}><h3>{copy.sourceLabel}</h3><a href={technology.href} target="_blank" rel="noopener noreferrer">{technology.name}<span aria-hidden="true"> ↗</span><span className={styles.linkHint}> ({copy.externalLinkHint})</span></a></section>
     </div>
   </dialog>;
 }

@@ -19,6 +19,8 @@ npm run dev
 
 Open http://localhost:3000. Run `npm run lint` and `npm run build` for validation. Use `npm start` to serve a completed production build.
 
+With a production preview running, use `node tests/runtime-comparison.browser.mjs http://localhost:3100` and `node tests/scout-homepage.browser.mjs http://localhost:3100` for the runtime dialogs and homepage/Scout flows. Both require Chromium; set `CHROME_BIN` if it is not autodetected.
+
 ## Edit the content
 
 Website shell text, navigation labels, button labels, preview labels, accessibility labels, page copy and SEO titles/descriptions are in **`src/content/site.ts`**. Insights copy and article content are in the dedicated files under `src/content/` described below. Its `SiteContent` type checks the structure. Edit quoted strings and keep the property names intact.
@@ -106,7 +108,7 @@ The existing header and sitemap include the new section. The visual refinement a
 
 The shared design system now covers the homepage, full AI Solutions and Salesforce service pages, and the About/Contact/Booking pages. The public palette display and generic home links have been removed. The desktop floating consultation button is omitted; the mobile action avoids duplicating a visible main consultation CTA.
 
-Edit the expanded homepage, diagrams, showcase, footer and secondary pages in `src/content/experience.ts`. Edit service-page content in `src/content/service-pages.ts`. Core positioning and navigation remain in `src/content/site.ts`. All content remains local and typed.
+Edit the expanded homepage, diagrams, showcase, footer and secondary pages in `src/content/experience.ts`. The four homepage preview cards are configured in `experience.insights.cards`; Custom Applications currently links to the existing custom-development heading at `/ai-solutions#ai-development-heading`. This homepage card row is independent of the three Insights publishing categories. Edit service-page content in `src/content/service-pages.ts`. Core positioning and navigation remain in `src/content/site.ts`. All content remains local and typed.
 
 See [the design and asset guide](docs/design-refinement.md) for the visual rules, missing assets, and instructions for adding authentic application screenshots without altering their UI colors.
 
@@ -135,7 +137,7 @@ See [the brand identity guide](docs/brand-identity.md) for the transparent SVG m
 
 ## Scout assistant frontend
 
-Scout appears after a short delay, finishes its entrance, then introduces itself once per browser tab if the visitor has not begun interacting. Clicking, typing, scrolling, focusing a control or navigating suppresses the automatic introduction for that tab. Closing leaves the avatar available for manual reopening. The tab flag `aa.scout.introduction.v1` records only that the introduction has been handled; if session storage is unavailable, Scout opens manually. Edit its name, greeting, supporting message, availability notice and starter destinations in `src/content/assistant.ts`. Its four starters navigate to existing service/contact pages. Free-form input is a local draft: submitting displays a clear coming-soon notice and sends nothing. Drafts are discarded when the panel closes.
+Scout appears after a short delay and automatically introduces itself on the first quiet homepage visit in a browser tab, using the existing entrance, portrait panel, and typed greeting. Browsing AI Solutions or another page does not consume that homepage opportunity. Clicking, typing, scrolling, switching away, or opening another dialog suppresses the current homepage visit’s automatic introduction without recording a completed introduction. Once Scout actually opens automatically, or a visitor opens or dismisses it manually, the tab flag `aa.scout.introduction.v1` prevents further auto-opening. Existing handled-tab flags remain respected. Closing leaves the original launcher available for reopening the full panel. If session storage is unavailable, Scout opens manually. Edit its name, greeting, supporting message, availability notice and starter destinations in `src/content/assistant.ts`. Its four starters navigate to existing service/contact pages. Free-form input is a local draft: submitting displays a clear coming-soon notice and sends nothing. Drafts are discarded when the panel closes.
 
 The reusable components live in `src/components/assistant/`: `AssistantLauncher`, `AssistantPanel`, `AssistantAvatar`, and `AssistantMessage`. `useAssistant.ts` separates entrance timing, reduced-motion preferences, greeting sequencing and local draft state from presentation. `useAssistantIntroduction.ts` coordinates the once-per-tab introduction with the fail-closed session policy in `src/lib/assistant-introduction.ts`. The typed `AssistantMessageData` model and welcome-message array provide a rendering boundary for future conversation history; no service adapter, endpoint, provider SDK or storage is installed. A future integration should replace the local draft availability action with a separately reviewed transport, and update the availability copy only when messaging actually works.
 

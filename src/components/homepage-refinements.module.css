@@ -12,11 +12,15 @@
 .principles li { display: grid; grid-template-columns: 24px minmax(0,1fr); align-items: baseline; gap: 14px; padding-block: 16px; font-size: 13px; line-height: 1.75; }
 .principles li + li { border-top: var(--border-subtle); }
 .principles li > span:first-child { color: var(--focus-ring); font-family: var(--font-code); font-size: 11px; letter-spacing: .04em; }
+.insightsCards:global(.insight-teasers) { grid-template-columns: repeat(4,minmax(0,1fr)); gap: 20px; }
 .insightsCards .insightCard { position: relative; background: var(--insight-tint); border-color: color-mix(in srgb, var(--insight-accent) 25%, transparent); box-shadow: var(--shadow-subtle); transition: transform .18s, border-color .18s, box-shadow .18s; }
 .insightCard::before { content: ''; position: absolute; height: 2px; top: -1px; left: 22px; right: 22px; background: var(--insight-accent); }
 .insightCard[data-category='philosophy'] { --insight-tint: var(--tint-slate); --insight-accent: var(--blue); }
 .insightCard[data-category='ai-architecture'] { --insight-tint: var(--tint-cyan); --insight-accent: color-mix(in srgb, var(--brand-cyan) 65%, var(--blue)); }
 .insightCard[data-category='salesforce'] { --insight-tint: var(--tint-periwinkle); --insight-accent: color-mix(in srgb, var(--brand-violet) 70%, var(--blue)); }
+.insightCard[data-category='custom-applications'] { --insight-tint: color-mix(in srgb,var(--blue) 7%,var(--surface)); --insight-accent: var(--focus-ring); }
+@media (max-width: 1050px) { .insightsCards:global(.insight-teasers) { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media (max-width: 600px) { .insightsCards:global(.insight-teasers) { grid-template-columns: minmax(0,1fr); } }
 @media (hover: hover) {
   .tiles > li:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--blue) 48%, transparent); box-shadow: var(--shadow-subtle-hover); }
   .insightsCards .insightCard:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--insight-accent) 65%, transparent); box-shadow: var(--shadow-subtle-hover); }

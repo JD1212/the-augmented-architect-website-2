@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { experience } from '@/content/experience';
-import { insights, categoryIds, categoryHref } from '@/content/insights';
 import { Arrow } from './icon';
 import { HeadingEmphasis } from './heading-emphasis';
 import styles from './homepage-refinements.module.css';
@@ -12,5 +11,5 @@ export function PhilosophyPreview() {
 
 export function InsightsPreview() {
   const content = experience.insights;
-  return <section className="insights-preview section" aria-labelledby="insights-preview-heading"><div className="container"><div className="section-heading split-heading"><div><p className="eyebrow">{content.eyebrow}</p><h2 id="insights-preview-heading">{content.title}</h2></div><div><p>{content.description}</p><Link className="text-link" href={content.link.href}>{content.link.label}<Arrow /></Link></div></div><div className={`insight-teasers ${styles.insightsCards}`}>{categoryIds.map(category => <Link className={styles.insightCard} data-category={category} href={categoryHref(category)} key={category}><h3>{insights.categories[category].title}</h3><p>{insights.categories[category].summary}</p><Arrow /></Link>)}</div></div></section>;
+  return <section className="insights-preview section" aria-labelledby="insights-preview-heading"><div className="container"><div className="section-heading split-heading"><div><p className="eyebrow">{content.eyebrow}</p><h2 id="insights-preview-heading">{content.title}</h2></div><div><p>{content.description}</p><Link className="text-link" href={content.link.href}>{content.link.label}<Arrow /></Link></div></div><div className={`insight-teasers ${styles.insightsCards}`}>{content.cards.map(card => <Link className={styles.insightCard} data-category={card.id} href={card.href} key={card.id}><h3>{card.title}</h3><p>{card.description}</p><Arrow /></Link>)}</div></div></section>;
 }

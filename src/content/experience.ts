@@ -1,4 +1,5 @@
 import type { IconName } from './site';
+import { insights } from './insights';
 
 export type DiagramSpec = {
   label: string;
@@ -88,7 +89,16 @@ export const experience = {
     link: { label: 'How we think about architecture', href: '/insights/philosophy' },
     principles: ['Business needs before platform choices', 'Modular systems with clear responsibilities', 'AI with shared context and appropriate governance'],
   },
-  insights: { eyebrow: 'IDEAS BEHIND THE SYSTEMS', title: 'Thoughtful architecture. Practical perspective.', description: 'Explore the principles, decisions, and technology behind better business systems.', link: { label: 'Explore all Insights', href: '/insights' } },
+  insights: {
+    eyebrow: 'IDEAS BEHIND THE SYSTEMS', title: 'Thoughtful architecture. Practical perspective.',
+    description: 'Explore the principles, decisions, and technology behind better business systems.', link: { label: 'Explore all Insights', href: '/insights' },
+    cards: [
+      { id: 'philosophy', title: insights.categories.philosophy.title, description: insights.categories.philosophy.summary, href: '/insights/philosophy' },
+      { id: 'ai-architecture', title: insights.categories['ai-architecture'].title, description: insights.categories['ai-architecture'].summary, href: '/ai-solutions' },
+      { id: 'salesforce', title: insights.categories.salesforce.title, description: insights.categories.salesforce.summary, href: '/salesforce' },
+      { id: 'custom-applications', title: 'Custom Applications', description: 'Custom applications, internal tools, and integrations designed around your business.', href: '/ai-solutions#ai-development-heading' },
+    ],
+  },
   consultation: {
     eyebrow: 'LET’S BUILD THE RIGHT FOUNDATION', title: 'Your next chapter starts with a better architecture.',
     description: 'Bring us the business problem, the systems that need to connect, or the Salesforce org that needs a fresh perspective.',
