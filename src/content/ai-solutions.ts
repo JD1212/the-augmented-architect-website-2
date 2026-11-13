@@ -1,3 +1,4 @@
+import { aiTechnologies } from './ai-technologies';
 import type { IconName } from './site';
 
 export type AiConcept = {
@@ -6,13 +7,12 @@ export type AiConcept = {
   image: { src: string; alt: string; width: number; height: number };
 };
 type Capability = { title: string; description: string; icon: IconName };
-type Technology = { name: string; category: string; description: string; href: string; logo: string | null };
 type AiSolutionsContent = {
   seo: { title: string; description: string };
   hero: { eyebrow: string; title: string; description: string; capabilitiesLabel: string; topics: readonly string[] };
   problems: { eyebrow: string; title: string; items: readonly { title: string; description: string }[] };
   capabilities: { eyebrow: string; title: string; description: string; items: readonly Capability[] };
-  technology: { eyebrow: string; title: string; introduction: string; approach: string; note: string; trademark: string; sourceLabel: string; items: readonly Technology[] };
+  technology: typeof aiTechnologies;
   enterprise: { eyebrow: string; name: string; monogram: string; title: string; description: string; brands: readonly { name: string; role: string }[]; conceptLabel: string; concepts: readonly AiConcept[] };
   viewer: { openLabel: string; hint: string; closeLabel: string; fitLabel: string; actualSizeLabel: string; scrollHint: string };
   development: { eyebrow: string; title: string; description: string; items: readonly string[] };
@@ -47,22 +47,7 @@ export const aiSolutions: AiSolutionsContent = {
       { title: 'Operational Visibility', description: 'Help businesses understand agent execution, utilization, costs, and measurable outcomes.', icon: 'chart' },
     ],
   },
-  technology: {
-    eyebrow: 'CHOOSING THE RIGHT RUNTIME', title: 'The right technology for the right job.',
-    introduction: 'These tools play different roles. A controllable orchestration framework, a persistent agent runtime, and a managed visual platform solve different architectural problems.',
-    approach: 'Some businesses benefit from custom-coded systems; others benefit from visual tools or managed platforms. We select and connect the tools that fit the process, the team, and the operational requirements.',
-    note: 'Technologies we can evaluate or build integrations for. Inclusion does not indicate an existing Augmented Enterprises connector, a certified partnership, or a guaranteed integration.',
-    trademark: 'Product names and marks belong to their respective owners. Microsoft and Microsoft Copilot Studio are trademarks of the Microsoft group of companies.',
-    sourceLabel: 'Official documentation',
-    items: [
-      { name: 'LangGraph', category: 'STATEFUL ORCHESTRATION', description: 'Stateful, long-running, controllable agent workflows.', href: 'https://docs.langchain.com/oss/python/langgraph/overview', logo: '/images/ai-solutions/technologies/langgraph.svg' },
-      { name: 'Hermes Agent', category: 'AGENT RUNTIME', description: 'Autonomous agent execution and extensible skills.', href: 'https://hermes-agent.nousresearch.com/', logo: '/images/ai-solutions/technologies/hermes.svg' },
-      { name: 'OpenClaw', category: 'PERSISTENT AGENT EXPERIENCES', description: 'Persistent personal and business agent experiences.', href: 'https://docs.openclaw.ai/', logo: '/images/ai-solutions/technologies/openclaw.svg' },
-      { name: 'CrewAI', category: 'MULTI-AGENT COORDINATION', description: 'Coordinated multi-agent workflows.', href: 'https://docs.crewai.com/', logo: '/images/ai-solutions/technologies/crewai.png' },
-      { name: 'n8n', category: 'VISUAL WORKFLOW AUTOMATION', description: 'Visual workflow automation and rapid integration.', href: 'https://docs.n8n.io/', logo: '/images/ai-solutions/technologies/n8n.svg' },
-      { name: 'Microsoft Copilot Studio', category: 'MANAGED DECLARATIVE PLATFORM', description: 'Enterprise-focused declarative agent experiences.', href: 'https://learn.microsoft.com/en-us/microsoft-copilot-studio/', logo: null },
-    ],
-  },
+  technology: aiTechnologies,
   enterprise: {
     eyebrow: 'OUR SOFTWARE PLATFORM · IN DEVELOPMENT', name: 'Augmented Enterprises', monogram: 'AE',
     title: 'One business. Many agents. One connected foundation.',

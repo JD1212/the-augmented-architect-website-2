@@ -1,10 +1,10 @@
-import Image from 'next/image';
 import Link from 'next/link';
 import { aiSolutions as content } from '@/content/ai-solutions';
 import { site } from '@/content/site';
 import { ArchitectureDiagram } from '@/components/architecture-diagram';
 import { Icon, Arrow } from '@/components/icon';
 import { ConceptViewer } from './concept-viewer';
+import { TechnologyComparison } from './technology-comparison';
 import styles from './ai-solutions.module.css';
 
 export function AiSolutionsPage() {
@@ -15,10 +15,7 @@ export function AiSolutionsPage() {
 
     <section id="capabilities" className={`section capabilities-section ${styles.capabilities}`} aria-labelledby="ai-capabilities-heading"><div className="container"><div className="section-heading split-heading"><div><p className="eyebrow">{content.capabilities.eyebrow}</p><h2 id="ai-capabilities-heading">{content.capabilities.title}</h2></div><p>{content.capabilities.description}</p></div><div className={`capability-grid ${styles.capabilityGrid}`}>{content.capabilities.items.map(item => <article key={item.title}><span className="icon-box"><Icon name={item.icon} /></span><h3>{item.title}</h3><p>{item.description}</p></article>)}</div></div></section>
 
-    <section className="section" aria-labelledby="ai-runtime-heading"><div className="container"><div className="section-heading split-heading"><div><p className="eyebrow">{content.technology.eyebrow}</p><h2 id="ai-runtime-heading">{content.technology.title}</h2></div><p>{content.technology.introduction}</p></div><ul className={styles.runtimeGrid}>{content.technology.items.map(technology => <li key={technology.name}>
-      <div className={styles.runtimeLogo}>{technology.logo ? <Image src={technology.logo} alt="" width={150} height={52} className={styles.vendorLogo} /> : <span className={styles.textBrand}>{technology.name}</span>}</div>
-      <p className={styles.runtimeCategory}>{technology.category}</p><h3><a href={technology.href} aria-label={`${content.technology.sourceLabel}: ${technology.name}`}>{technology.name}<span aria-hidden="true">↗</span></a></h3><p>{technology.description}</p>
-    </li>)}</ul><div className={styles.technologyApproach}><p>{content.technology.approach}</p><p>{content.technology.note}</p></div><p className={styles.trademark}>{content.technology.trademark}</p></div></section>
+    <TechnologyComparison content={content.technology} />
 
     <section id="demo" className={`section dark-section ${styles.enterprise}`} aria-labelledby="ae-heading"><div className="container">
       <div className={styles.productIdentity}><span className={styles.aeMark} aria-hidden="true">{content.enterprise.monogram}</span><div><p className="eyebrow">{content.enterprise.eyebrow}</p><p>{content.enterprise.name}</p></div></div>

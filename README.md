@@ -114,6 +114,8 @@ See [the design and asset guide](docs/design-refinement.md) for the visual rules
 
 Local code → Git commit → Push to GitHub → Automatic Vercel deployment.
 
+After each completed change, validate the intended scope, commit to `main`, push to `origin/main`, and verify that the existing Vercel project's automatic deployment reaches **Ready** for that exact commit. Smoke-test the live `.vercel.app` URL and report both the URL and commit SHA. Review and refine on Vercel rather than accumulating uncommitted changes, unless a later task explicitly requests a local-only review.
+
 - Repository: `https://github.com/JD1212/the-augmented-architect-website-2`.
 - Production branch: `main`.
 - Existing Vercel project: `the-augmented-architect-website-2`, under JD Burkholder's projects.

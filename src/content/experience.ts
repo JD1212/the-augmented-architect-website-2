@@ -10,7 +10,7 @@ export type DiagramSpec = {
 };
 type PreviewNavigation = { label: string; icon: IconName };
 export type ProductShowcaseContent = {
-  eyebrow: string; brand: string; link: { label: string; href: string }; notice: string;
+  eyebrow: string; brand: string; notice: string;
   strategy: {
     id: string; label: string; title: string; subtitle: string; navigationLabel: string;
     navigation: PreviewNavigation[];
@@ -62,7 +62,6 @@ export const experience = {
   showcase: {
     eyebrow: 'FROM ARCHITECTURE TO EXPERIENCE',
     brand: 'Augmented Enterprises',
-    link: { label: 'Explore a Demo', href: '#product-previews' },
     notice: 'Illustrative product previews with example data. Augmented Enterprises is in development; these are not live application screens.',
     strategy: {
       id: 'strategy-preview', label: 'AI CONSULTANCY', title: 'AI Consultancy Strategy',
