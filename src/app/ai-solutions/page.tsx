@@ -1,6 +1,7 @@
-import { ServicePage } from '@/components/service-page';
-import { pageMetadata } from '@/lib/metadata';
+import { AiSolutionsPage } from '@/components/ai-solutions/ai-solutions-page';
+import { aiSolutions } from '@/content/ai-solutions';
+import { createPageMetadata } from '@/lib/metadata';
 
-export const metadata = pageMetadata('ai-solutions', '/ai-solutions');
+export const metadata = createPageMetadata(aiSolutions.seo, '/ai-solutions');
 
-export default function Page() { return <ServicePage slug="ai-solutions" />; }
+export default function Page() { return <AiSolutionsPage />; }
