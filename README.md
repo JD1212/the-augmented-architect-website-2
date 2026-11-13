@@ -130,3 +130,11 @@ Cloudflare DNS, `theaugmentedarchitect.com`, the old Augmented Architect project
 ## Brand identity
 
 See [the brand identity guide](docs/brand-identity.md) for the transparent SVG monograms, header/footer lockups, favicons, and reproducible asset exports. The live wordmark remains editable HTML in the existing content configuration. Shared brand tokens live in `globals.css`, while logo layout is scoped to `brand.module.css`.
+
+## Scout assistant frontend
+
+Scout appears after a short delay and opens only when selected. Edit its name, greeting, supporting message, availability notice and starter destinations in `src/content/assistant.ts`. Its four starters navigate to existing service/contact pages. Free-form input is a local draft: submitting displays a clear coming-soon notice and sends nothing. Drafts are discarded when the panel closes.
+
+The reusable components live in `src/components/assistant/`: `AssistantLauncher`, `AssistantPanel`, `AssistantAvatar`, and `AssistantMessage`. `useAssistant.ts` separates entrance timing, reduced-motion preferences, greeting sequencing and local draft state from presentation. The typed `AssistantMessageData` model and welcome-message array provide a rendering boundary for future conversation history; no service adapter, endpoint, provider SDK or storage is installed. A future integration should replace the local draft availability action with a separately reviewed transport, and update the availability copy only when messaging actually works.
+
+Assistant colors, border and shadow tokens live in `src/app/globals.css`. Its scoped layout, character animation and responsive behavior live in `assistant.module.css`. The native dialog includes focus wrapping, Escape dismissal and focus restoration, with immediate greeting/starter display when reduced motion is enabled. On mobile the assistant clears the existing consultation dock and yields to the navigation menu. Root layout mounts it once, preserving the website's pages and content.

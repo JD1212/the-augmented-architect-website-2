@@ -8,9 +8,21 @@ export type DiagramSpec = {
   outputs: readonly { label: string; icon: IconName }[];
   foundation: readonly string[];
 };
-export type ProjectExample = {
-  number: string; title: string; description: string; diagram: 'business' | 'agents';
-  image: { src: string; alt: string; width: number; height: number } | null;
+type PreviewNavigation = { label: string; icon: IconName };
+export type ProductShowcaseContent = {
+  eyebrow: string; brand: string; link: { label: string; href: string }; notice: string;
+  strategy: {
+    id: string; label: string; title: string; subtitle: string; navigationLabel: string;
+    navigation: PreviewNavigation[];
+    stats: { label: string; value: string }[];
+    activityTitle: string; activity: { title: string; status: string }[];
+  };
+  workspace: {
+    id: string; label: string; title: string; subtitle: string; navigationLabel: string;
+    navigation: PreviewNavigation[]; businessLabel: string; businessName: string;
+    callout: { eyebrow: string; title: string; description: string; link: { label: string; href: string } };
+    readiness: { label: string; value: string }[];
+  };
 };
 
 export const diagrams: Record<'business' | 'agents' | 'salesforce', DiagramSpec> = {
@@ -49,13 +61,28 @@ export const experience = {
   valueEyebrow: 'BUILT AROUND YOUR BUSINESS',
   showcase: {
     eyebrow: 'FROM ARCHITECTURE TO EXPERIENCE',
-    link: { label: 'Discuss a walkthrough', href: '/contact' },
-    assetNotice: 'Illustrative architecture examples.',
-    examples: [
-      { number: '01', title: 'Connected business systems', description: 'A shared foundation for people, data, workflows, and intelligent agents.', diagram: 'business', image: null },
-      { number: '02', title: 'Business agents, with context', description: 'Agent experiences designed around business processes, permissions, and oversight.', diagram: 'agents', image: null },
-    ] satisfies readonly ProjectExample[],
-  },
+    brand: 'Augmented Enterprises',
+    link: { label: 'Explore a Demo', href: '#product-previews' },
+    notice: 'Illustrative product previews with example data. Augmented Enterprises is in development; these are not live application screens.',
+    strategy: {
+      id: 'strategy-preview', label: 'AI CONSULTANCY', title: 'AI Consultancy Strategy',
+      subtitle: 'Design, build, and operationalize AI across your business.',
+      navigationLabel: 'AI CONSULTANCY',
+      navigation: [{ label: 'Overview', icon: 'layers' }, { label: 'Projects', icon: 'code' }, { label: 'Business agents', icon: 'chart' }, { label: 'Integrations', icon: 'data' }, { label: 'Settings', icon: 'bolt' }],
+      stats: [{ label: 'Active Projects', value: '4' }, { label: 'Business Agents', value: '12' }, { label: 'Integrations', value: '8' }],
+      activityTitle: 'Recent activity',
+      activity: [{ title: 'Workspace architecture', status: 'Planning' }, { title: 'Agent access review', status: 'In review' }, { title: 'Integration mapping', status: 'Scoping' }],
+    },
+    workspace: {
+      id: 'workspace-preview', label: 'BUSINESS WORKSPACE', title: 'Overview',
+      subtitle: 'A focused view of your business agents and their readiness.',
+      navigationLabel: 'AGENT STUDIO',
+      navigation: [{ label: 'Overview', icon: 'layers' }, { label: 'Business agents', icon: 'chart' }, { label: 'Environments', icon: 'code' }, { label: 'Access packages', icon: 'data' }],
+      businessLabel: 'ACTIVE BUSINESS', businessName: 'Example workspace',
+      callout: { eyebrow: 'CONNECTED BUSINESS CONTEXT', title: 'Build your augmented enterprise.', description: 'Bring your business agents, authorized integrations, and execution environments into one workspace.', link: { label: 'Explore your agents', href: '/ai-solutions#capabilities' } },
+      readiness: [{ label: 'Business context', value: 'Shared foundation' }, { label: 'Agent permissions', value: 'Scoped access' }],
+    },
+  } satisfies ProductShowcaseContent,
   philosophy: {
     eyebrow: 'OUR PHILOSOPHY', title: 'Build for change, not for a particular technology.',
     description: 'The right architecture gives your business options. We build modular, maintainable foundations that can evolve as your needs—and the technology—change.',

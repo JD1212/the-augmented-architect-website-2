@@ -25,6 +25,13 @@
   --icon-background: linear-gradient(140deg, color-mix(in srgb, var(--brand-cyan) 9%, var(--surface)), color-mix(in srgb, var(--brand-violet) 6%, var(--surface)));
   --showcase-surface: linear-gradient(140deg, #344959, #2B3542);
   --showcase-border: color-mix(in srgb, var(--brand-cyan) 18%, #8295a547);
+  /* Scout surfaces share the site font, spacing and focus tokens. */
+  --assistant-panel: #DCE4E8;
+  --assistant-ink: #1D2830;
+  --assistant-graphite: #344754;
+  --assistant-cyan: #8FE0F0;
+  --assistant-border: color-mix(in srgb, var(--assistant-graphite) 18%, transparent);
+  --assistant-shadow: 0 24px 70px #142d4433, 0 4px 16px #142d4414, inset 0 1px 0 #ffffff99;
 }
 @theme inline { --color-background: var(--ivory); --color-foreground: var(--graphite); --color-steel-blue: var(--blue); --font-sans: var(--font-body); }
 * { box-sizing: border-box; }
