@@ -10,7 +10,7 @@ export const salesforceOffering = {
     asideLabel: 'A PRACTICAL PATH FORWARD',
     asideTitle: 'Clarity first.\nModernization in manageable steps.',
     offers: ['Architecture assessment', 'Automation cleanup', 'Incremental modernization'],
-    experience: 'Senior Salesforce development and solutions architecture experience across organizations of different sizes.',
+    experience: 'Build a cleaner Salesforce foundation for AI, automation, and whatever comes next.',
   },
   problem: {
     eyebrow: 'WHEN AUTOMATION BECOMES TECHNICAL DEBT',
