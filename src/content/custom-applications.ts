@@ -1,3 +1,4 @@
+export type ModernizationFaqCopy = { title: string; introduction: string; closeLabel: string; scrollLabel: string; items: readonly { question: string; paragraphs: readonly string[] }[] };
 type TextPair = readonly [title: string, description: string];
 type SectionCopy = { eyebrow: string; title: string; description: string };
 type CustomApplicationsContent = {
@@ -7,6 +8,7 @@ type CustomApplicationsContent = {
   problem: SectionCopy & { points: readonly string[] };
   solution: SectionCopy & { layers: readonly TextPair[]; diagram: { label: string; steps: readonly string[]; existing: string; caption: string } };
   package: SectionCopy & { capabilities: readonly TextPair[]; note: string; examplesTitle: string; examplesNote: string; examples: readonly { title: string; steps: readonly string[] }[] };
+  faq: ModernizationFaqCopy;
   future: SectionCopy & { capabilities: readonly string[]; protocols: string; boundaries: string; platform: string; linkLabel: string; linkHref: string };
   approach: SectionCopy & { stages: readonly TextPair[] };
   closing: { title: string; description: string; preparation: string };
@@ -70,6 +72,81 @@ export const customApplications = {
       { title: 'Service businesses', steps: ['Customer inquiry', 'Request tracking', 'Team assignment', 'Customer updates'] },
       { title: 'Contractors', steps: ['Website inquiry', 'Customer profile', 'Project/job tracking', 'Staff coordination'] },
       { title: 'Tourism and hospitality', steps: ['Experience inquiry', 'Booking information', 'Guest record', 'Team operations'] },
+    ],
+  },
+  faq: {
+    title: 'Questions Before You Modernize',
+    introduction: 'Wondering about cost, SEO, growth, or how AI fits into your business?',
+    closeLabel: 'Close modernization questions', scrollLabel: 'Frequently asked questions and answers',
+    items: [
+      {
+        question: 'Can a small business really afford a full custom application?',
+        paragraphs: [
+          'Yes. Modern development tools and AI-assisted engineering have made custom applications much more accessible than they once were.',
+          "The value isn't simply writing code faster. It's having an experienced software architect who knows how to design secure systems, connect business data, and use AI-assisted development effectively.",
+          'Our starting $10,000 engagement delivers a complete, production-ready application for an agreed initial scope—including the modern website, customer access, internal workspace, business data foundation, and a defined operational workflow.',
+          'Additional capabilities can be introduced as the business grows.',
+        ],
+      },
+      {
+        question: 'Will I lose my existing website or Google rankings?',
+        paragraphs: [
+          'Not necessarily. We can modernize an existing WordPress or traditional website while preserving its domain, important URLs, content, metadata, and existing search visibility wherever possible.',
+          'When URLs need to change, we plan redirects and appropriate SEO migration practices.',
+          'Search rankings cannot be guaranteed, but protecting your existing SEO investment is part of the modernization process.',
+        ],
+      },
+      {
+        question: 'How will a modern business application help my business grow?',
+        paragraphs: [
+          'A connected application can make it easier for customers to discover your business, submit inquiries, interact with your team, and access relevant information.',
+          'Your employees can manage those interactions through a shared workspace instead of relying on disconnected emails, spreadsheets, and applications.',
+          'That can reduce manual work, improve responsiveness, and support more consistent customer experiences.',
+          'We can also expand search optimization, content publishing, customer communications, and workflow automation as your needs evolve.',
+        ],
+      },
+      {
+        question: 'Why not just add an AI agent to my existing website?',
+        paragraphs: [
+          "There's nothing inherently wrong with starting with one AI agent. For some businesses, that's an appropriate first step.",
+          'But an agent becomes much more useful when it can securely access relevant business information.',
+          'If your customer records, scheduling information, projects, and communications are disconnected, the agent may lack the context necessary to provide meaningful assistance.',
+          'We focus on creating a connected business foundation so that future agents can work with authorized customer information, business records, and workflows.',
+        ],
+      },
+      {
+        question: 'What do you mean by business context and customer journey?',
+        paragraphs: [
+          'Business context is the information that helps your systems understand who a customer is, what their relationship with your business involves, and what work is taking place.',
+          'A customer journey is the sequence of interactions someone has with your business—from discovering your services and making an inquiry through receiving service and becoming a returning customer.',
+          'We design applications that connect those interactions and preserve useful context across supported systems.',
+          'That creates a better experience for customers, employees, and future AI agents.',
+        ],
+      },
+      {
+        question: 'Will I have to replace all my existing business software?',
+        paragraphs: [
+          'Usually not. The goal is to connect the systems that already work well while improving the parts of your operation that are fragmented or inefficient.',
+          'We can integrate supported CRMs, scheduling applications, and other business software through their available APIs.',
+          'The starting package includes one agreed, supported integration. Additional integrations are scoped separately.',
+        ],
+      },
+      {
+        question: 'Can we add automated blogging, marketing, and AI agents later?',
+        paragraphs: [
+          'Yes. A modern application can provide a foundation for future capabilities such as content management, AI-assisted article drafting, workflow automation, and intelligent customer support.',
+          'SEO improvements and content strategy should prioritize useful, original information and human review rather than automatically publishing large volumes of low-quality articles.',
+          'Advanced content automation, additional integrations, and custom AI agents are optional services, not automatically included in the $10,000 starting package.',
+        ],
+      },
+      {
+        question: 'What exactly does the $10,000 starting price include?',
+        paragraphs: [
+          'It covers a defined initial implementation: a modern public website, basic secure customer and team access, a structured business database, one agreed integration, one end-to-end business workflow, deployment, and initial handoff.',
+          'We define the exact scope during discovery so there are clear expectations about what will be delivered.',
+          'Complex migrations, extensive custom features, multiple integrations, ongoing hosting/support, and custom AI agents are quoted separately.',
+        ],
+      },
     ],
   },
   future: {

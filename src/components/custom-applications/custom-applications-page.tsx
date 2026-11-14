@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { customApplications as copy } from '@/content/custom-applications';
 import { site } from '@/content/site';
 import { Arrow } from '@/components/icon';
+import { ModernizationFaq } from './modernization-faq';
 import { BusinessFoundationDiagram } from './business-foundation-diagram';
 import styles from './custom-applications.module.css';
 
@@ -30,6 +31,7 @@ export function CustomApplicationsPage() {
       <div className={styles.packageHeading}><div className={styles.heading}><p className="eyebrow">{copy.package.eyebrow}</p><h2 id="custom-package">{copy.package.title}</h2><p>{copy.package.description}</p></div><Link className="text-link" href={site.consultation.href}>{copy.hero.cta}<Arrow /></Link></div>
       <dl className={styles.capabilities}>{copy.package.capabilities.map(([title, description], index) => <div key={title}><dt><span aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>{title}</dt><dd>{description}</dd></div>)}</dl>
       <p className={styles.scopeNote}>{copy.package.note}</p>
+      <ModernizationFaq content={copy.faq} consultation={{ label: copy.hero.cta, href: site.consultation.href }} />
       <div className={styles.examples}><h3>{copy.package.examplesTitle}</h3><div className={styles.exampleGrid}>{copy.package.examples.map(example => <article key={example.title}><h4>{example.title}</h4><ol>{example.steps.map((step, index) => <li key={step}>{index > 0 && <span aria-hidden="true">→</span>}{step}</li>)}</ol></article>)}</div><p className={styles.small}>{copy.package.examplesNote}</p></div>
     </div></section>
     <section className={`section ${styles.future}`} aria-labelledby="custom-ai"><div className="container">
