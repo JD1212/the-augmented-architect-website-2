@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Unmodified reference captures; public-safe derivatives are in public/images/salesforce-showcase.
+/.local-assets/salesforce-website-captures/

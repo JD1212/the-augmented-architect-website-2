@@ -1,0 +1,184 @@
+[
+  {
+    "name": "01-architecture-explorer.png",
+    "originalSha256": "3df15873d27a1d3c890f578b7642ae848345a5452b4a2a602e6ffa5ee9746d25",
+    "crop": {
+      "left": 2,
+      "top": 4,
+      "width": 2046,
+      "height": 884
+    },
+    "width": 2046,
+    "height": 884,
+    "publicSha256": "e82553b59e6aa5bea43891e17e2daa7674275e6ce1fb630a22b807384b37bbf0"
+  },
+  {
+    "name": "02-registration-manager.png",
+    "originalSha256": "9f290b17d244dd0bafffbdea0fc892b578165bcec50b57dca8cc5768154031ce",
+    "crop": {
+      "left": 32,
+      "top": 250,
+      "width": 1986,
+      "height": 614
+    },
+    "width": 1986,
+    "height": 614,
+    "publicSha256": "4ee2d3728590b084b4b3102a8ead1733c662855989068fd7fb132110431ce803"
+  },
+  {
+    "name": "03-native-flow-discovery.png",
+    "originalSha256": "8259738d1da22211d7a52f50211bf6111c5f83cfa74de9ad4e77c4c169ce39ee",
+    "crop": {
+      "left": 16,
+      "top": 15,
+      "width": 1988,
+      "height": 735
+    },
+    "width": 1988,
+    "height": 735,
+    "publicSha256": "1bedb8031351180df0748de38f5dccc989d333556b116625d0f3097c13ea709a"
+  },
+  {
+    "name": "04-apex-source-inspector.png",
+    "originalSha256": "45fe3c976ff7ed38a6e748e99cfcd8e9e48301d280088fa7be0ca283ba5b7a6b",
+    "crop": {
+      "left": 48,
+      "top": 64,
+      "width": 1954,
+      "height": 870
+    },
+    "width": 1954,
+    "height": 870,
+    "publicSha256": "2b45205d5dbb5ad76078ef28aa1f75cc7a5d14a1d43f74bef6fd67a275864120"
+  },
+  {
+    "name": "05-apex-dependencies.png",
+    "originalSha256": "43d3ca9b590138416f470bc15269dcc0becee83b57a36090d232940914d79dbc",
+    "crop": {
+      "left": 124,
+      "top": 82,
+      "width": 1234,
+      "height": 1375
+    },
+    "width": 1234,
+    "height": 1375,
+    "publicSha256": "afbe1bf55a1474ba5f082b56188ec7c8d9281c9ac1a91fbe3b58e8b57bdc6309"
+  },
+  {
+    "name": "06-context-handler-grouping.png",
+    "originalSha256": "47829ad85401441b0979952951ca17694ea820633c66e58a99e042521336f48c",
+    "crop": {
+      "left": 42,
+      "top": 108,
+      "width": 1987,
+      "height": 688
+    },
+    "width": 1987,
+    "height": 688,
+    "publicSha256": "ad56aeb69c7bbd10c8ef497814554eb6c1e55c5c47e10702fc3827b1f23cfa65"
+  },
+  {
+    "name": "07-open-in-vscode-button.png",
+    "originalSha256": "f52f80cc765083e73f2a16de01f65172acb1e923b79549523b12c7a47c485aaa",
+    "crop": {
+      "left": 32,
+      "top": 40,
+      "width": 1990,
+      "height": 509
+    },
+    "width": 1990,
+    "height": 509,
+    "publicSha256": "bb54d49deea4df97ca57914d8f5e830babd7f3968c93f76c2e2f68ecbf1df50a"
+  },
+  {
+    "name": "08-wizard-target.png",
+    "originalSha256": "0eded77c5988305149c32bda6335595fb668cf84eac737dcfddfb8e0e411a088",
+    "crop": {
+      "left": 20,
+      "top": 38,
+      "width": 1950,
+      "height": 620
+    },
+    "width": 1950,
+    "height": 620,
+    "publicSha256": "528bd836bdb68ab1b8b48f2044b5752b93052a14430f72f7e2459d41ec24c649"
+  },
+  {
+    "name": "09-wizard-execution-order.png",
+    "originalSha256": "e38d3eda419b1b7c0210fa7cb86b24c6e2935950b69ef2b017a8d469f3746f88",
+    "crop": {
+      "left": 77,
+      "top": 100,
+      "width": 1928,
+      "height": 513
+    },
+    "width": 1928,
+    "height": 513,
+    "publicSha256": "5167ab0a4772abe2ee3416c0568121a38fd08d5d97bf1a05bda1910f0f389f1f"
+  },
+  {
+    "name": "10-wizard-create-handler.png",
+    "originalSha256": "0e241b31430027179eef3086b12f211bca2eb8ed6e3134da0e9ed2f535ae609f",
+    "crop": {
+      "left": 52,
+      "top": 56,
+      "width": 1954,
+      "height": 846
+    },
+    "width": 1954,
+    "height": 846,
+    "publicSha256": "13442c426f8c6a21570c9f875c061f41178da829083a2b1c932b7382da8c4faa"
+  },
+  {
+    "name": "11-wizard-handler-verified.png",
+    "originalSha256": "d1887aee0886111e2cf2110927160004bc061de589fb1e953f441bee051035a1",
+    "crop": {
+      "left": 108,
+      "top": 269,
+      "width": 1840,
+      "height": 298
+    },
+    "width": 1840,
+    "height": 298,
+    "publicSha256": "edac0ab2b9bc70fb5f5340ef1e161d02fd10e698ebae6ae4298eb14cae3b35e7"
+  },
+  {
+    "name": "12-wizard-compatibility.png",
+    "originalSha256": "d18310e53f21d3a31820e5d45812714f3e37070c80186e4f94fe719e50e4c892",
+    "crop": {
+      "left": 54,
+      "top": 176,
+      "width": 1878,
+      "height": 369
+    },
+    "width": 1878,
+    "height": 369,
+    "publicSha256": "c96bd95800e773fa6c2424d5363781d6d6c765edd0e6c009096f135a081e8c04"
+  },
+  {
+    "name": "13-wizard-register.png",
+    "originalSha256": "6bcd93c141086c97dce0b3ec450775be8709995478971fd918f1289a57227ced",
+    "crop": {
+      "left": 58,
+      "top": 40,
+      "width": 1935,
+      "height": 580
+    },
+    "width": 1935,
+    "height": 580,
+    "publicSha256": "9ed82485e7ad1e2a4b87aa949abe51dc53dd9654fc6acb1afa00d703136cc4f5"
+  },
+  {
+    "name": "14-registration-success.png",
+    "originalSha256": "aa242cebb37739bc75946ff58288de77ea8347c9ce175f9ff953ccee31bb8e9e",
+    "crop": {
+      "left": 2,
+      "top": 6,
+      "width": 2046,
+      "height": 1082
+    },
+    "width": 2046,
+    "height": 1082,
+    "publicSha256": "540c36ffe993d1650d61bc6389bd3dfc3f158bd7eb6e1534cd346f3c237361ac"
+  }
+]

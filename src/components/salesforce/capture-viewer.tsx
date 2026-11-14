@@ -1,36 +1,25 @@
 'use client';
 
-import Image from 'next/image';
-import { useRef, useState } from 'react';
-import { salesforceCaptures } from '@/content/salesforce';
-import styles from './salesforce.module.css';
+import { useState } from 'react';
+import { productViews, showcaseCopy } from '@/content/salesforce-showcase';
+import { ProductFrame, ViewTabs } from './showcase-controls';
+import styles from './showcase.module.css';
 
 export function CaptureViewer() {
-  const [selected, setSelected] = useState(salesforceCaptures[0]);
-  const [zoom, setZoom] = useState(100);
-  const dialog = useRef<HTMLDialogElement>(null);
-  const openButton = useRef<HTMLButtonElement>(null);
-  const image = selected.image;
-  function close() { dialog.current?.close(); openButton.current?.focus(); }
-  return <div className={styles.viewer}>
-    <div className={styles.captureChoices} role="group" aria-label="Application views">
-      {salesforceCaptures.map(capture => <button key={capture.id} type="button" aria-pressed={capture.id === selected.id} onClick={() => { setSelected(capture); setZoom(100); }}>{capture.title}</button>)}
-    </div>
-    <div className={styles.captureCaption} aria-live="polite"><h3>{selected.title}</h3><p>{selected.description}</p></div>
-    {image ? <>
-      <div className={styles.scrollPanel} tabIndex={0} role="region" aria-label={selected.title + ' screenshot; scroll to inspect'}>
-        <Image src={image.src} alt={image.alt} width={image.width} height={image.height} className={styles.captureImage} sizes="(max-width: 800px) 1200px, 1248px" />
+  const [selectedId,setSelectedId]=useState(productViews[0].id);
+  const [variantId,setVariantId]=useState<string>(productViews[0].variants[0].id);
+  const selected=productViews.find(view=>view.id===selectedId)!;
+  const variant=selected.variants.find(view=>view.id===variantId)??selected.variants[0];
+  return <div id="salesforce-product-showcase" className={styles.showcase}>
+    <div className={styles.introduction}><h3>{showcaseCopy.title}</h3><p>{showcaseCopy.description}</p></div>
+    <ViewTabs items={productViews} value={selectedId} onChange={id=>{const view=productViews.find(v=>v.id===id)!;setSelectedId(view.id);setVariantId(view.variants[0].id);}} label="Salesforce product views" prefix="sf-product" />
+    <div role="tabpanel" id={`sf-product-panel-${selected.id}`} aria-labelledby={`sf-product-tab-${selected.id}`} className={styles.productPanel}>
+      <div className={styles.caption} aria-live="polite"><h3>{selected.title}</h3><p>{selected.description}</p></div>
+      {selected.variants.length>1&&<ViewTabs items={selected.variants} value={variant.id} onChange={setVariantId} label={`${selected.title} views`} prefix="sf-variant" />}
+      <div role={selected.variants.length>1?'tabpanel':undefined} id={`sf-variant-panel-${variant.id}`} aria-labelledby={selected.variants.length>1?`sf-variant-tab-${variant.id}`:undefined}>
+        <ProductFrame key={`${selected.id}-${variant.id}`} variant={variant} />
       </div>
-      <button ref={openButton} className={styles.expand} type="button" onClick={() => { setZoom(100); dialog.current?.showModal(); }}>Expand screenshot</button>
-      <dialog ref={dialog} className={styles.dialog} aria-labelledby="salesforce-capture-title" onCancel={event => { event.preventDefault(); close(); }}>
-        <header><h3 id="salesforce-capture-title">{selected.title}</h3><button type="button" onClick={close} autoFocus>Close</button></header>
-        <label className={styles.zoom}>Image size <input type="range" min="50" max="200" step="25" value={zoom} onChange={event => setZoom(Number(event.target.value))} /> {zoom}%</label>
-        <div className={styles.expandedPanel} tabIndex={0} role="region" aria-label="Expanded screenshot; scroll horizontally and vertically">
-          <Image src={image.src} alt={image.alt} width={image.width} height={image.height} unoptimized style={{ width: image.width * zoom / 100, maxWidth: 'none', height: 'auto' }} />
-        </div>
-      </dialog>
-    </> : <div className={styles.pending}><span className={styles.captureTag}>REAL APPLICATION CAPTURE PENDING</span><p>Explore the architecture with us.</p><p>We are preparing a public-safe capture of this application view. No simulated dashboard is shown here.</p><details><summary>Planned view</summary><p>{selected.capture}</p></details></div>}
-    <p className={styles.viewerNote}>Application images retain their original colors. When available, scroll to inspect or expand for zoom controls. Mobile browser zoom remains available.</p>
+      {selected.limitation&&<p className={styles.limitation}>{selected.limitation}</p>}
+    </div>
   </div>;
 }
-
