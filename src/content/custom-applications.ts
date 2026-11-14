@@ -1,0 +1,99 @@
+type TextPair = readonly [title: string, description: string];
+type SectionCopy = { eyebrow: string; title: string; description: string };
+type CustomApplicationsContent = {
+  href: '/custom-applications'; navigationLabel: string; name: string;
+  seo: { title: string; description: string };
+  hero: SectionCopy & { subtitle: string; tagline: string; cta: string; secondary: string; price: string; clarification: string; packageLabel: string; foundation: readonly string[] };
+  problem: SectionCopy & { points: readonly string[] };
+  solution: SectionCopy & { layers: readonly TextPair[]; diagram: { label: string; steps: readonly string[]; existing: string; caption: string } };
+  package: SectionCopy & { capabilities: readonly TextPair[]; note: string; examplesTitle: string; examplesNote: string; examples: readonly { title: string; steps: readonly string[] }[] };
+  future: SectionCopy & { capabilities: readonly string[]; protocols: string; boundaries: string; platform: string; linkLabel: string; linkHref: string };
+  approach: SectionCopy & { stages: readonly TextPair[] };
+  closing: { title: string; description: string; preparation: string };
+};
+
+export const customApplications = {
+  href: '/custom-applications', navigationLabel: 'Custom Business Applications', name: 'AI-Ready Business Platform',
+  seo: {
+    title: 'Custom Business Applications & Customer Portals',
+    description: 'AI-ready business applications for small and midsize businesses: modern websites, customer portals, and connected workflows. Implementations starting at $10,000.',
+  },
+  hero: {
+    eyebrow: 'CUSTOM BUSINESS APPLICATIONS', title: 'Your website is just the beginning.',
+    subtitle: 'Turn your website into a connected business application.',
+    description: 'We build modern digital experiences that connect your customers, employees, and existing business tools—giving your business a practical foundation for automation and AI.',
+    tagline: "Your business. Connected. Ready for what's next.",
+    cta: 'Book a Free Consultation', secondary: "See What's Included",
+    price: 'Implementation starting at $10,000',
+    clarification: 'Defined-scope implementation. Additional integrations, advanced AI features, and ongoing support quoted separately.',
+    packageLabel: 'A FOCUSED IMPLEMENTATION',
+    foundation: ['Your public website', 'Customer access', 'A private team workspace', 'One connected business workflow'],
+  },
+  problem: {
+    eyebrow: 'WHEN YOUR TOOLS WORK APART', title: "Your website shouldn't be disconnected from your business.",
+    description: 'A marketing website. A CRM. Email inquiries, tracking spreadsheets, and separate scheduling software. Your team moves information between them while customers call for basic updates. The data is there; the connected experience is missing.',
+    points: ['Information scattered across applications.', 'Repeated manual data entry.', 'Customers calling or emailing for basic updates.', 'Employees without a unified workspace.', 'Limited visibility into customer relationships and activity.', 'Disconnected systems that make automation and AI harder to introduce.'],
+  },
+  solution: {
+    eyebrow: 'ONE BUSINESS · A CONNECTED FOUNDATION', title: 'One connected experience for your customers and your team.',
+    description: 'We transform traditional business websites into modern, connected applications—with customer access, a private team workspace, integrated business workflows, and a foundation for future AI.',
+    layers: [
+      ['Your public website', 'A professionally designed, mobile-friendly website that represents your business, communicates its services, and captures customer interest.'],
+      ['Your customer portal', 'Secure login and a defined customer experience. Depending on the agreed scope, customers might access requests, booking information, project status, or account details.'],
+      ['Your business workspace', 'A private application where authorized employees manage customer information, inquiries, and agreed business records. Connect the tools you already use without replacing every application.'],
+    ],
+    diagram: {
+      label: 'ILLUSTRATIVE ARCHITECTURE',
+      steps: ['PUBLIC WEBSITE', 'CUSTOMER EXPERIENCE / CUSTOMER LOGIN', 'SHARED BUSINESS DATA & IDENTITY', 'PRIVATE BUSINESS WORKSPACE'],
+      existing: 'EXISTING BUSINESS SYSTEMS',
+      caption: 'Connected experiences, shared identities, and permissioned access. Integration boundaries depend on the systems and scope agreed for your business.',
+    },
+  },
+  package: {
+    eyebrow: 'THE STARTING IMPLEMENTATION', title: 'A connected business foundation. Starting at $10,000.',
+    description: 'An initial implementation tailored to one defined business workflow and an agreed, bounded scope. We shape the customer experience, team workspace, and integration around that practical starting point.',
+    capabilities: [
+      ['Modern business website', 'A responsive, search-friendly public website within an agreed page and design scope. This can include replacing an existing WordPress marketing site.'],
+      ['Customer access', 'Basic secure customer authentication and a defined customer-facing portal experience.'],
+      ['Team workspace', 'Secure employee/admin login and a practical dashboard for managing the agreed business workflow.'],
+      ['Connected business data', 'A structured database for customers, inquiries, and a defined set of operational records.'],
+      ['Identity and permissions foundation', 'Customer and employee profiles, basic role-based access, and references to records in connected systems where applicable.'],
+      ['One business integration', 'One supported, agreed integration with an existing CRM, scheduling system, or other business application, subject to available APIs and project scope.'],
+      ['One working business workflow', 'An end-to-end process connecting customer access, the team workspace, and agreed data—for example, a service inquiry becoming a managed customer request.'],
+      ['AI-ready architecture', 'Documented data relationships, defined integration boundaries, and a technical foundation for future AI agents and additional automation.'],
+      ['Deployment and handoff', 'Initial deployment configuration, implementation documentation, and basic administrator orientation.'],
+    ],
+    note: 'The starting package is tailored to a defined business workflow and agreed implementation scope. Complex integrations, extensive data migration, additional portal modules, custom AI agents, and ongoing support are quoted separately.',
+    examplesTitle: 'A practical starting point for your business.',
+    examplesNote: 'Illustrative workflows. These are possible applications, not claims of completed client projects or features included in every implementation.',
+    examples: [
+      { title: 'Service businesses', steps: ['Customer inquiry', 'Request tracking', 'Team assignment', 'Customer updates'] },
+      { title: 'Contractors', steps: ['Website inquiry', 'Customer profile', 'Project/job tracking', 'Staff coordination'] },
+      { title: 'Tourism and hospitality', steps: ['Experience inquiry', 'Booking information', 'Guest record', 'Team operations'] },
+    ],
+  },
+  future: {
+    eyebrow: 'BUILT FOR THE FUTURE OF AI', title: 'Build the foundation now. Add intelligence as your business grows.',
+    description: 'AI becomes more useful when it has controlled access to connected business information, customer identities, relevant context, and authorized operations. A clearer foundation makes future expansion more practical.',
+    capabilities: ['Customer assistants that help people navigate services and request information.', 'Agents that retrieve authorized business context.', 'Automation connecting scheduling, CRM, operations, and customer workflows.', 'Coordinated intelligent workflows across supported applications.', 'Operational visibility and future agent management capabilities.'],
+    protocols: 'Where appropriate, MCP can standardize tool access and A2A can support communication between compatible agents. They are interoperability protocols, not business applications or guaranteed connectivity. Not every system supports them or the required APIs; A2A is not needed for ordinary integrations or single-agent workflows.',
+    boundaries: 'We choose integration methods around your actual business systems. AI-ready means the foundation supports later expansion—not that custom agents or distributed workflows are included at launch.',
+    platform: 'Augmented Enterprises is our broader platform direction, currently in development. It is not a dependency or a promised completed feature of this implementation.',
+    linkLabel: 'Explore AI Solutions & Architecture', linkHref: '/ai-solutions',
+  },
+  approach: {
+    eyebrow: 'START FOCUSED · EXPAND WITH PURPOSE', title: 'A clear scope. A working foundation. Room to grow.',
+    description: 'Begin with the workflow that matters most. Define what is included, connect the right pieces, and expand as your business is ready.',
+    stages: [
+      ['DISCOVER', 'Understand your business, current website, applications, and most important workflow.'],
+      ['DESIGN', 'Define the customer experience, business workspace, integration boundaries, and agreed implementation scope.'],
+      ['BUILD & CONNECT', 'Develop the website, portal, admin workspace, and selected integration and workflow.'],
+      ['LAUNCH & EXPAND', 'Deploy, validate, train, and identify sensible future automation or AI improvements.'],
+    ],
+  },
+  closing: {
+    title: 'Your business deserves more than a website.',
+    description: "Let's turn your existing tools, customer interactions, and everyday workflows into a connected business experience.",
+    preparation: "Tell us what your business does, what software you already use, and what you'd like to improve.",
+  },
+} as const satisfies CustomApplicationsContent;
