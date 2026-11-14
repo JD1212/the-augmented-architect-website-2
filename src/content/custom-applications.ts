@@ -1,4 +1,4 @@
-export type ModernizationFaqCopy = { title: string; introduction: string; closeLabel: string; scrollLabel: string; items: readonly { question: string; paragraphs: readonly string[] }[] };
+import type { ServiceFaqCopy } from './faq-types';
 type TextPair = readonly [title: string, description: string];
 type SectionCopy = { eyebrow: string; title: string; description: string };
 type CustomApplicationsContent = {
@@ -8,7 +8,7 @@ type CustomApplicationsContent = {
   problem: SectionCopy & { points: readonly string[] };
   solution: SectionCopy & { layers: readonly TextPair[]; diagram: { label: string; steps: readonly string[]; existing: string; caption: string } };
   package: SectionCopy & { capabilities: readonly TextPair[]; note: string; examplesTitle: string; examplesNote: string; examples: readonly { title: string; steps: readonly string[] }[] };
-  faq: ModernizationFaqCopy;
+  faq: ServiceFaqCopy;
   future: SectionCopy & { capabilities: readonly string[]; protocols: string; boundaries: string; platform: string; linkLabel: string; linkHref: string };
   approach: SectionCopy & { stages: readonly TextPair[] };
   closing: { title: string; description: string; preparation: string };

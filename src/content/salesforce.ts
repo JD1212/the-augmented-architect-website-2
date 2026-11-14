@@ -1,3 +1,5 @@
+import type { ServiceFaqCopy } from './faq-types';
+
 export const salesforceOffering = {
   hero: {
     eyebrow: 'SALESFORCE ARCHITECTURE & MODERNIZATION',
@@ -86,3 +88,18 @@ export const salesforceOffering = {
     description: "Let's understand your current architecture and identify a practical starting point.",
   },
 } as const;
+
+export const salesforceFaq = {
+  title: 'Questions About Salesforce Modernization',
+  introduction: 'A practical starting point for making your Salesforce org easier to maintain.',
+  closeLabel: 'Close Salesforce modernization questions', scrollLabel: 'Salesforce modernization questions and answers',
+  items: [
+    { question: 'Do we need to rebuild our Salesforce organization?', paragraphs: ['Usually not. We begin by understanding the existing architecture and identifying areas where changes have become difficult or risky. Modernization can often happen incrementally, starting with one object or workflow.'] },
+    { question: 'Can you help with complicated Apex triggers and Flows?', paragraphs: ['Yes. We assess how automation is organized, identify dependencies, and help establish a clearer, more maintainable architecture.'] },
+    { question: 'Will modernization break our existing business processes?', paragraphs: ['Changes to existing automation carry risk, which is why we emphasize assessment, controlled implementation, regression testing, and validation. No responsible modernization project can guarantee zero risk.'] },
+    { question: 'Do we need to stop using Salesforce Flows?', paragraphs: ['No. Flows can be valuable. The goal is to establish appropriate responsibilities, execution boundaries, and maintainability across Flows and Apex rather than treating either as universally superior.'] },
+    { question: 'How does your Architecture Command Center help?', paragraphs: ['Our proprietary tooling supports architecture inspection, visibility into registered automation, and structured modernization workflows. It assists developers and architects; it is not a replacement for sound engineering practices or testing.'] },
+    { question: 'Can our existing development team continue maintaining the org?', paragraphs: ['Yes. A major goal is to leave the organization easier for your developers and administrators to understand, maintain, and extend.'] },
+    { question: 'How does Salesforce modernization prepare us for AI?', paragraphs: ['Clearer automation boundaries, reliable business data, well-defined permissions, and maintainable integration points help create a better foundation for introducing AI capabilities into business workflows.'] },
+  ],
+} as const satisfies ServiceFaqCopy;

@@ -1,3 +1,4 @@
+import type { ServiceFaqCopy } from './faq-types';
 import { aiTechnologies } from './ai-technologies';
 import type { IconName } from './site';
 
@@ -88,3 +89,18 @@ export const aiSolutions: AiSolutionsContent = {
     description: "Whether you're exploring AI for the first time or connecting an existing collection of applications and agents, we'll help you find the right architecture and build a foundation that can evolve.",
   },
 };
+
+export const aiSolutionsFaq = {
+  title: 'Questions About AI for Your Business',
+  introduction: 'Practical answers to help you find the right starting point for your business.',
+  closeLabel: 'Close AI Solutions questions', scrollLabel: 'AI Solutions questions and answers',
+  items: [
+    { question: 'Does my business really need AI?', paragraphs: ['Not every business needs an AI agent immediately. We begin by understanding your business, identifying repetitive work, and determining where intelligent systems can provide practical value.'] },
+    { question: 'Why not just add a chatbot to my website?', paragraphs: ['A chatbot can be useful, but its value is limited if it cannot access relevant, authorized business information. We focus on connecting customer identity, business context, and the systems an agent needs to provide meaningful assistance.'] },
+    { question: 'What is business context, and why does AI need it?', paragraphs: ['Business context includes customer relationships, operational records, ongoing work, and relevant interaction history. With appropriate permissions, agents can use this information to provide more useful assistance across supported systems.'] },
+    { question: 'Can AI work with my existing business software?', paragraphs: ['Often, yes. Integration depends on the APIs, permissions, and capabilities of the software involved. We evaluate your existing applications before recommending new systems or replacing anything.'] },
+    { question: 'Can different AI agents work together?', paragraphs: ['Yes, when their runtimes and integrations support it. MCP can standardize tool access, and A2A can support communication between compatible agents. Neither guarantees connectivity, and A2A is not required for a single-agent workflow. We choose the architecture around your business needs.'] },
+    { question: 'How do we keep our business information secure?', paragraphs: ['We design access around identity, permissions, approved operations, and controlled integration boundaries. Security requirements are evaluated for each business and implementation. A model or agent should only access the information and operations its role requires.'] },
+    { question: 'Do I need to replace my existing systems to become AI-ready?', paragraphs: ['Usually not. We identify which systems should remain, which connections are missing, and what additional structure is needed to make business information useful and appropriately accessible.'] },
+  ],
+} as const satisfies ServiceFaqCopy;

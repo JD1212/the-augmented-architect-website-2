@@ -1,0 +1,14 @@
+/* Scout stays untouched: desktop bottom 20px + launcher 85px + a 12px gap. */
+.root { position:fixed; z-index:64; right:24px; bottom:117px; }
+.launcher { display:inline-flex; align-items:center; justify-content:center; gap:7px; min-height:40px; padding:9px 12px; border:var(--border-subtle); border-radius:9px; background:var(--surface); color:var(--focus-ring); box-shadow:var(--shadow-subtle); font-size:12px; font-weight:550; line-height:1.5; transition:background 160ms,border-color 160ms,box-shadow 160ms; }
+.launcher:hover { background:var(--tint-slate); border-color:var(--blue); box-shadow:var(--shadow-subtle-hover); }
+.launcher:focus-visible { outline:2px solid var(--focus-ring); outline-offset:3px; }
+:global(body:has(dialog[open]:not([data-service-faq-dialog]))) .launcher,
+:global(body:has(.navigation.is-open)) .launcher { visibility:hidden; pointer-events:none; }
+@media(max-width:540px) {
+  /* Mobile Scout is 74px tall, with the same 12px separation. */
+  .root { right:12px; bottom:calc(98px + env(safe-area-inset-bottom)); }
+  .launcher { min-height:44px; }
+  :global(body:has(.consultation-dock)) .root { bottom:calc(164px + env(safe-area-inset-bottom)); }
+}
+@media(prefers-reduced-motion:reduce) { .launcher { transition:none; } }
