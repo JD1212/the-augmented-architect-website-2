@@ -1,11 +1,24 @@
-# Salesforce product showcase
+# Salesforce consulting page and retained capture library
 
-Route: `/salesforce`. The five product tabs and five-step Create Trigger Action
-walkthrough use the fourteen actual captures supplied for a fictional scratch org.
-Editable presentation metadata, captions, limitations, source excerpts, and asset
-sizes are in `src/content/salesforce-showcase.ts`. Read-only interface components
-are in `src/components/salesforce/product-interfaces.tsx`; scoped product styles
-are in `showcase.module.css`. Existing page copy remains in `src/content/site.ts`.
+Route: `/salesforce`. This is a consulting services page for architecture
+assessment, automation cleanup, and incremental modernization. Edit its copy in
+`src/content/salesforce.ts`; Salesforce SEO metadata remains in `src/content/site.ts`.
+
+The public page uses exactly two static, focused interface reconstructions:
+Architecture Explorer (capture 01) and Registration Manager (capture 02). Both
+reuse the captured data and interface primitives, with a visible reconstruction
+label and inactive states. They have no application controls or simulated org
+operations. The five-tab viewer and Create Trigger Action walkthrough are no
+longer mounted on the public page. Their components and all fourteen public-safe
+captures are retained for future use, along with the untouched private originals.
+
+`consulting-proof.tsx` composes these focused views from `product-interfaces.tsx`.
+Shared captured data, source excerpts, and image sizes remain in
+`src/content/salesforce-showcase.ts`. Page and proof styles are scoped CSS Modules;
+shared site tokens remain unchanged. The sections are rendered as Server Components.
+
+The following mapping and fidelity notes document the retained capture library;
+they do not imply that all fourteen views appear on the consulting page.
 
 ## Capture mapping
 
@@ -35,8 +48,9 @@ directly for the dependency tree. No image is regenerated, recolored, stretched,
 or AI-upscaled. Actual-size image inspection is the default in expanded capture
 views; Fit image is optional. Complex views scroll internally on mobile.
 
-Application controls inside reconstructions are read-only visual context. Website
-tabs, walkthrough navigation, expansion, and image-fit controls are functional.
+In the retained full-viewer components, application controls are read-only visual
+context. Their tabs, walkthrough navigation, expansion, and image-fit controls are
+not mounted on the current public page.
 Nothing connects to Salesforce or creates, activates, or deploys anything.
 All trigger, Flow, and registration states remain inactive. Order 100 in the new
 AFTER_INSERT event does not replace existing BEFORE_UPDATE orders 100/200/300.
@@ -73,7 +87,8 @@ Do not move unreviewed originals back under `public/` or stage the private archi
 Run `npm run lint`, `npx tsc --noEmit`, `node --test tests/*.test.mjs`,
 `npm run build`, and the browser checks against a production preview. The
 Salesforce-specific check is `node tests/salesforce-showcase.browser.mjs URL`.
-It covers the five tabs, subviews, all five steps, modals, keyboard navigation,
-image integrity, responsive scrolling, and absence of runtime/asset errors.
+It covers the six consulting sections, two labeled product proofs, captured
+inactive states and order, absence of simulator/wizard UI, booking and approach
+links, SEO, responsive layouts, image availability, and browser errors.
 Use the existing GitHub main → automatic Vercel Production workflow. Do not
 change domains, DNS, or deployment assignments.

@@ -1,34 +1,59 @@
 import Link from 'next/link';
 import { site } from '@/content/site';
-import { salesforceProblems } from '@/content/salesforce';
+import { salesforceOffering as content } from '@/content/salesforce';
 import { Arrow } from '@/components/icon';
-import { CaptureViewer } from './capture-viewer';
-import { TriggerWalkthrough } from './trigger-walkthrough';
+import { ConsultingProof } from './consulting-proof';
 import styles from './salesforce.module.css';
 
-function RegistryDiagram() {
-  return <figure className={styles.diagram} aria-labelledby="registry-title" aria-describedby="registry-note">
-    <div className={styles.diagramTop}><span>TRIGGER RUNTIME</span><span>CONCEPTUAL ARCHITECTURE</span></div>
-    <div className={styles.pipeline}>
-      <div className={styles.node}><small>01 / ENTRY POINT</small><strong>One thin Apex trigger</strong><code>TriggerDispatcher.dispatch()</code></div>
-      <span className={styles.connector} aria-hidden="true">↓</span>
-      <div className={styles.registry}><small>02 / CONFIGURATION</small><strong id="registry-title">Custom Metadata action registry</strong><p>Object + event + active state + execution order</p></div>
-      <span className={styles.connector} aria-hidden="true">↓</span>
-      <ol className={styles.actions}><li><span>100</span><strong>Apex handler</strong><small>Normalize</small></li><li><span>200</span><strong>Apex handler</strong><small>Route</small></li><li><span>300</span><strong>Auto-launched Flow</strong><small>Prepare review</small></li></ol>
-    </div>
-    <figcaption id="registry-note">Illustrative Account BEFORE_UPDATE sequence. Runtime orders registered actions; native Salesforce automation retains its own execution rules.</figcaption>
-  </figure>;
-}
-export function SalesforcePage() {
-  return <main id="main" className={styles.page}>
-    <section className="service-hero"><div className={`container ${styles.hero}`}><div><p className="eyebrow">SALESFORCE ARCHITECTURE & DEVELOPMENT</p><h1>Your Salesforce org shouldn&apos;t be afraid of change.</h1><p className="hero-description">Understand what runs. Give automation a clear structure. Build a Salesforce org your team can confidently maintain.</p><p className={styles.lead}>Architecture assessment, modernization and ongoing development, supported by our proprietary Architecture Command Center and Trigger Runtime.</p><div className="hero-actions"><Link className="button" href={site.consultation.href}>{site.consultation.label}<Arrow /></Link><a className="text-link" href="#salesforce-architecture">See the architecture ↓</a></div></div><div className={styles.heroAside}><span className={styles.kicker}>CLARITY BEFORE CHANGE</span><p>From inherited complexity<br />to intentional architecture.</p><dl><div><dt>Understand</dt><dd>Discover the automation you have.</dd></div><div><dt>Organize</dt><dd>Give each responsibility a place.</dd></div><div><dt>Maintain</dt><dd>Change with the right context.</dd></div></dl></div></div></section>
-    <section className="section" aria-labelledby="sf-problems"><div className="container"><p className="eyebrow">WHEN AUTOMATION OUTGROWS ITS STRUCTURE</p><h2 id="sf-problems">The org still works.<br />Changing it is the hard part.</h2><div className={styles.problems}>{salesforceProblems.map(([title,description],i)=><article key={title}><span className="step-number">0{i+1}</span><h3>{title}</h3><p>{description}</p></article>)}</div></div></section>
-    <section id="salesforce-architecture" className={`section ${styles.architecture}`} aria-labelledby="sf-architecture"><div className="container"><div className="section-heading split-heading"><div><p className="eyebrow">A BETTER WAY TO BUILD</p><h2 id="sf-architecture">Small responsibilities.<br />An explicit execution plan.</h2></div><p>A subscriber-owned trigger delegates to Runtime. Custom Metadata selects independent Apex handlers and compatible auto-launched Flows for each object and trigger event.</p></div><RegistryDiagram /><div className={styles.packagePair}><article><h3>Trigger Runtime</h3><p>The managed execution foundation: handler contracts, ordered registered actions, recursion protection and Flow execution.</p></article><article><h3>Architecture Command Center</h3><p>A separate managed package for discovery, inspection and registration management. It depends on Runtime; Runtime does not depend on the Command Center.</p></article></div><p className={styles.boundary}>Change registrations without changing trigger source. Metadata writes still require appropriate authorization and deployment. Recursion protection supports a deliberate design; it does not resolve every automation conflict.</p></div></section>
-    <section className="section" aria-labelledby="sf-command"><div className="container"><div className="section-heading split-heading"><div><p className="eyebrow">ARCHITECTURE COMMAND CENTER</p><h2 id="sf-command">See the system<br />before changing a piece.</h2></div><p>Discover Apex triggers, native Flows and registered Trigger Actions. Inspect available source and metadata, group implementations as Context Handlers, and follow bounded dependencies into related code.</p></div><CaptureViewer /><TriggerWalkthrough /></div></section>
-    <section className={`section ${styles.tinted}`} aria-labelledby="sf-organize"><div className={`container ${styles.editorial}`}><div><p className="eyebrow">ORGANIZE EXECUTION</p><h2 id="sf-organize">Make the sequence<br />a conscious decision.</h2></div><div><p>Registration Manager brings implementation identity, execution order and activation controls together. Context Handler grouping connects an Apex or Flow implementation to its registered actions.</p><ol className={styles.sequence}><li><span>100</span>Normalize the Account</li><li><span>200</span>Determine its routing tier</li><li><span>300</span>Prepare the review outcome</li></ol><p className={styles.small}>Illustrative business logic. This ordering applies within Runtime for the selected object and event, not to all native Salesforce automation.</p></div></div></section>
-    <section className="section" aria-labelledby="sf-maintain"><div className="container"><p className="eyebrow">BUILD & MAINTAIN</p><h2 id="sf-maintain">Structure that carries<br />through implementation.</h2><div className={styles.capabilities}>{[['Controlled registration','Validate object, event and implementation compatibility before submitting authorized metadata changes.'],['Scaffolding with a purpose','Start from handler, companion-test and compatible Flow templates, then implement and test your business rules.'],['Tooling API operations','Support inspection and environment-gated generation and Flow lifecycle operations through subscriber-owned authorization.'],['Flow context evaluation','Compare old and new records for supported update contexts, with a Flow Builder editor and guarded before-update output handling.']].map(([title,copy])=><article key={title}><h3>{title}</h3><p>{copy}</p></article>)}</div><p className={styles.small}>Privileged operations require explicit subscriber setup and appropriate permissions. Generated code and Flow scaffolds still require review and meaningful tests.</p></div></section>
-    <section className={`section ${styles.develop}`} aria-labelledby="sf-develop"><div className={`container ${styles.editorial}`}><div><p className="eyebrow">DEVELOP WITH CONTEXT</p><h2 id="sf-develop">Bring the right working set<br />into VS Code.</h2><p>The optional Augmented Architect Vibes extension hands a selected implementation and its architectural context to a dedicated desktop workspace.</p></div><div className={styles.files}><span>OPEN IN VS CODE / OPTIONAL EXTENSION</span><ul><li>Selected source & bounded dependencies</li><li>Related tests</li><li><code>AUGARCH_CONTEXT.md</code></li><li><code>AGENTS.md</code></li></ul><p>Local Salesforce CLI authentication and package permissions are required. The extension retrieves context; it does not automatically deploy metadata or remediate your org.</p></div></div></section>
-    <section className="section consultation-section" aria-labelledby="sf-consultation"><div className="container consultation-inner"><div><p className="eyebrow">LET&apos;S MAKE CHANGE POSSIBLE</p><h2 id="sf-consultation">A clearer path for<br />your Salesforce org.</h2><p>Assess an inherited architecture, modernize automation incrementally, or build a dependable ongoing development practice.</p></div><div className="consultation-action"><Link className="button" href={site.consultation.href}>{site.consultation.label}<Arrow /></Link></div></div></section>
-  </main>;
+function ConsultationLink() {
+  return <Link className="button" href={site.consultation.href}>{content.hero.cta}<Arrow /></Link>;
 }
 
+function RegistryDiagram() {
+  const diagram = content.architecture.diagram;
+  return <figure className={styles.diagram} aria-labelledby="registry-title" aria-describedby="registry-note">
+    <p className={styles.diagramLabel}>{diagram.label}</p>
+    <div className={styles.pipeline}>
+      <div className={styles.node}><strong>{diagram.entry}</strong><code>{diagram.call}</code></div>
+      <span className={styles.connector} aria-hidden="true">→</span>
+      <div className={styles.registry}><strong id="registry-title">{diagram.registry}</strong><p>{diagram.selection}</p></div>
+      <span className={styles.connector} aria-hidden="true">→</span>
+      <ol className={styles.actions}>{diagram.actions.map(([order, type, name]) => <li key={order}><span>{order}</span><div><strong>{type}</strong><small>{name}</small></div></li>)}</ol>
+    </div>
+    <figcaption id="registry-note">{diagram.caption}</figcaption>
+  </figure>;
+}
+
+export function SalesforcePage() {
+  return <main id="main">
+    <section className={`service-hero ${styles.heroSection}`} aria-labelledby="sf-hero">
+      <div className={`container ${styles.hero}`}>
+        <div><p className="eyebrow">{content.hero.eyebrow}</p><h1 id="sf-hero">{content.hero.title}</h1><p className="hero-description">{content.hero.description}</p><p className={styles.supporting}>{content.hero.supporting}</p><div className="hero-actions"><ConsultationLink /><a className="text-link" href="#salesforce-architecture">{content.hero.secondary} <span aria-hidden="true">↓</span></a></div></div>
+        <aside className={styles.heroAside}><p className={styles.kicker}>{content.hero.asideLabel}</p><h2>{content.hero.asideTitle}</h2><ul>{content.hero.offers.map((offer, index) => <li key={offer}><span aria-hidden="true">0{index + 1}</span>{offer}</li>)}</ul><p className={styles.experience}>{content.hero.experience}</p></aside>
+        <p className={styles.emphasis}>{content.hero.emphasis}</p>
+      </div>
+    </section>
+    <section className={`section ${styles.problemSection}`} aria-labelledby="sf-problems"><div className={`container ${styles.problemLayout}`}>
+      <div><p className="eyebrow">{content.problem.eyebrow}</p><h2 id="sf-problems">{content.problem.title}</h2><p className={styles.description}>{content.problem.description}</p></div>
+      <ul className={styles.problems}>{content.problem.points.map(point => <li key={point}>{point}</li>)}</ul>
+    </div></section>
+    <section id="salesforce-architecture" className={`section ${styles.architecture}`} aria-labelledby="sf-architecture"><div className="container">
+      <div className={styles.sectionHeading}><p className="eyebrow">{content.architecture.eyebrow}</p><h2 id="sf-architecture">{content.architecture.title}</h2><p>{content.architecture.description}</p></div>
+      <RegistryDiagram />
+      <div className={styles.architectureBenefits}>{content.architecture.benefits.map(([title, description]) => <div key={title}><h3>{title}</h3><p>{description}</p></div>)}</div>
+      <p className={styles.boundary}>{content.architecture.boundary}</p>
+    </div></section>
+    <section id="salesforce-tools" className={`section ${styles.tools}`} aria-labelledby="sf-tools"><div className="container">
+      <div className={styles.sectionHeading}><p className="eyebrow">{content.tools.eyebrow}</p><h2 id="sf-tools">{content.tools.title}</h2><p>{content.tools.description}</p></div>
+      <ConsultingProof />
+      <div className={styles.toolCapabilities}>{content.tools.capabilities.map(([title, description]) => <div key={title}><h3>{title}</h3><p>{description}</p></div>)}</div>
+      <p className={styles.context}>{content.tools.context}</p><p className={styles.small}>{content.tools.relationship}</p>
+    </div></section>
+    <section className={`section ${styles.approach}`} aria-labelledby="sf-approach"><div className="container">
+      <div className={styles.sectionHeading}><p className="eyebrow">{content.approach.eyebrow}</p><h2 id="sf-approach">{content.approach.title}</h2><p>{content.approach.description}</p></div>
+      <ol className={styles.stages}>{content.approach.stages.map(([title, description], index) => <li key={title}><span className={styles.stageNumber}>0{index + 1}</span><h3>{title}</h3><p>{description}</p></li>)}</ol>
+      <div className={styles.aiNote}><p>{content.approach.ai}</p><p>{content.approach.aiBoundary}</p></div>
+    </div></section>
+    <section className={`section consultation-section ${styles.closing}`} aria-labelledby="sf-consultation"><div className="container consultation-inner"><div><h2 id="sf-consultation">{content.closing.title}</h2><p>{content.closing.description}</p></div><div className="consultation-action"><ConsultationLink /></div></div></section>
+  </main>;
+}

@@ -2,11 +2,11 @@ import Image from 'next/image';
 import { actions, createdAction, accountSource, opportunitySource, readinessChecks, compatibilityChecks, showcaseCopy, captureAssets, type SurfaceId, type TriggerAction } from '@/content/salesforce-showcase';
 import styles from './showcase.module.css';
 
-function Badge({ children, tone = '' }: { children: React.ReactNode; tone?: string }) { return <span className={`${styles.badge} ${tone === 'inactive' ? styles.inactive : tone === 'flow' ? styles.flow : ''}`}>{children}</span>; }
+export function Badge({ children, tone = '' }: { children: React.ReactNode; tone?: string }) { return <span className={`${styles.badge} ${tone === 'inactive' ? styles.inactive : tone === 'flow' ? styles.flow : ''}`}>{children}</span>; }
 function Controls({ labels, primary }: { labels: readonly string[]; primary?: string }) { return <div className={styles.capturedControls}>{labels.map(label => <span className={label===primary?styles.primaryControl:undefined} key={label}>{label}</span>)}</div>; }
 function Fields({ rows }: { rows: readonly (readonly [string, React.ReactNode])[] }) { return <dl className={styles.fields}>{rows.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>; }
-function Panel({ title, count, children }: { title: string; count?: number; children: React.ReactNode }) { return <section className={styles.panel}><div className={styles.panelHeading}><h4>{title}</h4>{count !== undefined && <span>{count}</span>}</div>{children}</section>; }
-function ActionRow({ action, compact = false }: { action: TriggerAction; compact?: boolean }) {
+export function Panel({ title, count, children }: { title: string; count?: number; children: React.ReactNode }) { return <section className={styles.panel}><div className={styles.panelHeading}><h4>{title}</h4>{count !== undefined && <span>{count}</span>}</div>{children}</section>; }
+export function ActionRow({ action, compact = false }: { action: TriggerAction; compact?: boolean }) {
   return <div className={styles.actionRow}><div className={styles.order}><strong>{action.order}</strong><span>ORDER</span></div><div className={styles.actionMain}><strong>{action.name}</strong><p>{action.implementation}</p>{!compact && <p className={styles.actionMeta}>{action.type === 'APEX' ? 'APEX HANDLER' : 'FLOW'} <span>{action.implementation}</span> · LIFECYCLE <span>REGISTERED</span></p>}</div><div className={styles.badges}><Badge tone={action.type === 'FLOW' ? 'flow' : ''}>{action.type}</Badge><Badge tone="inactive">Inactive</Badge></div></div>;
 }
 function Filters({ object }: { object: 'Account' | 'Opportunity' }) {

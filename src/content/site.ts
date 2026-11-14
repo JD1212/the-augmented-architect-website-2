@@ -42,7 +42,7 @@ export const site: SiteContent = {
   seo: {
     home: { title: 'Architecture for the AI future', description: 'Connected business systems, intelligent agents, and modern Salesforce foundations from The Augmented Architect.' },
     'ai-solutions': { title: 'AI Solutions', description: 'Build the foundation for AI-ready growth with connected business systems, integrations, and workflows.' },
-    salesforce: { title: 'Salesforce Modernization', description: 'Simplify Salesforce flows and triggers and prepare your Salesforce foundations for AI.' },
+    salesforce: { title: 'Salesforce Architecture Assessment & Modernization', description: 'Assess, clean up, and modernize Salesforce automation with hands-on architecture expertise, AI-assisted development, and proprietary managed tools. Start with one object.' },
     about: { title: 'About', description: 'Learn about The Augmented Architect and our approach to connecting people, data, and AI.' },
     contact: { title: 'Contact', description: 'Contact information for The Augmented Architect. Inquiry setup is coming soon.' },
     book: { title: 'Book a Consultation', description: 'Consultation information for The Augmented Architect. Online scheduling is not yet available.' },

@@ -1,7 +1,88 @@
-export const salesforceProblems = [
-  ['Triggers that do everything', 'Pricing, routing, approvals and data quality become tangled in one class. A small change demands a large investigation.'],
-  ['Flows without a clear map', 'Native Flows accumulate alongside Apex. It becomes difficult to understand which automation owns a business outcome.'],
-  ['Dependencies hidden in the details', 'Related services, metadata and tests are easy to miss when a team inherits an unfamiliar org.'],
-  ['Changes that feel risky', 'Unclear execution boundaries and undocumented behavior make maintenance harder than it needs to be.'],
-] as const;
-
+export const salesforceOffering = {
+  hero: {
+    eyebrow: 'SALESFORCE ARCHITECTURE & MODERNIZATION',
+    title: 'Make your Salesforce org easier to change.',
+    description: "Understand what's running. Untangle complicated automation. Build a structure your team can confidently maintain.",
+    supporting: 'We help businesses assess, clean up, and modernize Salesforce automation using hands-on architecture expertise, AI-assisted development, and our proprietary Architecture Command Center.',
+    emphasis: "Start with one object. Improve it systematically. Expand when you're ready.",
+    cta: 'Book an Architecture Consultation',
+    secondary: 'See Our Approach',
+    asideLabel: 'A PRACTICAL PATH FORWARD',
+    asideTitle: 'Clarity first.\nModernization in manageable steps.',
+    offers: ['Architecture assessment', 'Automation cleanup', 'Incremental modernization'],
+    experience: 'Senior Salesforce development and solutions architecture experience across organizations of different sizes.',
+  },
+  problem: {
+    eyebrow: 'WHEN AUTOMATION BECOMES TECHNICAL DEBT',
+    title: 'When everything depends on everything, even small changes become risky.',
+    description: 'Your org may still work. Maintaining it has become unnecessarily difficult.',
+    points: [
+      'Large Apex triggers and tightly coupled handler classes.',
+      'Native Flows scattered across Salesforce Setup.',
+      'Hidden dependencies across triggers, services, metadata, and Flow logic.',
+      'Multiple developers modifying the same shared files.',
+      'Fear of breaking existing business processes.',
+      'More time investigating automation than implementing changes.',
+    ],
+  },
+  architecture: {
+    eyebrow: 'A BETTER WAY TO BUILD',
+    title: 'One stable trigger. Independent responsibilities. Controlled execution.',
+    description: 'Our proprietary Trigger Runtime gives automation a clearer structure: a subscriber-owned, thin Apex trigger delegates execution to independently maintained responsibilities.',
+    diagram: {
+      label: 'TRIGGER RUNTIME / CONCEPTUAL ARCHITECTURE',
+      entry: 'One thin Apex trigger',
+      call: 'AugArch.TriggerDispatcher.dispatch()',
+      registry: 'Custom Metadata action registry',
+      selection: 'Object + trigger operation + active state + execution order',
+      actions: [['100', 'Apex handler', 'Normalize'], ['200', 'Apex handler', 'Route'], ['300', 'Compatible auto-launched Flow', 'Prepare review']],
+      caption: 'Illustrative Account / BEFORE_UPDATE sequence. Distinct business responsibilities, maintained independently.',
+    },
+    benefits: [
+      ['Separate responsibilities', 'Individual Apex handlers and compatible auto-launched Flows hold distinct business logic. Developers can maintain separate implementations without repeatedly editing the same trigger source.'],
+      ['Change the plan, not the trigger', 'Custom Metadata selects eligible active actions for each object and trigger operation, with explicit execution ordering. Registry changes do not require changing the trigger source.'],
+    ],
+    boundary: 'Metadata writes still require proper authorization and deployment. Runtime orders registered actions, not every native Flow or automation; Salesforce controls its overall order of execution. Handler and Flow implementations require testing and review.',
+  },
+  tools: {
+    eyebrow: 'BUILT TO UNDERSTAND YOUR ORG',
+    title: "See what's running before changing what works.",
+    description: 'Our proprietary Architecture Command Center brings discovery, inspection, and controlled registration into one workspace. It supports the architecture work; it does not replace it.',
+    capabilities: [
+      ['Discover & inspect', 'Find Apex triggers, record-triggered Flows, and registered Trigger Actions for a selected object. Inspect available source, bounded dependencies, service classes, referenced fields, and related metadata.'],
+      ['Organize & implement', 'Review metadata-driven execution order and Context Handler groupings. Generate compatible Apex handler and companion-test scaffolds, validate capability, and register actions through a controlled workflow.'],
+    ],
+    context: 'The optional Augmented Architect Vibes extension opens relevant source and working context in VS Code, including related tests, AUGARCH_CONTEXT.md, and AGENTS.md. Local Salesforce CLI authentication and appropriate package permissions are required; it does not automatically deploy changes.',
+    relationship: 'Architecture Command Center depends on Trigger Runtime. Runtime can operate independently.',
+    proofLabel: 'Interface reconstruction based on an actual application capture.',
+    proofNote: 'Focused views from a fictional scratch org. Captured registrations remain inactive; these examples do not demonstrate runtime execution.',
+    proofs: [
+      { title: 'Architecture Explorer', description: 'A selected object, its trigger, native Flows, and registered actions in one place.', asset: '01-architecture-explorer.png' },
+      { title: 'Registration Manager', description: 'An explicit sequence for independent responsibilities, with implementation and state visible.', asset: '02-registration-manager.png' },
+    ],
+    discovery: {
+      title: 'Account Architecture', context: 'Account · BEFORE_UPDATE',
+      triggerLabel: 'Apex Triggers', trigger: 'DemoAccountTrigger', status: 'Inactive',
+      flowLabel: 'Record-Triggered Flows', flowCount: '0', flowNote: 'No record-triggered Flows match the current context filters.',
+      actionsLabel: 'Trigger Actions', actionCount: '3',
+    },
+    sequence: { title: 'Account Trigger Actions', context: 'BEFORE UPDATE · 3 Actions' },
+  },
+  approach: {
+    eyebrow: 'MODERNIZE WITHOUT STARTING OVER',
+    title: 'Start with one object. Build a healthier org.',
+    description: "You don't need to commit to a complete org rewrite. Start with a focused assessment and a practical plan, whether you're a small team or part of a larger enterprise.",
+    stages: [
+      ['ASSESS', 'Review current automation, identify complexity and dependencies, and establish a baseline.'],
+      ['PRIORITIZE', 'Identify high-impact, high-complexity objects and develop a phased modernization roadmap.'],
+      ['MODERNIZE', 'Refactor selected responsibilities into clearer handler and Flow implementations, using the managed architecture where appropriate.'],
+      ['VALIDATE', 'Test existing behavior, review dependencies, and expand incrementally.'],
+    ],
+    ai: "Modernizing Salesforce doesn't have to mean starting over. With better architecture and AI-assisted development, we can tackle technical debt systematically—object by object, workflow by workflow.",
+    aiBoundary: 'AI assists discovery, code understanding, scaffolding, implementation, and testing. Architecture decisions, code review, and validation remain human responsibilities.',
+  },
+  closing: {
+    title: 'Ready to make Salesforce easier to maintain?',
+    description: "Let's understand your current architecture and identify a practical starting point.",
+  },
+} as const;

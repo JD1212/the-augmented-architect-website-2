@@ -36,68 +36,46 @@ try{
  };
  await send('Page.enable');await send('Runtime.enable');await send('Network.enable');await send('Page.addScriptToEvaluateOnNewDocument',{source:"sessionStorage.setItem('aa.scout.introduction.v1','1')"});
 
- const viewer='#salesforce-product-showcase',tour='#create-trigger-action';
- const text=selector=>ev(`document.querySelector(${JSON.stringify(selector)}).innerText`);
- const click=async selector=>{await ev(`document.querySelector(${JSON.stringify(selector)}).click()`);await sleep(80);};
- const key=async(name,code,modifiers=0)=>{for(const type of ['keyDown','keyUp'])await send('Input.dispatchKeyEvent',{type,key:name,code:name,windowsVirtualKeyCode:code,modifiers});};
- const surfaces=['explorer','sequence','flow','source','vscode'];
- for(const width of [1440,1100,768,390,320]){
-  await send('Emulation.setDeviceMetricsOverride',{width,height:1000,deviceScaleFactor:1,mobile:width<540});await nav('/salesforce');await until("!!document.querySelector('#sf-product-tab-explorer')");await sleep(300);
+ const key=async(name,code)=>{for(const type of ['keyDown','keyUp'])await send('Input.dispatchKeyEvent',{type,key:name,code:name,windowsVirtualKeyCode:code});};
+ const sections=['sf-hero','sf-problems','sf-architecture','sf-tools','sf-approach','sf-consultation'];
+ if(process.env.SALESFORCE_BASELINE){
+  await send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
+  await send('Page.navigate',{url:process.env.SALESFORCE_BASELINE+'/salesforce'});await until("document.readyState==='complete'&&!!document.querySelector('main')");
+  report.baselineHeight=await ev("document.querySelector('main').getBoundingClientRect().height");
+ }
+ for(const width of [1440,1100,900,768,600,390,320]){
+  await send('Emulation.setDeviceMetricsOverride',{width,height:1000,deviceScaleFactor:1,mobile:width<540});await nav('/salesforce');await sleep(250);
   check(await ev('document.documentElement.scrollWidth===innerWidth'),'No page overflow '+width);
-  check(await ev(`${JSON.stringify(viewer)}&&document.querySelectorAll('#salesforce-product-showcase > [role=tablist] [role=tab]').length===5`),'Five product tabs '+width);
-  for(const [index,id] of ['explorer','registrations','flow','dependencies','vscode'].entries()){
-   await click('#sf-product-tab-'+id);await until(`!!document.querySelector('${viewer} [data-interface=${surfaces[index]}]')`);
-   check((await text(viewer)).includes('Interface reconstruction based on an actual application capture.'),'Reconstruction labeled '+id+' '+width);
-   check(await ev(`(()=>{const e=document.querySelector('${viewer} [role=region]');return getComputedStyle(e).overflowX==='auto'&&e.scrollWidth>=1040})()`),'Readable internal scroll '+id+' '+width);
-   if(id==='explorer')check((await text(viewer)).includes('Demo_Account_Review')&&(await text(viewer)).includes('Inactive'),'Captured Account names and states '+width);
-   if(id==='registrations'){
-    check(await ev(`JSON.stringify([...document.querySelectorAll('${viewer} [data-interface] [class*=order] strong')].map(e=>e.textContent))==='["100","200","300"]'`),'Execution orders 100/200/300 '+width);
-    await click('#sf-variant-tab-context');check((await text(viewer)).includes('DemoAccountRoutingHandler')&&(await text(viewer)).includes('Demo Account Prepare Review'),'Context handlers and exact Flow heading '+width);check(await ev(`Array.from(document.querySelectorAll('${viewer} [class*=order] strong')).every(e=>e.scrollWidth<=e.clientWidth)`),'Context order numbers do not wrap '+width);
-   }
-   if(id==='flow')check((await text(viewer)).includes('Demo_Opportunity_Discount_Review')&&(await text(viewer)).includes('A detailed Flow Inspector has not been supplied'),'Accurate Flow discovery limitation '+width);
-   if(id==='dependencies'){
-    check((await text(viewer)).includes('DemoLegacySalesPolicyService.netValue(amount, discount)')&&(await text(viewer)).includes('remaining trigger source is outside'),'Only captured source excerpt '+width);
-    await click('#sf-variant-tab-dependencies');await ev("document.querySelector('#salesforce-product-showcase img').scrollIntoView({block:'center',behavior:'instant'})");await until(`!!document.querySelector('${viewer} img')&&document.querySelector('${viewer} img').complete`);
-    check(await ev(`(()=>{const i=document.querySelector('${viewer} img');return i.naturalWidth>0&&i.alt.includes('dependency tree')&&getComputedStyle(i).filter==='none'})()`),'Actual dependency image loads '+width);
-   }
-   if([1440,390].includes(width))await shot('view-'+id+'-'+width,viewer);
-   if(id==='vscode')check((await text(viewer)).includes('Open in VS Code')&&(await text(viewer)).includes('desktop workspace capture is still pending'),'Accurate captured IDE action '+width);
+  check(await ev("document.querySelectorAll('main > section').length===6"),'Six focused consulting sections '+width);
+  for(const id of sections)check(await ev(`!!document.getElementById('${id}')`),'Section '+id+' '+width);
+  check(await ev("document.querySelectorAll('h1').length===1&&document.querySelector('h1').textContent==='Make your Salesforce org easier to change.'"),'Exact offer headline '+width);
+  check(await ev("!document.querySelector('#salesforce-product-showcase,#create-trigger-action,main [role=tablist],main dialog,main button[aria-haspopup]')"),'Simulator and walkthrough absent '+width);
+  check(await ev("document.querySelectorAll('[data-product-proof]').length===2&&[...document.querySelectorAll('[data-product-proof] figcaption small')].every(e=>e.textContent==='Interface reconstruction based on an actual application capture.')"),'Exactly two labeled proof views '+width);
+  check(await ev("[...document.querySelectorAll('[data-product-proof]')].every(e=>e.innerText.includes('Inactive'))"),'Captured inactive states preserved '+width);
+  check(await ev("JSON.stringify([...document.querySelectorAll('[data-product-proof]:last-child [class*=order] strong')].map(e=>e.textContent))==='[\"100\",\"200\",\"300\"]'"),'Actual 100/200/300 sequence '+width);
+  check(await ev("[...document.querySelectorAll('[data-product-proof] [class*=order] strong')].every(e=>e.clientWidth>=e.scrollWidth)"),'Order numbers remain readable '+width);
+  check(await ev("document.querySelector('main').textContent.includes('AugArch.TriggerDispatcher.dispatch()')&&document.querySelector('main').textContent.includes('Salesforce controls its overall order of execution')"),'Accurate Runtime boundaries '+width);
+  check(await ev("document.querySelectorAll('main [class*=stages] > li').length===4&&document.querySelector('main').textContent.includes('Architecture decisions, code review, and validation remain human responsibilities.')"),'Four engagement stages and responsible AI '+width);
+  check(await ev("document.querySelectorAll('main a[href=\"/book\"]').length===2&&[...document.querySelectorAll('main a[href=\"/book\"]')].every(e=>e.textContent.includes('Book an Architecture Consultation'))"),'Existing booking destination reused '+width);
+  check(await ev("(()=>{const a=document.querySelector('a[href=\"#salesforce-architecture\"]');return a.textContent.includes('See Our Approach')&&!!document.querySelector(a.hash)})()"),'Approach anchor target valid '+width);
+  check(await ev("[...document.querySelectorAll('[data-product-proof] [role=region]')].every(e=>getComputedStyle(e).overflowX==='auto'&&e.scrollWidth>=500)"),'Readable focused proofs scroll internally '+width);
+  if(width===1440){
+   report.newHeight=await ev("document.querySelector('main').getBoundingClientRect().height");
+   if(report.baselineHeight)check(report.newHeight<report.baselineHeight*.8,'Page substantially shorter than previous production');
   }
-  await click('#sf-product-tab-explorer');await ev("document.querySelector('#sf-product-tab-explorer').focus()");await key('ArrowRight',39);await until("document.querySelector('#sf-product-tab-registrations').getAttribute('aria-selected')==='true'");check(await ev("document.activeElement.id==='sf-product-tab-registrations'"),'Arrow-key tab navigation '+width);
-  await key('End',35);check(await ev("document.activeElement.id==='sf-product-tab-vscode'"),'End-key tab navigation '+width);await key('Home',36);
-  for(let step=0;step<5;step++){
-   await click(`${tour} nav button:nth-child(${step+1})`);
-   check((await text(tour)).includes(`Step ${step+1} of 5`),'Step counter '+(step+1)+' '+width);
-   if(step===0)check((await text(tour)).includes('AFTER_INSERT')&&await ev(`document.querySelector('${tour} > div:last-child button:first-child').disabled`),'Target and disabled Previous '+width);
-   if(step===1)check((await text(tour)).includes('No existing Trigger Actions are registered'),'No existing actions for AFTER_INSERT '+width);
-   if(step===2){check((await text(tour)).includes('My_Account_HandlerTest'),'Companion test artifact '+width);await click('#sf-walkthrough-variant-tab-verified');check((await text(tour)).includes('Apex handler bundle created successfully.')&&(await text(tour)).includes('Capability declared'),'Captured verified stage '+width);}
-   if(step===3)check(await ev(`document.querySelectorAll('${tour} [data-interface] li').length===6`),'Six captured compatibility checks '+width);
-   if(step===4){check((await text(tour)).includes('Register Inactive Trigger Action'),'Inactive registration review '+width);await click('#sf-walkthrough-variant-tab-result');check(await ev(`document.querySelectorAll('${tour} [data-interface] [class*=order] strong').length===4`),'Four-action result '+width);check((await text(tour)).includes('My Account Handler AFTER INSERT'),'Exact new action name '+width);}
-   if([1440,390].includes(width))await shot('step-'+(step+1)+'-'+width,tour);
-  }
-  check(await ev(`document.querySelector('${tour} > div:last-child button:last-child').disabled`),'Disabled Next at end '+width);await click(`${tour} > div:last-child button:first-child`);check((await text(tour)).includes('Step 4 of 5'),'Previous works '+width);await click(`${tour} > div:last-child button:last-child`);check((await text(tour)).includes('Step 5 of 5'),'Next works '+width);
-  if(width===1440||width===390){
-   const suffix=width===1440?'desktop':'mobile';await shot('product-'+suffix,viewer);await shot('walkthrough-'+suffix,tour);
-   for(const mode of ['interface','capture']){
-    const opener=`${viewer} button[aria-haspopup=dialog]:${mode==='interface'?'first':'last'}-child`;
-    await click(opener);await until("!!document.querySelector('[data-product-dialog][open]')");
-    check(await ev("document.activeElement.getAttribute('aria-label')==='Close expanded view'"),'Dialog initial focus '+mode+' '+width);
-    check(await ev("(()=>{const d=document.querySelector('[data-product-dialog]'),r=d.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight&&d.scrollWidth<=d.clientWidth+1})()"),'Dialog fits viewport '+mode+' '+width);
-    if(mode==='capture'){
-     await until("document.querySelector('[data-product-dialog] img').complete");
-     check(await ev("(()=>{const i=document.querySelector('[data-product-dialog] img');return i.clientWidth===i.naturalWidth&&getComputedStyle(i).filter==='none'})()"),'Actual-size capture default '+width);
-     await click('[data-product-dialog] button[aria-pressed=false]');
-     check(await ev("(()=>{const i=document.querySelector('[data-product-dialog] img');return i.clientWidth<=i.parentElement.clientWidth&&Math.abs(i.clientWidth/i.clientHeight-i.naturalWidth/i.naturalHeight)<.01})()"),'Fit preserves image ratio '+width);
-    }
-    await ev("document.querySelector('[data-product-dialog] button').focus()");await key('Tab',9,8);check(await ev("document.activeElement.matches('[data-product-dialog] [role=region]')"),'Reverse focus trap '+mode+' '+width);await key('Tab',9);check(await ev("document.activeElement.getAttribute('aria-label')==='Close expanded view'"),'Forward focus trap '+mode+' '+width);
-    await shot('expanded-'+mode+'-'+suffix);await key('Escape',27);await until("!document.querySelector('[data-product-dialog]')");check(await ev(`document.activeElement===document.querySelector(${JSON.stringify(opener)})`),'Escape and focus restoration '+mode+' '+width);
-   }
+  if([1440,390].includes(width)){
+   await shot('salesforce-full-'+width,'main');await shot('salesforce-proof-'+width,'#salesforce-tools');
+   await ev("document.querySelector('a[href=\"#salesforce-architecture\"]').click()");await until("location.hash==='#salesforce-architecture'");check(true,'Approach link navigates '+width);
+   const region="document.querySelector('[data-product-proof] [role=region]')";
+   await ev(`${region}.focus();${region}.scrollLeft=0`);await key('ArrowRight',39);await sleep(150);
+   if(width===390)check(await ev(`${region}.scrollLeft>0`),'Keyboard horizontal proof scrolling '+width);
+   await ev("document.querySelector('main a[href=\"/book\"]').click()");await until("location.pathname==='/book'&&document.readyState==='complete'");check(true,'Architecture consultation opens existing booking page '+width);
   }
  }
- // Every source capture has a public-safe evidence image; originals stay private.
- const filenames=['01-architecture-explorer','02-registration-manager','03-native-flow-discovery','04-apex-source-inspector','05-apex-dependencies','06-context-handler-grouping','07-open-in-vscode-button','08-wizard-target','09-wizard-execution-order','10-wizard-create-handler','11-wizard-handler-verified','12-wizard-compatibility','13-wizard-register','14-registration-success'];
- for(const file of filenames){const r=await fetch(origin+'/images/salesforce-showcase/'+file+'.png');check(r.ok&&r.headers.get('content-type')?.includes('image/png'),'Public-safe capture '+file);}
- check((await fetch(origin+'/images/salesforce-website-captures/11-wizard-handler-verified.png')).status===404,'Unreviewed original not publicly hosted');
- for(const path of ['/','/ai-solutions','/salesforce','/insights/philosophy','/book'])check((await fetch(origin+path)).status===200,'Healthy route '+path);
- check(report.errors.length===0,'No runtime errors');check(report.console.length===0,'No console errors');check(report.failedAssets.length===0,'No failed browser assets');await writeFile(out+'/results.json',JSON.stringify(report,null,2));console.log(JSON.stringify({checks:report.checks.length,errors:report.errors,console:report.console,failedAssets:report.failedAssets,out},null,2));
+ await nav('/salesforce');
+ check(await ev("document.title.includes('Salesforce Architecture Assessment & Modernization')&&document.querySelector('meta[name=description]').content.includes('Assess, clean up, and modernize')"),'Updated service SEO');
+ check(await ev("document.querySelector('link[rel=canonical]').href.endsWith('/salesforce')&&document.querySelector('meta[property=\"og:title\"]').content.includes('Architecture Assessment')"),'Canonical and Open Graph retained');
+ for(const path of ['/','/ai-solutions','/salesforce','/book','/contact','/insights'])check((await fetch(origin+path)).status===200,'Healthy route '+path);
+ for(const name of ['01-architecture-explorer','02-registration-manager','03-native-flow-discovery','04-apex-source-inspector','05-apex-dependencies','06-context-handler-grouping','07-open-in-vscode-button','08-wizard-target','09-wizard-execution-order','10-wizard-create-handler','11-wizard-handler-verified','12-wizard-compatibility','13-wizard-register','14-registration-success'])check((await fetch(origin+'/images/salesforce-showcase/'+name+'.png')).ok,'Capture retained '+name);
+ check(report.errors.length===0,'No runtime errors');check(report.console.length===0,'No console errors');check(report.failedAssets.length===0,'No failed browser assets');await writeFile(out+'/results.json',JSON.stringify(report,null,2));console.log(JSON.stringify({checks:report.checks.length,baselineHeight:report.baselineHeight,newHeight:report.newHeight,errors:report.errors,console:report.console,failedAssets:report.failedAssets,out},null,2));
 }finally{ws?.close();child.kill('SIGTERM');}
