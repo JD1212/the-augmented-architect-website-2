@@ -1,6 +1,6 @@
-export type AssistantStarter = { label: string; href: string };
+export type AssistantStarter = { label: string; href: string; message: string };
 
-/** All public Scout copy lives here. No conversation service is connected. */
+/** All public Scout interface copy lives here. */
 export const assistantContent = {
   name: 'Scout',
   subtitle: 'AI Architecture Guide',
@@ -10,17 +10,23 @@ export const assistantContent = {
   supporting: 'I can help you explore the right technology for your business.',
   startersLabel: 'Explore a starting point',
   previewLabel: 'A starting point for your next idea',
-  availability: 'AI conversation is coming soon. Messages are not sent.',
-  inputLabel: 'Message draft — AI conversation coming soon',
+  availability: 'Scout can make mistakes. Please don’t share sensitive information.',
+  inputLabel: 'Message Scout',
   placeholder: 'Type your message...',
-  sendLabel: 'Check messaging availability',
-  unavailable: 'Your message has not been sent. Live conversation is coming soon. You can discuss your project through our Contact page.',
+  sendLabel: 'Send message to Scout',
+  failure: 'Scout could not finish this reply. Please retry in a moment.',
+  thinking: 'Scout is replying…',
+  retryLabel: 'Retry reply',
+  newConversationLabel: 'New Conversation',
+  conversationLabel: 'Conversation with Scout',
+  senderLabels: { assistant: 'Scout', user: 'You' },
+  restoreLabel: 'Restoring your conversation…',
   contactLabel: 'Go to Contact',
   starters: [
-    { label: 'Explore AI solutions', href: '/ai-solutions' },
-    { label: 'Salesforce consulting', href: '/salesforce' },
-    { label: 'Custom software', href: '/ai-solutions#capabilities' },
-    { label: 'Discuss my project', href: '/contact' },
+    { label: 'Explore AI solutions', href: '/ai-solutions', message: 'How can AI help my business, and where should I start?' },
+    { label: 'Salesforce consulting', href: '/salesforce', message: 'How can you help modernize our Salesforce org?' },
+    { label: 'Custom software', href: '/ai-solutions#capabilities', message: 'What do your custom business applications include, and how much do they cost?' },
+    { label: 'Discuss my project', href: '/contact', message: 'I would like to discuss a project. What would be useful to tell you first?' },
   ] satisfies AssistantStarter[],
 } as const;
 

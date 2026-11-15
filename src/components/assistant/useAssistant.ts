@@ -43,10 +43,3 @@ export function useGreetingSequence(reducedMotion: boolean) {
     starterCount: reducedMotion ? 4 : Math.min(4, Math.max(0, Math.floor((elapsed - 2000) / 150))),
   };
 }
-
-/** Local draft state only. Deliberately has no transport, persistence or fake replies. */
-export function useAssistantDraft() {
-  const [draft, setDraft] = useState('');
-  const [attempted, setAttempted] = useState(false);
-  return { draft, setDraft, attempted, checkAvailability: () => setAttempted(true) };
-}

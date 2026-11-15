@@ -6,6 +6,7 @@ import { AssistantAvatar } from './AssistantAvatar';
 import { AssistantPanel } from './AssistantPanel';
 import { useAssistantEntrance } from './useAssistant';
 import { useAssistantIntroduction } from './useAssistantIntroduction';
+import { useScoutConversation } from './useScoutConversation';
 import styles from './assistant.module.css';
 
 export function AssistantLauncher() {
@@ -14,6 +15,7 @@ export function AssistantLauncher() {
 
 function ScoutLauncher() {
   const ready = useAssistantEntrance();
+  const conversation = useScoutConversation();
   const [open, setOpen] = useState(false);
   const openPanel = useCallback(() => setOpen(true), []);
   const finishIntroduction = useAssistantIntroduction(ready, openPanel);
@@ -30,6 +32,6 @@ function ScoutLauncher() {
       aria-label={copy.launcherLabel} aria-haspopup="dialog" aria-expanded={open} aria-controls={open ? 'scout-panel' : undefined}>
       <AssistantAvatar /><span className={styles.launcherName}>{copy.name}</span>
     </button>
-    {open && <AssistantPanel onClose={close} />}
+    {open && <AssistantPanel onClose={close} conversation={conversation} />}
   </div>;
 }

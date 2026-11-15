@@ -1,20 +1,21 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
 import { assistantContent as copy, assistantWelcome } from '@/content/assistant';
 import { AssistantAvatar } from './AssistantAvatar';
 import { AssistantMessage } from './AssistantMessage';
-import { useAssistantDraft, useGreetingSequence, useReducedMotion } from './useAssistant';
+import { useGreetingSequence, useReducedMotion } from './useAssistant';
+import type { ScoutConversationState } from './useScoutConversation';
 import styles from './assistant.module.css';
 
-export function AssistantPanel({ onClose }: { onClose: (restoreFocus: boolean) => void }) {
+export function AssistantPanel({ onClose, conversation }: { onClose: (restoreFocus: boolean) => void; conversation: ScoutConversationState }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const feedbackRef = useRef<HTMLDivElement>(null);
   const reducedMotion = useReducedMotion();
   const sequence = useGreetingSequence(reducedMotion);
-  const { draft, setDraft, attempted, checkAvailability } = useAssistantDraft();
+  const { messages, draft, setDraft, partial, busy, loading, error, failed, send, reset } = conversation;
+  const hasConversation = messages.length > 0;
   const [closing, setClosing] = useState(false);
   const restoreFocusRef = useRef(true);
 
@@ -32,8 +33,8 @@ export function AssistantPanel({ onClose }: { onClose: (restoreFocus: boolean) =
   }, [closing, onClose, reducedMotion]);
 
   useEffect(() => {
-    if (attempted) feedbackRef.current?.scrollIntoView({ block: 'nearest', behavior: 'instant' });
-  }, [attempted]);
+    if (hasConversation || error) feedbackRef.current?.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+  }, [hasConversation, messages, partial, error]);
 
   function close(restoreFocus = true) {
     restoreFocusRef.current = restoreFocus;
@@ -62,23 +63,31 @@ export function AssistantPanel({ onClose }: { onClose: (restoreFocus: boolean) =
       </header>
       <div className={styles.conversation}>
         <p className={styles.kicker}>{copy.previewLabel}</p>
-        <div className={styles.messages} aria-label={copy.subtitle}>
-          <AssistantMessage message={assistantWelcome[0]} visibleCharacters={sequence.characters} />
-          {sequence.showSupport && <AssistantMessage message={assistantWelcome[1]} />}
+        {hasConversation && <button type="button" className={styles.newConversation} onClick={() => void reset()} disabled={busy || loading}>{copy.newConversationLabel}</button>}
+        <div className={styles.messages} aria-label={copy.conversationLabel} role={hasConversation ? 'log' : undefined} aria-live={hasConversation ? 'polite' : undefined} aria-relevant="additions" aria-busy={busy}>
+          {!hasConversation ? <>
+            <AssistantMessage message={assistantWelcome[0]} visibleCharacters={sequence.characters} />
+            {sequence.showSupport && <AssistantMessage message={assistantWelcome[1]} />}
+          </> : <>
+            {messages.map(message => <AssistantMessage key={message.id} message={message} conversation />)}
+            {partial && <AssistantMessage message={{ id: 'streaming', role: 'assistant', content: partial }} conversation />}
+          </>}
         </div>
-        <nav className={styles.starters} aria-label={copy.startersLabel}>
-          {copy.starters.slice(0, sequence.starterCount).map((starter, index) => <Link key={starter.href} href={starter.href} onNavigate={() => close(false)} className={styles.starter}>
+        {!hasConversation && <div className={styles.starters} aria-label={copy.startersLabel} role="group">
+          {copy.starters.slice(0, sequence.starterCount).map((starter, index) => <button type="button" key={starter.href} disabled={busy || loading} onClick={() => void send(starter.message)} className={styles.starter}>
             <span className={styles.starterIndex} aria-hidden="true">0{index + 1}</span><span>{starter.label}</span><span aria-hidden="true">↗</span>
-          </Link>)}
-        </nav>
-        {attempted && <div ref={feedbackRef} className={styles.feedback} role="status"><p>{copy.unavailable}</p><Link href="/contact" onNavigate={() => close(false)}>{copy.contactLabel} <span aria-hidden="true">→</span></Link></div>}
+          </button>)}
+        </div>}
+        {(busy || loading) && <p className={styles.replyStatus} role="status">{loading ? copy.restoreLabel : copy.thinking}</p>}
+        {error && <div className={styles.feedback} role="status"><p>{error}</p>{failed && <button type="button" className={styles.retry} disabled={busy || loading} onClick={() => void send(failed.message, true)}>{copy.retryLabel}</button>}</div>}
+        <div ref={feedbackRef} />
       </div>
       <footer className={styles.composer}>
         <p id="scout-availability" className={styles.availability}>{copy.availability}</p>
-        <form onSubmit={event => { event.preventDefault(); if (draft.trim()) checkAvailability(); }}>
+        <form onSubmit={event => { event.preventDefault(); void send(); }}>
           <label htmlFor="scout-draft" className={styles.srOnly}>{copy.inputLabel}</label>
-          <input id="scout-draft" value={draft} onChange={event => setDraft(event.target.value)} placeholder={copy.placeholder} aria-describedby="scout-availability" autoComplete="off" maxLength={1000} />
-          <button type="submit" disabled={!draft.trim()} aria-label={copy.sendLabel}>
+          <input id="scout-draft" value={draft} onChange={event => setDraft(event.target.value)} placeholder={copy.placeholder} aria-describedby="scout-availability" autoComplete="off" maxLength={1000} disabled={busy || loading || !!failed} />
+          <button type="submit" disabled={!draft.trim() || busy || loading || !!failed} aria-label={copy.sendLabel}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 18V6M6 12L12 6L18 12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </button>
         </form>

@@ -1,0 +1,4 @@
+# CLI caches and temporary project linkage must never be committed.
+.temp/
+.branches/
+.env*

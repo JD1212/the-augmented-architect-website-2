@@ -6,9 +6,9 @@ Local, responsive Next.js 16 website built with TypeScript, Tailwind CSS 4 and t
 
 The deployment platform is the existing Vercel project `the-augmented-architect-website-2` under JD Burkholder's projects. Website 2.0 remains independent of the existing public domain and other applications.
 
-This repository remains an independent website shell. Do not install Supabase, merge it with the existing Augment application or security kernel, or add agent infrastructure as part of this build. Preserve the approved visual design and homepage scope.
+This repository remains independent of Augment, the security kernel, Salesforce packages, and other applications. Scout Phase 1 uses only its dedicated Supabase project (`cjldcaiybqguklzqtdjj`) and the official OpenAI Agents SDK. Do not connect other databases or runtimes. Preserve the approved visual design and homepage scope.
 
-Presentation components, typed content, routes and metadata are separate. Future integrations can be added through server-only modules and App Router route handlers when explicitly requested, without coupling the visual components to external services. No integration scaffolding is needed now.
+Presentation components, typed content, routes and metadata are separate. Scout's privileged integration lives in server-only modules behind `/api/scout`; its approved interface remains separate from model and database access. See [Scout Phase 1 setup and verification](docs/scout-phase1.md).
 
 ## Development
 
@@ -42,7 +42,7 @@ Website shell text, navigation labels, button labels, preview labels, accessibil
 - `src/app/sitemap.ts`, `src/app/robots.ts`: search engine routes.
 - `src/app/icon.svg`, `src/app/favicon.ico`, `src/app/apple-icon.png`: approved AA identity in browser and touch icons.
 
-The hero uses the approved `Glowing AI Workflow Network.png` artwork. The showcase uses labeled conceptual architecture diagrams. The header, footer and favicons use the new geometric interlocking AA identity. No screenshot is simulated as production UI. Replace the conceptual showcase visuals with independently supplied application captures when available. Booking, contact submission and live demos are not connected. No database or external APIs are configured.
+The hero uses the approved `Glowing AI Workflow Network.png` artwork. The showcase uses labeled conceptual architecture diagrams. The header, footer and favicons use the new geometric interlocking AA identity. No screenshot is simulated as production UI. Replace the conceptual showcase visuals with independently supplied application captures when available. Booking, contact submission and live demos are not connected. Scout alone uses the dedicated database and OpenAI connection described below.
 
 ## Insights and article publishing
 
@@ -124,21 +124,21 @@ After each completed change, validate the intended scope, commit to `main`, push
 - Production URL: `https://the-augmented-architect-website-2.vercel.app`.
 - Framework preset: Next.js. Use the existing Git integration; do not create another project or deploy a separate CLI upload.
 
-Before pushing, run `npm run lint`, `node --test tests/*.test.mjs`, and `npm run build`. Review the staged files: keep `.env*`, private keys, `.next/`, `node_modules/`, and `.vercel/` out of Git. Commit the intended changes, then push to `origin/main` without force-pushing.
+Before pushing, run `npm run lint`, `node --test tests/*.test.mjs`, and `npm run build`. Review the staged files: keep credential-bearing `.env*` files, private keys, `.next/`, `node_modules/`, and `.vercel/` out of Git. Only the credential-free `.env.example` template is allowed. Commit the intended changes, then push to `origin/main` without force-pushing.
 
 Pushes to `main` are production releases. Feature-branch pushes can generate preview deployments through the same Git integration. After a push, confirm Vercel reaches Ready for the exact GitHub commit, inspect build logs, and smoke-test the deployed pages, hero image, navigation and mobile layout. There is no separate hosted test job configured; the automated tests must be run before pushing.
 
-Cloudflare DNS, `theaugmentedarchitect.com`, the old Augmented Architect project, Supabase and the Augment kernel are outside this deployment workflow. No public-domain connection or transfer is part of this release.
+Cloudflare DNS, `theaugmentedarchitect.com`, the old Augmented Architect project, all other Supabase projects and the Augment kernel are outside this deployment workflow. Only the dedicated Scout database is used. No public-domain connection or transfer is part of this release.
 
 
 ## Brand identity
 
 See [the brand identity guide](docs/brand-identity.md) for the transparent SVG monograms, header/footer lockups, favicons, and reproducible asset exports. The live wordmark remains editable HTML in the existing content configuration. Shared brand tokens live in `globals.css`, while logo layout is scoped to `brand.module.css`.
 
-## Scout assistant frontend
+## Scout conversational assistant
 
-Scout appears after a short delay and automatically introduces itself on the first quiet homepage visit in a browser tab, using the existing entrance, portrait panel, and typed greeting. Browsing AI Solutions or another page does not consume that homepage opportunity. Clicking, typing, scrolling, switching away, or opening another dialog suppresses the current homepage visit’s automatic introduction without recording a completed introduction. Once Scout actually opens automatically, or a visitor opens or dismisses it manually, the tab flag `aa.scout.introduction.v1` prevents further auto-opening. Existing handled-tab flags remain respected. Closing leaves the original launcher available for reopening the full panel. If session storage is unavailable, Scout opens manually. Edit its name, greeting, supporting message, availability notice and starter destinations in `src/content/assistant.ts`. Its four starters navigate to existing service/contact pages. Free-form input is a local draft: submitting displays a clear coming-soon notice and sends nothing. Drafts are discarded when the panel closes.
+Scout appears after a short delay and automatically introduces itself on the first quiet homepage visit in a browser tab, using the existing entrance, portrait panel, and typed greeting. Browsing AI Solutions or another page does not consume that homepage opportunity. Clicking, typing, scrolling, switching away, or opening another dialog suppresses the current homepage visit’s automatic introduction without recording a completed introduction. Once Scout actually opens automatically, or a visitor opens or dismisses it manually, the tab flag `aa.scout.introduction.v1` prevents further auto-opening. Existing handled-tab flags remain respected. Closing leaves the original launcher available for reopening the full panel. If session storage is unavailable, Scout opens manually. Edit its interface copy and four starter prompts in `src/content/assistant.ts`. The starters begin conversations; replies stream through `/api/scout` and persist in the dedicated Supabase database. Closing, navigation and refresh retain the conversation. New Conversation rotates the secure session and waits for another send before creating a new record.
 
-The reusable components live in `src/components/assistant/`: `AssistantLauncher`, `AssistantPanel`, `AssistantAvatar`, and `AssistantMessage`. `useAssistant.ts` separates entrance timing, reduced-motion preferences, greeting sequencing and local draft state from presentation. `useAssistantIntroduction.ts` coordinates the once-per-tab introduction with the fail-closed session policy in `src/lib/assistant-introduction.ts`. The typed `AssistantMessageData` model and welcome-message array provide a rendering boundary for future conversation history; no service adapter, endpoint, provider SDK or storage is installed. A future integration should replace the local draft availability action with a separately reviewed transport, and update the availability copy only when messaging actually works.
+The reusable components live in `src/components/assistant/`: `AssistantLauncher`, `AssistantPanel`, `AssistantAvatar`, and `AssistantMessage`. `useAssistant.ts` retains entrance timing, reduced-motion preferences and greeting sequencing. `useAssistantIntroduction.ts` coordinates the once-per-tab introduction with the fail-closed session policy in `src/lib/assistant-introduction.ts`. `useScoutConversation.ts` manages the conversation transport and restoration, while `src/lib/scout/` contains the server-only agent, curated approved knowledge, session authorization, persistence, and shared rate limits. No booking/lead tools or internal-system access are implemented. Configuration, security boundaries, migrations, deterministic tests and live-model checks are documented in [Scout Phase 1](docs/scout-phase1.md).
 
 Assistant colors, border and shadow tokens live in `src/app/globals.css`. Its scoped layout, character animation and responsive behavior live in `assistant.module.css`. The native dialog includes focus wrapping, Escape dismissal and focus restoration, with immediate greeting/starter display when reduced motion is enabled. On mobile the assistant clears the existing consultation dock and yields to the navigation menu. Root layout mounts it once, preserving the website's pages and content.

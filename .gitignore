@@ -42,3 +42,7 @@ next-env.d.ts
 
 # Unmodified reference captures; public-safe derivatives are in public/images/salesforce-showcase.
 /.local-assets/salesforce-website-captures/
+# Local environment variables and secrets
+.env
+.env.*
+!.env.example
