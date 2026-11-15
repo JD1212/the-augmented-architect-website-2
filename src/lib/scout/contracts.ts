@@ -1,18 +1,18 @@
 export type ScoutMessage = { id: string; role: 'user' | 'assistant'; content: string };
 export type ScoutEvent =
   | { type: 'delta'; text: string }
-  | { type: 'done'; messages: ScoutMessage[] }
+  | { type: 'done'; messages: ScoutMessage[]; expiresInMs?: number | null }
   | { type: 'error'; message: string };
 
 export const scoutLimits = {
   inputCharacters: 1000, outputCharacters: 12000, turns: 40,
   hourlyTurns: 20, attempts: 3, executionMs: 45000, leaseMs: 120000,
-  sessionSeconds: 7 * 24 * 60 * 60,
+  sessionSeconds: 24 * 60 * 60,
 } as const;
 
 export type Conversation = {
   id: string; session_token_hash: string; status: string;
-  created_at: string; expires_at: string;
+  created_at: string; last_activity_at?: string; expires_at: string;
 };
 export type Turn = {
   id: string; conversation_id: string; turn_number: number; client_turn_id: string;

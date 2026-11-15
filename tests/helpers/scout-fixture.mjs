@@ -11,7 +11,7 @@ export function scoutFixture(reply = 'We can help you connect your business syst
     async create(hash, created_at, expires_at) {
       const old = conversations.find(c => c.session_token_hash === hash);
       if (old) return clone(old);
-      const c = { id: randomUUID(), session_token_hash: hash, created_at, expires_at, status: 'active' };
+      const c = { id: randomUUID(), session_token_hash: hash, created_at, last_activity_at: created_at, expires_at, status: 'active' };
       conversations.push(c); return clone(c);
     },
     async turns(id) { return clone(turns.filter(t => t.conversation_id === id).sort((a,b) => a.turn_number-b.turn_number)); },
@@ -28,6 +28,8 @@ export function scoutFixture(reply = 'We can help you connect your business syst
       const old = turns.find(t => t.id === turn.id && t.started_at === turn.started_at && t.status === 'running');
       if (!old) throw Error('Stale claim');
       Object.assign(old, { status: answer ? 'completed' : 'failed', assistant_message: answer, completed_at: new Date(now).toISOString() });
+      const conversation=conversations.find(c=>c.id===turn.conversation_id);
+      conversation.last_activity_at=new Date(now).toISOString();conversation.expires_at=new Date(now+86400000).toISOString();
     },
     async expireRuns(id, before, at) {
       for (const t of turns) if (t.conversation_id === id && ['pending','running'].includes(t.status) && t.started_at < before) Object.assign(t, { status:'failed', completed_at:at });

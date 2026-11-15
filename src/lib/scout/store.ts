@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { scoutDatabaseConfig } from './config';
 import { ScoutError } from './errors';
 import type { Conversation, Turn } from './contracts';
+import { scoutLimits } from './contracts';
 
 export interface ScoutStore {
   find(hash: string): Promise<Conversation | null>;
@@ -62,7 +63,7 @@ export function createScoutStore(): ScoutStore {
         .eq('id', turn.id).eq('conversation_id', turn.conversation_id).eq('status', 'running').eq('started_at', turn.started_at!).select('id');
       if (error || data?.length !== 1) throw new Error('Reply persistence failed');
       // Activity updates cannot change the conversation's ownership or status.
-      const { error: activityError } = await db.from('scout_conversations').update({ last_activity_at: now }).eq('id', turn.conversation_id).eq('status', 'active');
+      const { error: activityError } = await db.from('scout_conversations').update({ last_activity_at: now, expires_at: new Date(Date.parse(now) + scoutLimits.sessionSeconds * 1000).toISOString() }).eq('id', turn.conversation_id).eq('status', 'active');
       if (activityError) throw new Error('Activity persistence failed');
     },
     async expireRuns(id, before, now) {

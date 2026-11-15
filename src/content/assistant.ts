@@ -21,6 +21,7 @@ export const assistantContent = {
   conversationLabel: 'Conversation with Scout',
   senderLabels: { assistant: 'Scout', user: 'You' },
   restoreLabel: 'Restoring your conversation…',
+  sessionRecoveryFailure: 'Scout could not establish a secure session. Please allow cookies for this site, then retry. Your message has been kept.',
   contactLabel: 'Go to Contact',
   starters: [
     { label: 'Explore AI solutions', href: '/ai-solutions', message: 'How can AI help my business, and where should I start?' },

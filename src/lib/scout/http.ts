@@ -30,9 +30,22 @@ export function createScoutHandlers(getService: () => Service, limit: RequestLim
   const cookieName = () => process.env.NODE_ENV === 'production' ? '__Host-scout_session' : 'scout_session';
   const cookie = (token: string) => `${cookieName()}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${scoutLimits.sessionSeconds}${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`;
   const session = (request: Request) => {
-    const value = request.headers.get('cookie')?.split(';').map(v => v.trim()).find(v => v.startsWith(`${cookieName()}=`))?.slice(cookieName().length + 1);
-    return value && tokenPattern.test(value) ? value : null;
+    const values = request.headers.get('cookie')?.split(';').map(v => v.trim())
+      .filter(v => v.startsWith(`${cookieName()}=`)).map(v => v.slice(cookieName().length + 1)) ?? [];
+    // Cookie headers omit Path. Never guess an owner when legacy paths send
+    // multiple same-name credentials, even if one happens to be first.
+    return values.length === 1 && tokenPattern.test(values[0]) ? values[0] : null;
   };
+  function issueSession(response: Response, token: string) {
+    response.headers.append('Set-Cookie', cookie(token));
+    // A Path=/ replacement cannot overwrite a legacy /api/scout cookie.
+    // __Host- cookies already require Path=/, so keep their strict scope intact.
+    if (cookieName() === 'scout_session') for (const path of ['/api', '/api/', '/api/scout', '/api/scout/']) {
+      response.headers.append('Set-Cookie', `${cookieName()}=; Path=${path}; HttpOnly; SameSite=Lax; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT`);
+    }
+    return response;
+  }
+  const welcome = () => ({ messages: [], busy: false, failed: null, expiresInMs: null, sessionReset: true });
   function checkOrigin(request: Request, mutation = false) {
     if (request.headers.get('sec-fetch-site') === 'cross-site' || (mutation && request.headers.get('origin') !== new URL(request.url).origin)) throw new ScoutError(403, 'Please open Scout on this website to continue.');
   }
@@ -45,8 +58,14 @@ export function createScoutHandlers(getService: () => Service, limit: RequestLim
         checkOrigin(request); await limit(request, 'read', 90, 60000);
         const token = session(request);
         // Opening the greeting may set a cookie, but never creates a DB conversation.
-        if (!token) return Response.json({ messages: [], busy: false, failed: null }, { headers: { ...headers, 'Set-Cookie': cookie(randomBytes(32).toString('base64url')) } });
-        return Response.json(await getService().restore(digest(token)), { headers });
+        if (!token) return issueSession(Response.json(welcome(), { headers }), randomBytes(32).toString('base64url'));
+        try {
+          return Response.json({ ...await getService().restore(digest(token)), sessionReset: false }, { headers });
+        } catch (error) {
+          if (!(error instanceof ScoutError && error.status === 410)) throw error;
+          // Rotate ownership after inactivity; keep the prior database records intact.
+          return issueSession(Response.json(welcome(), { headers }), randomBytes(32).toString('base64url'));
+        }
       } catch (error) { return failure(error); }
     },
     async DELETE(request: Request) {
@@ -54,7 +73,7 @@ export function createScoutHandlers(getService: () => Service, limit: RequestLim
         checkOrigin(request, true); await limit(request, 'reset', 5, 3600000);
         const token = session(request);
         if (token) await getService().reset(digest(token));
-        return Response.json({ messages: [], busy: false, failed: null }, { headers: { ...headers, 'Set-Cookie': cookie(randomBytes(32).toString('base64url')) } });
+        return issueSession(Response.json(welcome(), { headers }), randomBytes(32).toString('base64url'));
       } catch (error) { return failure(error); }
     },
     async POST(request: Request) {
@@ -85,15 +104,20 @@ export function createScoutHandlers(getService: () => Service, limit: RequestLim
             let connected = true;
             const emit = (event: unknown) => { if (!connected) return; try { output.enqueue(encoder.encode(JSON.stringify(event) + '\n')); } catch { connected = false; controller.abort(); } };
             try {
-              if (prepared.replay) emit({ type: 'done', messages: prepared.replay });
+              if (prepared.replay) emit({ type: 'done', messages: prepared.replay, expiresInMs: prepared.expiresInMs });
               else await prepared.execute!(signal, emit);
             } catch { emit({ type: 'error', message: temporaryFailure }); }
             finally { if (connected) { try { output.close(); } catch { /* Reader disconnected. */ } } }
           },
           cancel() { controller.abort(); },
         });
-        return new Response(stream, { headers: { ...headers, 'Content-Type': 'application/x-ndjson; charset=utf-8', 'X-Accel-Buffering': 'no' } });
-      } catch (error) { return failure(error); }
+        return issueSession(new Response(stream, { headers: { ...headers, 'Content-Type': 'application/x-ndjson; charset=utf-8', 'X-Accel-Buffering': 'no' } }), token);
+      } catch (error) {
+        if (error instanceof ScoutError && (error.status === 410 || error.status === 401)) {
+          return issueSession(Response.json({ error: error.message, code: 'scout_session_reset' }, { status: error.status, headers }), randomBytes(32).toString('base64url'));
+        }
+        return failure(error);
+      }
     },
   };
 }
