@@ -61,13 +61,13 @@ try{
   check(true,'Database transcript restored after refresh '+width);await close();
   const sent=posts;
   await send('Page.navigate',{url:'about:blank'});await until("location.href==='about:blank'");await nav('/');await open();
-  await until("document.querySelector('#scout-panel').textContent.includes('Welcome back!')&&!document.querySelector('#scout-panel [role=group] button:disabled)");
+  await until("document.querySelector('#scout-panel').textContent.includes('Welcome back!')&&!document.querySelector('#scout-panel [role=group] button:disabled')");
   check(await ev("!document.querySelector('#scout-panel [role=log]')&&document.querySelectorAll('#scout-panel [role=group] button').length===2&&document.querySelector('#scout-draft').disabled"),'Returning Production visitor sees choice with no transcript '+width);
   await ev("[...document.querySelectorAll('#scout-panel button')].find(b=>b.textContent==='Continue previous conversation').click()");await until("document.querySelectorAll('#scout-panel [role=log] [data-message-role]').length===2&&!document.querySelector('#scout-draft').disabled");
   check(posts===sent,'Production Continue restores without another execution '+width);await close();
   await send('Page.reload');await until("document.readyState==='complete'");await open();await until("document.querySelectorAll('#scout-panel [role=log] [data-message-role]').length===2&&!document.querySelector('#scout-draft').disabled");
   check(posts===sent,'Refresh after Continue preserves active conversation '+width);await close();
-  await send('Page.navigate',{url:'about:blank'});await until("location.href==='about:blank'");await nav('/');await open();await until("document.querySelector('#scout-panel').textContent.includes('Welcome back!')&&!document.querySelector('#scout-panel [role=group] button:disabled)");
+  await send('Page.navigate',{url:'about:blank'});await until("location.href==='about:blank'");await nav('/');await open();await until("document.querySelector('#scout-panel').textContent.includes('Welcome back!')&&!document.querySelector('#scout-panel [role=group] button:disabled')");
   await ev("[...document.querySelectorAll('#scout-panel button')].find(b=>b.textContent==='Start a new conversation').click()");await until("document.querySelectorAll('#scout-panel [role=group] button').length===4&&!document.querySelector('#scout-draft').disabled");
   const rotated=(await send('Network.getCookies',{urls:[origin]})).cookies.find(c=>c.name==='__Host-scout_session'||c.name==='scout_session');
   check(rotated.value!==cookie.value&&posts===sent&&!await ev("!!document.querySelector('#scout-panel [role=log]')"),'Production Start New rotates securely and shows standard welcome '+width);await close();
