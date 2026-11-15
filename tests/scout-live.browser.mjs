@@ -14,11 +14,11 @@ import {writeFile,mkdir} from 'node:fs/promises';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 const origin=process.argv[2]||'http://localhost:3100',out=process.env.SCOUT_LIVE_REVIEW_DIR||join(tmpdir(),'aa-scout-live',origin.startsWith('https:')?'production':'local');await mkdir(out,{recursive:true});
-const report={origin,syntheticSessionHashes:[],checks:[],layouts:[],errors:[],console:[],failedAssets:[]},sleep=ms=>new Promise(r=>setTimeout(r,ms));
+let posts=0;const report={origin,syntheticSessionHashes:[],checks:[],layouts:[],errors:[],console:[],failedAssets:[]},sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const child=spawn(findChrome(),['--headless','--no-sandbox','--remote-debugging-port=19691','--user-data-dir='+out+'/profile','about:blank'],{stdio:'ignore'});let ws;
 try{
  let targets;for(let i=0;i<50;i++){try{targets=await(await fetch('http://localhost:19691/json')).json();if(targets.length)break;}catch{}await sleep(100);}assert(targets?.length);ws=new WebSocket(targets[0].webSocketDebuggerUrl);await new Promise((r,j)=>{ws.onopen=r;ws.onerror=j});let id=0;const pending=new Map();
- ws.onmessage=e=>{const m=JSON.parse(e.data);if(m.id){const p=pending.get(m.id);pending.delete(m.id);if(m.error)p.reject(m.error);else p.resolve(m.result);}if(m.method==='Runtime.exceptionThrown')report.errors.push(m.params.exceptionDetails);if(m.method==='Runtime.consoleAPICalled'&&m.params.type==='error')report.console.push(m.params.args);if(m.method==='Network.responseReceived'&&m.params.response.status>=400)report.failedAssets.push(m.params.response.url);};
+ ws.onmessage=e=>{const m=JSON.parse(e.data);if(m.id){const p=pending.get(m.id);pending.delete(m.id);if(m.error)p.reject(m.error);else p.resolve(m.result);}if(m.method==='Network.requestWillBeSent'&&m.params.request.url===origin+'/api/scout'&&m.params.request.method==='POST')posts++;if(m.method==='Runtime.exceptionThrown')report.errors.push(m.params.exceptionDetails);if(m.method==='Runtime.consoleAPICalled'&&m.params.type==='error')report.console.push(m.params.args);if(m.method==='Network.responseReceived'&&m.params.response.status>=400)report.failedAssets.push(m.params.response.url);};
  const send=(method,params={})=>new Promise((resolve,reject)=>{const i=++id;pending.set(i,{resolve,reject});ws.send(JSON.stringify({id:i,method,params}));});
  const ev=async expression=>{const r=await send('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});if(r.exceptionDetails)throw Error(JSON.stringify(r.exceptionDetails));return r.result.value;};
  const until=async expression=>{for(let i=0;i<350;i++){if(await ev(expression))return;await sleep(50)}throw Error('Timeout '+expression)};
@@ -38,7 +38,7 @@ try{
  // Explicit invocation only: this suite makes two real model requests.
  assert(['http://localhost:3100','https://the-augmented-architect-website-2.vercel.app'].includes(origin),'Use only the authorized website/local preview');
  await send('Page.enable');await send('Runtime.enable');await send('Network.enable');
- await send('Page.addScriptToEvaluateOnNewDocument',{source:"sessionStorage.setItem('aa.scout.introduction.v1','1')"});
+ await send('Page.addScriptToEvaluateOnNewDocument',{source:`if(location.origin===${JSON.stringify(origin)})sessionStorage.setItem('aa.scout.introduction.v1','1')`});
  const open=async()=>{await until("!!document.querySelector('[aria-label=\"Open Scout, AI Architecture Guide\"]')");await ev("document.querySelector('[aria-label=\"Open Scout, AI Architecture Guide\"]').click()");await until("!!document.querySelector('#scout-panel[open]')");};
  const close=async()=>{await ev("document.querySelector('[aria-label=\"Minimize Scout\"]').click()");await until("!document.querySelector('#scout-panel')");};
  for(const width of [1440,390]){
@@ -59,6 +59,19 @@ try{
   await ev("document.querySelector('#main-navigation a[href=\"/salesforce\"]').click()");await until("location.pathname==='/salesforce'");await open();check(await ev("document.querySelectorAll('#scout-panel [data-message-role]').length===2"),'Real transcript survives client navigation '+width);await close();
   await send('Page.reload');await until("document.readyState==='complete'");await open();await until("document.querySelectorAll('#scout-panel [data-message-role]').length===2&&!document.querySelector('#scout-draft').disabled");
   check(true,'Database transcript restored after refresh '+width);await close();
+  const sent=posts;
+  await send('Page.navigate',{url:'about:blank'});await until("location.href==='about:blank'");await nav('/');await open();
+  await until("document.querySelector('#scout-panel').textContent.includes('Welcome back!')&&!document.querySelector('#scout-panel [role=group] button:disabled)");
+  check(await ev("!document.querySelector('#scout-panel [role=log]')&&document.querySelectorAll('#scout-panel [role=group] button').length===2&&document.querySelector('#scout-draft').disabled"),'Returning Production visitor sees choice with no transcript '+width);
+  await ev("[...document.querySelectorAll('#scout-panel button')].find(b=>b.textContent==='Continue previous conversation').click()");await until("document.querySelectorAll('#scout-panel [role=log] [data-message-role]').length===2&&!document.querySelector('#scout-draft').disabled");
+  check(posts===sent,'Production Continue restores without another execution '+width);await close();
+  await send('Page.reload');await until("document.readyState==='complete'");await open();await until("document.querySelectorAll('#scout-panel [role=log] [data-message-role]').length===2&&!document.querySelector('#scout-draft').disabled");
+  check(posts===sent,'Refresh after Continue preserves active conversation '+width);await close();
+  await send('Page.navigate',{url:'about:blank'});await until("location.href==='about:blank'");await nav('/');await open();await until("document.querySelector('#scout-panel').textContent.includes('Welcome back!')&&!document.querySelector('#scout-panel [role=group] button:disabled)");
+  await ev("[...document.querySelectorAll('#scout-panel button')].find(b=>b.textContent==='Start a new conversation').click()");await until("document.querySelectorAll('#scout-panel [role=group] button').length===4&&!document.querySelector('#scout-draft').disabled");
+  const rotated=(await send('Network.getCookies',{urls:[origin]})).cookies.find(c=>c.name==='__Host-scout_session'||c.name==='scout_session');
+  check(rotated.value!==cookie.value&&posts===sent&&!await ev("!!document.querySelector('#scout-panel [role=log]')"),'Production Start New rotates securely and shows standard welcome '+width);await close();
+
  }
  check(report.errors.length===0,'No runtime errors');check(report.console.length===0,'No console errors');check(report.failedAssets.length===0,'No failed assets');await writeFile(out+'/results.json',JSON.stringify(report,null,2));console.log(JSON.stringify({checks:report.checks.length,errors:report.errors,console:report.console,failedAssets:report.failedAssets,out}));
 }finally{ws?.close();child.kill('SIGTERM');}

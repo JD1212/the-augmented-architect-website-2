@@ -78,6 +78,7 @@
 .feedback { margin-top: 18px; padding: 12px; border-left: 2px solid var(--blue); background: #ffffff40; font-size: 12px; line-height: 1.65; }
 .feedback a { display: inline-flex; gap: 8px; margin-top: 8px; text-decoration: underline; text-underline-offset: 3px; font-weight: 600; }
 .starter { text-align: left; }
+.choice { grid-template-columns: 1fr; }
 .newConversation, .retry { border: 0; padding: 0; background: transparent; color: var(--assistant-graphite); font: inherit; font-size: 11px; text-decoration: underline; text-underline-offset: 3px; }
 .newConversation { display: block; margin: -8px 0 16px auto; }
 .retry { margin-top: 8px; }

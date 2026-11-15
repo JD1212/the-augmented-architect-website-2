@@ -14,7 +14,7 @@ export function AssistantPanel({ onClose, conversation }: { onClose: (restoreFoc
   const feedbackRef = useRef<HTMLDivElement>(null);
   const reducedMotion = useReducedMotion();
   const sequence = useGreetingSequence(reducedMotion);
-  const { messages, draft, setDraft, partial, busy, loading, error, failed, send, reset } = conversation;
+  const { messages, draft, setDraft, partial, busy, loading, error, failed, returning, restoreFailed, send, reset, resume } = conversation;
   const hasConversation = messages.length > 0;
   const [closing, setClosing] = useState(false);
   const restoreFocusRef = useRef(true);
@@ -65,7 +65,7 @@ export function AssistantPanel({ onClose, conversation }: { onClose: (restoreFoc
         <p className={styles.kicker}>{copy.previewLabel}</p>
         {hasConversation && <button type="button" className={styles.newConversation} onClick={() => void reset()} disabled={busy || loading}>{copy.newConversationLabel}</button>}
         <div className={styles.messages} aria-label={copy.conversationLabel} role={hasConversation ? 'log' : undefined} aria-live={hasConversation ? 'polite' : undefined} aria-relevant="additions" aria-busy={busy}>
-          {!hasConversation ? <>
+          {returning ? <AssistantMessage message={{ id: 'returning', role: 'assistant', content: copy.returningGreeting }} /> : !hasConversation ? <>
             <AssistantMessage message={assistantWelcome[0]} visibleCharacters={sequence.characters} />
             {sequence.showSupport && <AssistantMessage message={assistantWelcome[1]} />}
           </> : <>
@@ -73,21 +73,25 @@ export function AssistantPanel({ onClose, conversation }: { onClose: (restoreFoc
             {partial && <AssistantMessage message={{ id: 'streaming', role: 'assistant', content: partial }} conversation />}
           </>}
         </div>
-        {!hasConversation && <div className={styles.starters} aria-label={copy.startersLabel} role="group">
-          {copy.starters.slice(0, sequence.starterCount).map((starter, index) => <button type="button" key={starter.href} disabled={busy || loading} onClick={() => void send(starter.message)} className={styles.starter}>
+        {returning && <div className={styles.starters} aria-label={copy.returningGreeting} role="group">
+          <button type="button" className={`${styles.starter} ${styles.choice}`} disabled={busy || loading} onClick={() => void resume()}>{copy.continueLabel}</button>
+          <button type="button" className={`${styles.starter} ${styles.choice}`} disabled={busy || loading} onClick={() => void reset()}>{copy.startNewLabel}</button>
+        </div>}
+        {!hasConversation && !returning && <div className={styles.starters} aria-label={copy.startersLabel} role="group">
+          {copy.starters.slice(0, sequence.starterCount).map((starter, index) => <button type="button" key={starter.href} disabled={busy || loading || restoreFailed} onClick={() => void send(starter.message)} className={styles.starter}>
             <span className={styles.starterIndex} aria-hidden="true">0{index + 1}</span><span>{starter.label}</span><span aria-hidden="true">↗</span>
           </button>)}
         </div>}
         {(busy || loading) && <p className={styles.replyStatus} role="status">{loading ? copy.restoreLabel : copy.thinking}</p>}
-        {error && <div className={styles.feedback} role="status"><p>{error}</p>{failed && <button type="button" className={styles.retry} disabled={busy || loading} onClick={() => void send(failed.message, true)}>{copy.retryLabel}</button>}</div>}
+        {error && <div className={styles.feedback} role="status"><p>{error}</p>{failed && <button type="button" className={styles.retry} disabled={busy || loading} onClick={() => void send(failed.message, true)}>{copy.retryLabel}</button>}{restoreFailed && !returning && <button type="button" className={styles.retry} disabled={busy || loading} onClick={() => void resume(false)}>{copy.restoreRetryLabel}</button>}</div>}
         <div ref={feedbackRef} />
       </div>
       <footer className={styles.composer}>
         <p id="scout-availability" className={styles.availability}>{copy.availability}</p>
         <form onSubmit={event => { event.preventDefault(); void send(); }}>
           <label htmlFor="scout-draft" className={styles.srOnly}>{copy.inputLabel}</label>
-          <input id="scout-draft" value={draft} onChange={event => setDraft(event.target.value)} placeholder={copy.placeholder} aria-describedby="scout-availability" autoComplete="off" maxLength={1000} disabled={busy || loading || !!failed} />
-          <button type="submit" disabled={!draft.trim() || busy || loading || !!failed} aria-label={copy.sendLabel}>
+          <input id="scout-draft" value={draft} onChange={event => setDraft(event.target.value)} placeholder={copy.placeholder} aria-describedby="scout-availability" autoComplete="off" maxLength={1000} disabled={busy || loading || !!failed || returning || restoreFailed} />
+          <button type="submit" disabled={!draft.trim() || busy || loading || !!failed || returning || restoreFailed} aria-label={copy.sendLabel}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 18V6M6 12L12 6L18 12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </button>
         </form>

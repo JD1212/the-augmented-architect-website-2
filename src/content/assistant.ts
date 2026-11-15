@@ -21,6 +21,10 @@ export const assistantContent = {
   conversationLabel: 'Conversation with Scout',
   senderLabels: { assistant: 'Scout', user: 'You' },
   restoreLabel: 'Restoring your conversation…',
+  returningGreeting: 'Welcome back! Would you like to continue our previous conversation or start something new?',
+  continueLabel: 'Continue previous conversation',
+  startNewLabel: 'Start a new conversation',
+  restoreRetryLabel: 'Try again',
   sessionRecoveryFailure: 'Scout could not establish a secure session. Please allow cookies for this site, then retry. Your message has been kept.',
   contactLabel: 'Go to Contact',
   starters: [
