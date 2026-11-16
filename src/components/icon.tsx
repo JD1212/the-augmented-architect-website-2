@@ -1,6 +1,7 @@
 import type { IconName } from '@/content/site';
 export function Icon({ name, className = '' }: { name: IconName; className?: string }) {
   const paths: Record<IconName, React.ReactNode> = {
+    microphone: <><rect x="11" y="3" width="10" height="17" rx="5" /><path d="M6 15v1a10 10 0 0 0 20 0v-1M16 26v5M11 31h10" /></>,
     layers: <><path d="m3 9 13-7 13 7-13 7Z" /><path d="m3 15 13 7 13-7M3 21l13 7 13-7" /></>,
     cloud: <path d="M9 25a7 7 0 0 1-1-14 9 9 0 0 1 17-1 7.5 7.5 0 0 1-1 15Z" />,
     bolt: <path d="m19 2-12 16h9l-3 12 12-18h-9Z" />,

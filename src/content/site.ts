@@ -1,5 +1,5 @@
 export type SiteLink = { label: string; href: string };
-export type IconName = 'layers' | 'cloud' | 'bolt' | 'chart' | 'code' | 'data';
+export type IconName = 'layers' | 'cloud' | 'bolt' | 'chart' | 'code' | 'data' | 'microphone';
 type DetailPage = { title: string; description: string; notice?: string };
 type SiteContent = {
   name: string; brandLines: string[]; monogram: string; url: string;

@@ -9,7 +9,7 @@ import styles from './editorial.module.css';
 export function AboutPage() {
   const hero = experience.about;
   return <main id="main">
-    <section className="secondary-hero section"><div className="container secondary-hero-grid"><div><p className="eyebrow">{hero.eyebrow}</p><h1>{hero.title}</h1><p className="hero-description">{hero.description}</p><Link className="text-link" href={hero.link.href}>{hero.link.label}<Arrow /></Link></div><ArchitectureDiagram /></div></section>
+    <section className={`secondary-hero section ${styles.aboutHero}`}><div className="container secondary-hero-grid"><div><p className="eyebrow">{hero.eyebrow}</p><h1>{hero.title}</h1><p className="hero-description">{hero.description}</p><Link className="text-link" href={hero.link.href}>{hero.link.label}<Arrow /></Link></div><ArchitectureDiagram /></div></section>
     <div className={`container ${styles.aboutBody}`}>
       <section className={styles.aboutIntroduction} aria-labelledby="about-company"><h2 id="about-company">{aboutEditorial.title}</h2><div className={styles.introduction}>{aboutEditorial.introduction.map(paragraph => <EditorialParagraph key={paragraph} text={paragraph} />)}</div></section>
       <EditorialSections sections={aboutEditorial.sections} />

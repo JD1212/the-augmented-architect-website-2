@@ -1,8 +1,8 @@
 /* Scoped editorial presentation; brand, typefaces and surfaces stay in shared tokens. */
-.page { padding-block: 36px 80px; }
+.page { padding-block: 30px 80px; }
 .breadcrumb { display:flex; flex-wrap:wrap; gap:12px; margin-bottom:28px; font-size:12px; color:var(--charcoal); }
 .breadcrumb a { color:var(--brand-blue); }
-.pageHeader { display:grid; grid-template-columns:1fr 1fr; gap:64px; padding-block:40px 56px; }
+.pageHeader { display:grid; grid-template-columns:1fr 1fr; gap:64px; padding-block:32px 48px; }
 .pageHeader h1 { font-size:clamp(38px,4vw,58px); margin-top:22px; }
 .introduction, .prose { color:var(--charcoal); font-size:17px; line-height:1.85; }
 .introduction > * + *, .prose > * + * { margin-top:18px; }
@@ -68,3 +68,14 @@
   .closing { padding:22px; }
   .aboutIntroduction { padding-bottom:32px; }
 }
+
+@media(min-width:901px) {
+  .aiPage .pageHeader h1 { font-size:clamp(35.7px,3.76vw,54.52px); }
+  .page .section { padding-block:44px; }
+}
+/* The existing About diagram receives a bounded contrast/accent treatment only. */
+.aboutHero :global(.architecture-diagram) { background:linear-gradient(140deg,#233642,var(--brand-navy)); border-color:color-mix(in srgb,var(--brand-cyan) 32%,var(--blue)); }
+.aboutHero :global(.diagram-connectors) { stroke:color-mix(in srgb,var(--brand-cyan) 55%,var(--blue)); }
+.aboutHero :global(.diagram-connectors circle), .aboutHero :global(.diagram-dot) { fill:var(--brand-cyan); background:var(--brand-cyan); }
+.aboutHero :global(.diagram-core) { border-color:color-mix(in srgb,var(--brand-cyan) 45%,var(--blue)); box-shadow:0 0 28px color-mix(in srgb,var(--brand-cyan) 9%,transparent),inset 0 1px 0 #ffffff18; }
+.aboutHero :global(.diagram-core-icon), .aboutHero :global(.diagram-foundation li > span) { color:color-mix(in srgb,var(--brand-cyan) 45%,var(--gray)); }

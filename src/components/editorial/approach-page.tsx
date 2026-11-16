@@ -6,7 +6,7 @@ import styles from './editorial.module.css';
 
 export function ApproachPage({ id }: { id: ApproachId }) {
   const page = approachPages[id];
-  return <main id="main" className={`container ${styles.page}`}>
+  return <main id="main" className={`container ${styles.page} ${id === 'ai-architecture' ? styles.aiPage : ''}`}>
     <nav aria-label={ourApproach.breadcrumbLabel} className={styles.breadcrumb}><Link href="/our-approach">{ourApproach.title}</Link><span aria-hidden="true">/</span><span aria-current="page">{page.label}</span></nav>
     <CategoryNavigation current={id} />
     <article>
