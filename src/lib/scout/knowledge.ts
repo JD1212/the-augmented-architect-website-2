@@ -5,11 +5,13 @@ import { salesforceOffering, salesforceFaq } from '@/content/salesforce';
 import { customApplications } from '@/content/custom-applications';
 import { businessFirst } from '@/content/business-first';
 import { experience } from '@/content/experience';
+import { editorialKnowledge } from '@/content/editorial';
 
 // Select text, not artwork/example metrics. The website remains the source of truth.
 export const scoutKnowledge = {
   homepage: { hero: site.hero, services: site.services, value: site.value, philosophy: experience.philosophy },
-  about: { ...site.pages.about, ...experience.about },
+  about: { ...site.pages.about, ...experience.about, ...editorialKnowledge.about },
+  approach: editorialKnowledge.approach,
   ai: { hero: aiSolutions.hero, capabilities: aiSolutions.capabilities, philosophy: aiSolutions.philosophy, faqs: aiSolutionsFaq, businessContext: businessFirst },
   salesforce: { hero: salesforceOffering.hero, architecture: salesforceOffering.architecture, tools: { description: salesforceOffering.tools.description, capabilities: salesforceOffering.tools.capabilities, context: salesforceOffering.tools.context, relationship: salesforceOffering.tools.relationship }, approach: salesforceOffering.approach, faqs: salesforceFaq },
   applications: { hero: customApplications.hero, solution: { description: customApplications.solution.description, layers: customApplications.solution.layers }, package: customApplications.package, assistant: customApplications.assistant, future: customApplications.future, faqs: customApplications.faq },

@@ -86,14 +86,14 @@ export const experience = {
   philosophy: {
     eyebrow: 'OUR PHILOSOPHY', title: 'Build for change, not for a particular technology.', emphasis: 'Build for change',
     description: 'The right architecture gives your business options. We build modular, maintainable foundations that can evolve as your needs—and the technology—change.',
-    link: { label: 'How we think about architecture', href: '/insights/philosophy' },
+    link: { label: 'How we think about architecture', href: '/our-approach/philosophy' },
     principles: ['Business needs before platform choices', 'Modular systems with clear responsibilities', 'AI with shared context and appropriate governance'],
   },
   insights: {
     eyebrow: 'IDEAS BEHIND THE SYSTEMS', title: 'Thoughtful architecture. Practical perspective.',
-    description: 'Explore the principles, decisions, and technology behind better business systems.', link: { label: 'Explore all Insights', href: '/insights' },
+    description: 'Explore the principles, decisions, and technology behind better business systems.', link: { label: 'Explore Our Approach', href: '/our-approach' },
     cards: [
-      { id: 'philosophy', title: insights.categories.philosophy.title, description: insights.categories.philosophy.summary, href: '/insights/philosophy' },
+      { id: 'philosophy', title: insights.categories.philosophy.title, description: insights.categories.philosophy.summary, href: '/our-approach/philosophy' },
       { id: 'ai-architecture', title: insights.categories['ai-architecture'].title, description: insights.categories['ai-architecture'].summary, href: '/ai-solutions' },
       { id: 'salesforce', title: insights.categories.salesforce.title, description: insights.categories.salesforce.summary, href: '/salesforce' },
       { id: 'custom-applications', title: 'Custom Applications', description: 'Custom applications, internal tools, and integrations designed around your business.', href: '/ai-solutions#ai-development-heading' },
@@ -110,7 +110,7 @@ export const experience = {
     description: 'We connect business goals with the systems, data, and technology needed to support them. Our approach is practical, technology-independent, and built around the ability to change.',
     principleTitle: 'A clear point of view. An open technology stack.',
     principleDescription: 'Custom software, Salesforce, n8n, Microsoft Copilot Studio, and AI runtimes can all have a place. The right combination depends on the process, the people, and the constraints—not a preference for one platform.',
-    link: { label: 'Read our philosophy', href: '/insights/philosophy' },
+    link: { label: 'Read our philosophy', href: '/our-approach/philosophy' },
   },
   inquiry: {
     eyebrow: 'START A CONVERSATION', title: 'Good systems start with the right questions.',

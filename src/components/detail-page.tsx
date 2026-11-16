@@ -1,13 +1,12 @@
 import Link from 'next/link';
 import { site } from '@/content/site';
 import { experience } from '@/content/experience';
-import { ArchitectureDiagram } from './architecture-diagram';
-import { ConsultationCta } from './consultation-cta';
+import { AboutPage } from './editorial/about-page';
 import { Arrow } from './icon';
 
 type Slug = 'about' | 'contact' | 'book';
 export function DetailPage({ slug }: { slug: Slug }) {
-  if (slug === 'about') return <main id="main"><section className="secondary-hero section"><div className="container secondary-hero-grid"><div><p className="eyebrow">{experience.about.eyebrow}</p><h1>{experience.about.title}</h1><p className="hero-description">{experience.about.description}</p><Link className="text-link" href={experience.about.link.href}>{experience.about.link.label}<Arrow /></Link></div><ArchitectureDiagram /></div></section><section className="section dark-section"><div className="container architecture-layout"><div><p className="eyebrow">{experience.philosophy.eyebrow}</p><h2>{experience.about.principleTitle}</h2><p>{experience.about.principleDescription}</p></div><ul className="principle-list">{experience.philosophy.principles.map(point => <li key={point}><span aria-hidden="true">↗</span>{point}</li>)}</ul></div></section><ConsultationCta /></main>;
+  if (slug === 'about') return <AboutPage />;
   const content = experience.inquiry;
   const booking = slug === 'book';
   const link = booking ? content.bookLink : content.contactLink;

@@ -50,7 +50,7 @@ try{
  await send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});await fresh('/');await until("!!document.querySelector('#scout-panel[open]')");check(await ev("getComputedStyle(document.querySelector('#scout-panel')).animationName==='none'&&document.querySelectorAll('#scout-panel [role=group] button').length===4"),'Reduced motion preserves complete greeting and interactions');await close();await send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'no-preference'}]});
  await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:legacy.identifier});
  const denied=await send('Page.addScriptToEvaluateOnNewDocument',{source:"Object.defineProperty(window,'sessionStorage',{get(){throw Error('denied')}})"});await nav('/');await until("!!document.querySelector('#scout-panel[open]')");check(true,'Homepage opening does not depend on session storage');await close();await send('Page.removeScriptToEvaluateOnNewDocument',{identifier:denied.identifier});
- const expected=['/insights/philosophy','/ai-solutions','/salesforce','/ai-solutions#ai-development-heading'];
+ const expected=['/our-approach/philosophy','/ai-solutions','/salesforce','/ai-solutions#ai-development-heading'];
  for(const width of [1440,1100,800,768,600,390,320]){
   await send('Emulation.setDeviceMetricsOverride',{width,height:1000,deviceScaleFactor:1,mobile:width<600});await nav('/');await until("!!document.querySelector('#scout-panel[open]')");await close();
   check(await ev("document.documentElement.scrollWidth===innerWidth"),'Homepage has no overflow '+width);

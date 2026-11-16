@@ -23,7 +23,7 @@ With a production preview running, use `node tests/runtime-comparison.browser.mj
 
 ## Edit the content
 
-Website shell text, navigation labels, button labels, preview labels, accessibility labels, page copy and SEO titles/descriptions are in **`src/content/site.ts`**. Insights copy and article content are in the dedicated files under `src/content/` described below. Its `SiteContent` type checks the structure. Edit quoted strings and keep the property names intact.
+Website shell text, navigation labels, button labels, preview labels, accessibility labels, page copy and SEO titles/descriptions are in **`src/content/site.ts`**. Our Approach and About editorial copy are in the dedicated files under `src/content/` described below. Its `SiteContent` type checks the structure. Edit quoted strings and keep the property names intact.
 
 - `hero`, `services`, `value`, `showcase`: homepage copy.
 - `navigation`, `consultation`: navigation and consultation links.
@@ -44,71 +44,42 @@ Website shell text, navigation labels, button labels, preview labels, accessibil
 
 The hero uses the approved `Glowing AI Workflow Network.png` artwork. The showcase uses labeled conceptual architecture diagrams. The header, footer and favicons use the new geometric interlocking AA identity. No screenshot is simulated as production UI. Replace the conceptual showcase visuals with independently supplied application captures when available. Booking, contact submission and live demos are not connected. Scout alone uses the dedicated database and OpenAI connection described below.
 
-## Insights and article publishing
+## Our Approach and About
 
-Insights lives at `/insights`, with category pages at `/insights/philosophy`, `/insights/ai-architecture` and `/insights/salesforce`. Edit introductions, category descriptions, the Philosophy page, empty states and navigation labels for this section in **`src/content/insights.ts`**. The main header link remains in `src/content/site.ts`.
+Our Approach lives at `/our-approach`, with three permanent pages:
+`/our-approach/philosophy`, `/our-approach/ai-architecture`, and
+`/our-approach/salesforce`. About remains separate at `/about`.
 
-The article registry starts empty. There are no placeholder articles, inferred publication dates or invented author profiles.
+- Edit the four pages, diagrams and concise Scout source summaries in
+  **`src/content/editorial.ts`**. Preserve the typed fields and approved facts.
+- The landing page reuses the three-card structure and navigation from
+  `src/content/insights.ts`. The legacy filename is internal; the public name is
+  Our Approach. Header/footer labels live in `src/content/site.ts`.
+- About's existing hero and conceptual architecture diagram remain in
+  `src/content/experience.ts`; its new company-focused body uses the editorial file.
+- `src/components/editorial/` contains the shared Server Components and scoped CSS
+  Module. Brand tokens and site typography remain in `src/app/globals.css`.
+- `src/lib/scout/knowledge.ts` selects concise approved summaries from the same
+  content source. It does not add full editorial pages to every agent request.
+- `next.config.ts` permanently redirects `/insights` and all nested paths to
+  `/our-approach`, retaining query parameters. Internal links, canonical metadata,
+  and sitemap entries use the new paths.
 
-### Add an article
+The pages have no article feeds, publication dates, or bylines. The empty, typed
+article registry and existing safe renderer remain available for compatibility;
+no articles or publishing schedule were introduced. Its detail URLs also move
+under `/our-approach/articles/`, with the same permanent legacy redirects.
 
-1. Create a TypeScript content file such as `src/content/articles/your-article.ts`. Use the `Article` type from `./types`:
-
-   ```ts
-   import type { Article } from './types';
-
-   export const article: Article = {
-     slug: 'your-article-slug',
-     title: 'Your approved article title',
-     category: 'philosophy',
-     summary: 'Your approved article summary for listings.',
-     seoDescription: 'Your approved search and social description.',
-     status: 'draft',
-     content: [
-       { type: 'paragraph', text: 'Your approved article text.' },
-     ],
-   };
-   ```
-
-2. Import that object in `src/content/articles/index.ts` and add it to `articles`:
-
-   ```ts
-   import type { Article } from './types';
-   import { article } from './your-article';
-
-   export const articles: readonly Article[] = [article];
-   ```
-
-3. Choose the category: `philosophy`, `ai-architecture`, or `salesforce`. Slugs must be unique across drafts and published articles, lowercase, and hyphenated. Keep slugs stable once published.
-4. Set `status: 'published'` only when the content is ready. Drafts have no public detail page, category card, related-article entry or sitemap entry.
-5. Add `publishedDate: 'YYYY-MM-DD'` only when you have an explicitly supplied publication date. Omit the property otherwise. No date or date metadata is generated by default.
-6. Run `npm run lint`, `node --test tests/insights.test.mjs` and `npm run build`. Content changes require a new build for production; no new React page component is needed.
-
-Supported content blocks are `paragraph` and `heading` (each with `text`), `quote` (with `text`), and `list` (with `items` and optional `ordered: true`). Text is rendered as text, not raw HTML. Blocks use article-level headings consistently under the page title.
-
-Registry order is the editorial listing order. Related articles use up to three other published articles in the same category. Unique article metadata, canonical URLs, Article Open Graph data, JSON-LD and sitemap entries are generated automatically. Structured data identifies the website as publisher without inventing an author. Set the existing `site.url` to the confirmed production origin before future publication.
-
-The Next.js Cache Components configuration requires a build-time parameter even when the registry is empty. The article route uses a private `__empty__` validation sentinel that resolves to the not-found page; it is never listed or included in the sitemap.
-
-### Insights implementation files
-
-- `src/content/insights.ts`: editable section and category copy, including Philosophy.
-- `src/content/articles/types.ts`, `src/content/articles/index.ts`: typed file-based publishing registry.
-- `src/lib/articles.ts`: validation, published-article selection, related articles and date formatting.
-- `src/lib/article-seo.ts`: article structured data.
-- `src/lib/metadata.ts`: shared metadata utility, extended for articles while retaining existing shell metadata.
-- `src/components/insights/`: reusable category navigation, category page, article cards, article lists and content renderer.
-- `src/app/insights/`: landing page, category routes, dynamic article route, article not-found state and scoped section stylesheet.
-- `tests/insights.test.mjs`: publishing and rendering checks using isolated test data, without adding articles to the site.
-
-The existing header and sitemap include the new section. The visual refinement adds homepage previews of the Philosophy and Insights content without changing the publishing architecture. No external services or dependencies were added.
-
+Run `npm run lint`, `npx tsc --noEmit`, `node --test tests/*.test.mjs`,
+`npm run build`, and `node tests/editorial.browser.mjs http://localhost:3100`
+against a running production build. GitHub main automatically deploys to the
+existing Vercel Production project after a verified release.
 
 ## Visual design and service pages
 
 The shared design system now covers the homepage, full AI Solutions and Salesforce service pages, and the About/Contact/Booking pages. The public palette display and generic home links have been removed. The desktop floating consultation button is omitted; the mobile action avoids duplicating a visible main consultation CTA.
 
-Edit the expanded homepage, diagrams, showcase, footer and secondary pages in `src/content/experience.ts`. The four homepage preview cards are configured in `experience.insights.cards`; Custom Applications currently links to the existing custom-development heading at `/ai-solutions#ai-development-heading`. This homepage card row is independent of the three Insights publishing categories. Edit service-page content in `src/content/service-pages.ts`. Core positioning and navigation remain in `src/content/site.ts`. All content remains local and typed.
+Edit the expanded homepage, diagrams, showcase, footer and secondary pages in `src/content/experience.ts`. The four homepage preview cards are configured in `experience.insights.cards`; Custom Applications currently links to the existing custom-development heading at `/ai-solutions#ai-development-heading`. This homepage card row is independent of the three permanent Our Approach pages. Edit service-page content in `src/content/service-pages.ts`. Core positioning and navigation remain in `src/content/site.ts`. All content remains local and typed.
 
 See [the design and asset guide](docs/design-refinement.md) for the visual rules, missing assets, and instructions for adding authentic application screenshots without altering their UI colors.
 

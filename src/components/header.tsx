@@ -14,7 +14,7 @@ export function Header() {
     <Link className="home-link" href="/" aria-label={site.accessibility.home} onClick={() => setOpen(false)}><Brand /></Link>
     <button ref={toggle} className="menu-toggle" aria-expanded={open} aria-controls="main-navigation" onClick={() => setOpen(value => !value)}>{site.accessibility.menu}<span aria-hidden="true">{open ? '−' : '+'}</span></button>
     <nav id="main-navigation" aria-label={site.accessibility.navigation} className={open ? 'navigation is-open' : 'navigation'}>
-      {site.navigation.map(link => <Link key={link.href} href={link.href} aria-current={pathname === link.href ? 'page' : link.href === '/insights' && pathname.startsWith('/insights/') ? 'location' : undefined} onClick={() => setOpen(false)}>{link.label}</Link>)}
+      {site.navigation.map(link => <Link key={link.href} href={link.href} aria-current={pathname === link.href ? 'page' : link.href === '/our-approach' && pathname.startsWith('/our-approach/') ? 'location' : undefined} onClick={() => setOpen(false)}>{link.label}</Link>)}
       <Link className="button header-cta" href={site.consultation.href} onClick={() => setOpen(false)}>{site.consultation.label}<Arrow /></Link>
     </nav>
   </div></header>;

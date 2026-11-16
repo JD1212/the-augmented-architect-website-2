@@ -82,7 +82,7 @@ export const aiSolutions: AiSolutionsContent = {
   philosophy: {
     eyebrow: 'OUR PHILOSOPHY', title: 'Build for change, not for a particular technology.',
     description: 'As code generation and automation tools improve, architecture matters more: clear boundaries, maintainability, and a deliberate integration strategy keep a business adaptable. We use both code and declarative tools, choosing the approach that serves the business need.',
-    link: { label: 'Explore our philosophy', href: '/insights/philosophy' },
+    link: { label: 'Explore our philosophy', href: '/our-approach/philosophy' },
   },
   consultation: {
     eyebrow: 'A FOUNDATION THAT CAN EVOLVE', title: "Let's design what comes next.",

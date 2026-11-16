@@ -16,7 +16,7 @@ export const site: SiteContent = {
   name: 'The Augmented Architect', brandLines: ['THE AUGMENTED', 'ARCHITECT'], monogram: 'AA',
   // Website 2.0 production origin; independent of the existing public domain.
   url: 'https://the-augmented-architect-website-2.vercel.app',
-  navigation: [{ label: 'AI Solutions', href: '/ai-solutions' }, { label: 'Salesforce', href: '/salesforce' }, { label: 'Custom Business Applications', href: '/custom-applications' }, { label: 'Insights', href: '/insights' }, { label: 'About', href: '/about' }, { label: 'Contact', href: '/contact' }],
+  navigation: [{ label: 'AI Solutions', href: '/ai-solutions' }, { label: 'Salesforce', href: '/salesforce' }, { label: 'Custom Business Applications', href: '/custom-applications' }, { label: 'Our Approach', href: '/our-approach' }, { label: 'About', href: '/about' }, { label: 'Contact', href: '/contact' }],
   consultation: { label: 'Book a Consultation', href: '/book' },
   accessibility: { skip: 'Skip to content', navigation: 'Main navigation', menu: 'Menu', home: 'The Augmented Architect home' },
   hero: {
@@ -24,7 +24,7 @@ export const site: SiteContent = {
     title: 'Architecture for the AI future.',
     description: "The future of business isn't a collection of disconnected AI tools. It's people, data, software, and intelligent agents working together. We help you design and build that foundation—using the right technology for your business, without locking you into yesterday's solutions.",
     secondary: { label: 'Explore Our Solutions', href: '/#services' },
-    philosophy: { label: 'Our philosophy', href: '/insights/philosophy' },
+    philosophy: { label: 'Our philosophy', href: '/our-approach/philosophy' },
   },
   services: [
     { title: 'Connected Business Systems', description: 'Build the foundation for AI-ready growth with integrations, workflows, and a unified customer context.', href: '/ai-solutions', icon: 'layers' },
@@ -43,7 +43,7 @@ export const site: SiteContent = {
     home: { title: 'Architecture for the AI future', description: 'Connected business systems, intelligent agents, and modern Salesforce foundations from The Augmented Architect.' },
     'ai-solutions': { title: 'AI Solutions', description: 'Build the foundation for AI-ready growth with connected business systems, integrations, and workflows.' },
     salesforce: { title: 'Salesforce Architecture Assessment & Modernization', description: 'Assess, clean up, and modernize Salesforce automation with hands-on architecture expertise, AI-assisted development, and proprietary managed tools. Start with one object.' },
-    about: { title: 'About', description: 'Learn about The Augmented Architect and our approach to connecting people, data, and AI.' },
+    about: { title: 'About The Augmented Architect', description: 'An independent consultancy led by JD Burkholder, connecting business systems, modernizing Salesforce, and helping smaller and mid-sized companies adopt practical AI.' },
     contact: { title: 'Contact', description: 'Contact information for The Augmented Architect. Inquiry setup is coming soon.' },
     book: { title: 'Book a Consultation', description: 'Book a free 30-minute video consultation with The Augmented Architect. Choose an available appointment and receive Google Meet details after confirmation.' },
   },

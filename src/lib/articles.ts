@@ -45,7 +45,7 @@ export function getRelatedArticles(article: Article): readonly Article[] {
 }
 
 export function articleHref(slug: string): string {
-  return `/insights/articles/${slug}`;
+  return `/our-approach/articles/${slug}`;
 }
 
 export function formatPublishedDate(date: string): string {

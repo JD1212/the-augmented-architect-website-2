@@ -1,7 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  async redirects() {
+    // Keep inbound links, nested article URLs and query parameters intact.
+    return [{ source: '/insights/:path*', destination: '/our-approach/:path*', permanent: true }];
+  },
   cacheComponents: true,
   outputFileTracingIncludes: { "/api/scout": ["./src/lib/scout/skills/consultation-scheduling/SKILL.md"] },
   partialPrefetching: true,

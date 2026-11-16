@@ -36,7 +36,7 @@ export default async function ArticlePage({ params }: Props) {
   const jsonLd = articleStructuredData(article, site.url, site.name);
   return (
     <main id="main" className="detail-page container insights-page">
-      <nav className="insights-breadcrumb" aria-label={insights.breadcrumbLabel}><ol><li><Link href="/insights">{insights.title}</Link></li><li><Link href={categoryHref(article.category)}>{category.title}</Link></li></ol></nav>
+      <nav className="insights-breadcrumb" aria-label={insights.breadcrumbLabel}><ol><li><Link href="/our-approach">{insights.title}</Link></li><li><Link href={categoryHref(article.category)}>{category.title}</Link></li></ol></nav>
       <article className="insights-article">
         <header className="insights-page-heading"><p className="eyebrow">{category.title}</p><h1>{article.title}</h1><p className="detail-description">{article.summary}</p>
           {article.publishedDate && <p className="insights-published">{insights.publishedLabel} <time dateTime={article.publishedDate}>{formatPublishedDate(article.publishedDate)}</time></p>}
