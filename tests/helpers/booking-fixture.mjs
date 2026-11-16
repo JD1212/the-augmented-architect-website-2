@@ -5,7 +5,7 @@ const {createBookingService}=loadScoutModule('src/lib/booking/service.ts',{},boo
 const {calendarEventId}=loadScoutModule('src/lib/booking/calendar.ts',{},bookingModuleCache);
 const policy={timezone:'America/New_York',hours:{1:[['09:00','17:00']]},bufferMinutes:15,noticeMinutes:120,horizonDays:30};
 const now=Date.parse('2026-11-15T12:00:00Z');
-export function bookingFixture(){
+export function bookingFixture(policyOverride=policy){
  const records=new Map(),events=new Map(),leads=new Set();let creates=0,failFinish=false,failReserve=false,failCreate=false,loseReply=false,meetPending=false,calendarFailure=false;
  let busy=[];
  const store={
@@ -16,5 +16,5 @@ export function bookingFixture(){
   async busy(){return [...records.values()].filter(r=>r.booking_state!=='failed').map(r=>({start:r.requested_start_at,end:r.booking_end_at}));},
  };
  const calendar={async busy(){if(calendarFailure)throw Error('Calendar down');return busy;},async get(id){if(calendarFailure)throw Error('Calendar down');return events.get(id)??null;},async create(id,i,end,fp){if(failCreate)throw Error('Calendar rejected');creates++;const e={id,status:'confirmed',start:{dateTime:i.start},end:{dateTime:end},extendedProperties:{private:{websiteBookingId:i.requestId,websiteBookingFingerprint:fp}},conferenceData:{entryPoints:meetPending?[]:[{entryPointType:'video',uri:'https://meet.google.com/abc-defg-hij'}]}};events.set(id,e);if(loseReply){loseReply=false;throw Error('Lost HTTP response');}return e;}};
- return {service:createBookingService(calendar,store,policy,'business-calendar',()=>now),records,events,leads,calendar,store,get creates(){return creates;},set busy(v){busy=v;},set failFinish(v){failFinish=v;},set failReserve(v){failReserve=v;},set failCreate(v){failCreate=v;},set loseReply(v){loseReply=v;},set meetPending(v){meetPending=v;},set calendarFailure(v){calendarFailure=v;}};
+ return {service:createBookingService(calendar,store,policyOverride,'business-calendar',()=>now),records,events,leads,calendar,store,get creates(){return creates;},set busy(v){busy=v;},set failFinish(v){failFinish=v;},set failReserve(v){failReserve=v;},set failCreate(v){failCreate=v;},set loseReply(v){loseReply=v;},set meetPending(v){meetPending=v;},set calendarFailure(v){calendarFailure=v;}};
 }

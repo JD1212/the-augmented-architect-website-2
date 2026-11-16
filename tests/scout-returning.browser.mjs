@@ -44,7 +44,8 @@ try{
  const server=createServer(async(req,res)=>{
   try{
    let response;
-   if(req.url==='/api/scout'){
+   if(req.url==='/api/scout/scheduling')response=Response.json({enabled:false,proposals:[],verificationRequired:false});
+   else if(req.url==='/api/scout'){
     const chunks=[];for await(const chunk of req)chunks.push(chunk);const body=Buffer.concat(chunks).toString();
     response=(req.method==='GET'&&failGet-->0)||(req.method==='DELETE'&&failDelete-->0)?Response.json({error:'Temporary test interruption'},{status:503}):await handlers[req.method](new Request(origin+req.url,{method:req.method,headers:req.headers,...(req.method==='POST'?{body}:{})}));
     if(req.method==='POST')attempts.push({status:response.status,turn:JSON.parse(body)});

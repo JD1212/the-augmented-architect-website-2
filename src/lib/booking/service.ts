@@ -5,6 +5,7 @@ import { calendarEventId, eventMatches, meetingUrl, type BookingCalendar } from 
 import { BookingError, type BookingInput, type BookingPolicy, type BookingResult } from './types';
 export type Reservation = { id: string; submission_reference: string; booking_payload_hash: string; booking_owner_hash: string; requested_start_at: string; booking_end_at: string; timezone: string; booking_state: string; calendar_event_id: string; calendar_meet_url: string | null };
 export interface BookingStore {
+  countDay?(date: string, timezone: string, calendarId: string): Promise<number>;
   find(reference: string, owner: string): Promise<Reservation | null>;
   reserve(input: BookingInput, owner: string, fingerprint: string, calendarId: string, end: string, buffer: number): Promise<Reservation>;
   claim(id: string, owner: string): Promise<string | null>;
@@ -17,8 +18,14 @@ export function createBookingService(calendar: BookingCalendar, store: BookingSt
     return {status:'confirmed',start:r.requested_start_at,end:r.booking_end_at,timezone:r.timezone,meetUrl:r.calendar_meet_url};
   };
   return {
-    async availability(date: string) {
+    async hasReservation(reference:string,owner:string){return !!await store.find(reference,owner);},
+    async availability(date: string, replacing?: {id:string;start:string}) {
       const slots = candidateSlots(date,policy,clock()); if (!slots.length) return [];
+      if (policy.dailyLimit && store.countDay) {
+        const count=await store.countDay(date,policy.timezone,calendarId);
+        const credit=replacing && localParts(Date.parse(replacing.start),policy.timezone).date===date ? 1 : 0;
+        if(count-credit>=policy.dailyLimit)return [];
+      }
       const start = new Date(Date.parse(slots[0].start)-policy.bufferMinutes*60000).toISOString(), end = new Date(Date.parse(slots.at(-1)!.end)+policy.bufferMinutes*60000).toISOString();
       const [calendarBusy,reservations] = await Promise.all([calendar.busy(start,end),store.busy(start,end,calendarId)]);
       return availableSlots(slots,[...calendarBusy,...reservations],policy.bufferMinutes);

@@ -3,6 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   cacheComponents: true,
+  outputFileTracingIncludes: { "/api/scout": ["./src/lib/scout/skills/consultation-scheduling/SKILL.md"] },
   partialPrefetching: true,
   turbopack: {
     rules: {

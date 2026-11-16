@@ -2,7 +2,7 @@ import 'server-only';
 import { createHash, randomBytes } from 'node:crypto';
 import { BookingError, parseBooking } from './types';
 import { bookingCopy } from '@/content/booking';
-import { localParts } from './policy';
+import { localParts, nextEligibleDate } from './policy';
 import type { createBookingService } from './service';
 import type { BookingPolicy } from './types';
 type Service = ReturnType<typeof createBookingService>;
@@ -23,7 +23,7 @@ export function createBookingHandlers(get: () => {service:Service;policy:Booking
         origin(request); const {service,policy} = get(); await limit(request,'read');
         const date = new URL(request.url).searchParams.get('date');
         const today = localParts(Date.now(),policy.timezone).date;
-        const response = Response.json({timezone:policy.timezone,today,lastDate:localParts(Date.now()+policy.horizonDays*86400000,policy.timezone).date,slots:date ? await service.availability(date) : []},{headers});
+        const response = Response.json({timezone:policy.timezone,today,initialDate:nextEligibleDate(policy),lastDate:localParts(Date.now()+policy.horizonDays*86400000,policy.timezone).date,slots:date ? await service.availability(date) : []},{headers});
         if (!token(request)) response.headers.set('Set-Cookie',`${name()}=${randomBytes(32).toString('base64url')}; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`);
         return response;
       } catch(e) { return error(e); }

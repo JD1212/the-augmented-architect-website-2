@@ -3,10 +3,12 @@ import { createHash } from 'node:crypto';
 import { BookingError, type BookingInput, type Busy, type Slot } from './types';
 import type { bookingConfig } from './config';
 type Config = ReturnType<typeof bookingConfig>;
-export type CalendarEvent = { id: string; status?: string; start?: { dateTime?: string }; end?: { dateTime?: string }; extendedProperties?: { private?: Record<string,string> }; conferenceData?: { createRequest?: { status?: { statusCode?: string } }; entryPoints?: { entryPointType: string; uri: string }[] } };
+export type CalendarEvent = { id: string; status?: string; etag?:string; start?: { dateTime?: string }; end?: { dateTime?: string }; extendedProperties?: { private?: Record<string,string> }; conferenceData?: { createRequest?: { status?: { statusCode?: string } }; entryPoints?: { entryPointType: string; uri: string }[] } };
 export interface BookingCalendar {
   busy(start: string, end: string): Promise<Busy[]>;
   get(id: string): Promise<CalendarEvent | null>;
+  cancel?(id:string,etag:string):Promise<void>;
+  reschedule?(id:string,etag:string,start:string,end:string,operation:string,properties?:Record<string,string>):Promise<CalendarEvent>;
   create(id: string, input: BookingInput, end: string, fingerprint: string): Promise<CalendarEvent>;
 }
 export const calendarEventId = (calendar: string, requestId: string) => createHash('sha256').update(`consultation:v1:${calendar}:${requestId}`).digest('hex');
@@ -40,8 +42,16 @@ export function createGoogleCalendar(config: Config, request: typeof fetch = fet
       return calendar.busy.map((v: Busy) => ({start:v.start,end:v.end}));
     },
     async get(id) {
-      const response = await call(eventPath(id)); if (response.status === 404) return null;
+      const response = await call(eventPath(id)); if (response.status === 404) return null; if(response.status===410)return {id,status:'cancelled'};
       if (!response.ok) throw unavailable(); return response.json();
+    },
+    async cancel(id,etag) {
+      const response=await call(eventPath(id)+'?sendUpdates=all',{method:'DELETE',headers:{'If-Match':etag}});
+      if(!response.ok && ![404,410].includes(response.status))throw unavailable();
+    },
+    async reschedule(id,etag,start,end,operation,properties) {
+      const response=await call(eventPath(id)+'?conferenceDataVersion=1&sendUpdates=all',{method:'PATCH',headers:{'If-Match':etag},body:JSON.stringify({start:{dateTime:start,timeZone:config.policy.timezone},end:{dateTime:end,timeZone:config.policy.timezone},extendedProperties:{private:{...properties,websiteManagementOperation:operation}}})});
+      if(!response.ok)throw unavailable(); return response.json();
     },
     async create(id,input,end,fingerprint) {
       const response = await call(`calendars/${encodeURIComponent(config.calendarId)}/events?conferenceDataVersion=1&sendUpdates=all`,{method:'POST',body:JSON.stringify({id,summary:'Free consultation — The Augmented Architect',description:input.description || '30-minute project consultation.',start:{dateTime:input.start,timeZone:config.policy.timezone},end:{dateTime:end,timeZone:config.policy.timezone},attendees:[{email:input.email,displayName:input.name}],extendedProperties:{private:{websiteBookingId:input.requestId,websiteBookingFingerprint:fingerprint}},conferenceData:{createRequest:{requestId:id,conferenceSolutionKey:{type:'hangoutsMeet'}}}})});

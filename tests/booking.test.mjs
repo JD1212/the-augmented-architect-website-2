@@ -75,9 +75,9 @@ test('Google adapter uses freeBusy, attendee invitation, deterministic event ID 
 test('approved Costa Rica schedule is weekdays 10–16, no weekends, last call finishes at 16',()=>{
  const {consultationSettings}=loadScoutModule('src/lib/booking/settings.ts');const p=consultationSettings.policy;
  assert.equal(consultationSettings.calendarId,'jd@theaugmentedarchitect.com');assert.equal(p.timezone,'America/Costa_Rica');assert.equal(p.bufferMinutes,15);
- for(const date of ['2026-11-16','2026-11-17','2026-11-18','2026-11-19','2026-11-20']){const slots=candidateSlots(date,p,now);assert.equal(slots.length,23);assert.equal(localParts(Date.parse(slots[0].start),p.timezone).time,'10:00');assert.equal(localParts(Date.parse(slots.at(-1).start),p.timezone).time,'15:30');assert(slots.every(s=>localParts(Date.parse(s.end),p.timezone).time<='16:00'));}
+ for(const date of ['2026-11-16','2026-11-17','2026-11-18','2026-11-19','2026-11-20']){const slots=candidateSlots(date,p,now);assert.equal(slots.length,4);assert.equal(localParts(Date.parse(slots[0].start),p.timezone).time,'10:00');assert.equal(localParts(Date.parse(slots.at(-1).start),p.timezone).time,'15:00');assert(slots.every(s=>localParts(Date.parse(s.end),p.timezone).time<='16:00'));}
  for(const date of ['2026-11-21','2026-11-22'])assert.equal(candidateSlots(date,p,now).length,0);
- const slots=candidateSlots('2026-11-16',p,now),busy=[slots[0]];const free=availableSlots(slots,busy,15);assert.equal(localParts(Date.parse(free[0].start),p.timezone).time,'10:45');
+ const slots=candidateSlots('2026-11-16',p,now),busy=[slots[0]];const free=availableSlots(slots,busy,15);assert.equal(localParts(Date.parse(free[0].start),p.timezone).time,'11:30');
 });
 
 test('a reservation from another booking owner never exposes its confirmation',async()=>{

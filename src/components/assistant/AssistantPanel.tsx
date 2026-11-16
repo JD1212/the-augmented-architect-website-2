@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { assistantContent as copy, assistantWelcome } from '@/content/assistant';
+import { ScoutScheduling } from './ScoutScheduling';
 import { AssistantAvatar } from './AssistantAvatar';
 import { AssistantMessage } from './AssistantMessage';
 import { useGreetingSequence, useReducedMotion } from './useAssistant';
@@ -87,6 +88,7 @@ export function AssistantPanel({ onClose, conversation }: { onClose: (restoreFoc
         </div>}
         {(busy || loading) && <p className={styles.replyStatus} role="status">{loading ? copy.restoreLabel : copy.thinking}</p>}
         {error && <div className={styles.feedback} role="status"><p>{error}</p>{failed && <button type="button" className={styles.retry} disabled={busy || loading} onClick={() => void send(failed.message, true)}>{copy.retryLabel}</button>}{restoreFailed && !returning && <button type="button" className={styles.retry} disabled={busy || loading} onClick={() => void resume(false)}>{copy.restoreRetryLabel}</button>}</div>}
+        {hasConversation && !returning && !loading && <ScoutScheduling revision={`${messages.at(-1)?.id ?? ''}:${busy}`} disabled={busy || loading || !!failed} onSend={send} />}
         <div ref={feedbackRef} />
       </div>
       <footer className={styles.composer}>

@@ -28,7 +28,7 @@ export function candidateSlots(date: string, policy: BookingPolicy, now = Date.n
   for (let start = midnight-14*3600000; start < midnight+38*3600000; start += 60000) {
     if (start < now+policy.noticeMinutes*60000 || start > now+policy.horizonDays*86400000) continue;
     const a = localParts(start,policy.timezone), b = localParts(start+30*60000,policy.timezone);
-    if (a.date !== date || b.date !== date) continue;
+    if (a.date !== date || b.date !== date || (policy.candidateTimes && !policy.candidateTimes.includes(a.time))) continue;
     if ((policy.hours[day] ?? []).some(([from,to]) => {
       const minutes = (t: string) => Number(t.slice(0,2))*60+Number(t.slice(3));
       return a.time >= from && b.time <= to && minutes(b.time)-minutes(a.time) === 30 && (minutes(a.time)-minutes(from))%15 === 0;
@@ -38,4 +38,13 @@ export function candidateSlots(date: string, policy: BookingPolicy, now = Date.n
 }
 export function availableSlots(slots: Slot[], busy: Busy[], buffer: number) {
   return slots.filter(slot => !busy.some(b => Date.parse(slot.start)-buffer*60000 < Date.parse(b.end) && Date.parse(slot.end)+buffer*60000 > Date.parse(b.start)));
+}
+
+export function nextEligibleDate(policy: BookingPolicy, now = Date.now()) {
+  const today = localParts(now, policy.timezone).date;
+  for (let day = 0; day <= policy.horizonDays; day++) {
+    const date = new Date(Date.parse(today+'T12:00:00Z')+day*86400000).toISOString().slice(0,10);
+    if (candidateSlots(date,policy,now).length) return date;
+  }
+  return today;
 }

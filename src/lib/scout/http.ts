@@ -1,4 +1,6 @@
 import 'server-only';
+import { schedulingEnabled, schedulingService } from '@/lib/booking/scheduling-server';
+import { BookingError } from '@/lib/booking/types';
 import { createHash, randomBytes } from 'node:crypto';
 import { scoutLimits } from './contracts';
 import { ScoutError, temporaryFailure } from './errors';
@@ -95,6 +97,7 @@ export function createScoutHandlers(getService: () => Service, limit: RequestLim
         if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new ScoutError(400, 'Please enter a valid message.');
         const input = parsed as Record<string, unknown>;
         if (Object.keys(input).some(key => !['message', 'clientTurnId'].includes(key)) || typeof input.message !== 'string' || !input.message.trim() || input.message.trim().length > scoutLimits.inputCharacters || typeof input.clientTurnId !== 'string' || !uuid.test(input.clientTurnId)) throw new ScoutError(400, 'Please enter a message under 1,000 characters.');
+        if(schedulingEnabled()){try{await schedulingService().verification.blockCodeInChat(digest(token),input.message.trim());}catch(error){if(error instanceof BookingError)throw new ScoutError(error.status,error.message);throw error;}}
         const prepared = await getService().prepare(digest(token), input.message.trim(), input.clientTurnId);
         const controller = new AbortController();
         const signal = AbortSignal.any([request.signal, controller.signal, AbortSignal.timeout(scoutLimits.executionMs)]);
