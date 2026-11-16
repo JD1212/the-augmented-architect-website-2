@@ -1,5 +1,5 @@
 // Real React UI and real browser cookie jar against actual HTTP/service handlers.
-// Only model and storage are fixtures; no window.fetch replacement or customer data.
+// Read-only smoke against the real deployed/local booking UI. Never submits a booking.
 // Set CHROME_BIN if Chromium is not installed in a standard browser/Playwright location.
 import {spawn} from 'node:child_process';
 import {existsSync, readdirSync} from 'node:fs';
@@ -47,10 +47,15 @@ try{
  for(const width of [1440,390]){
   const zone=width===1440?'America/Los_Angeles':'Asia/Tokyo';await send('Emulation.setTimezoneOverride',{timezoneId:zone});await send('Emulation.setDeviceMetricsOverride',{width,height:width===390?844:1000,deviceScaleFactor:1,mobile:width===390});await nav('/');
   if(width===390)await click('.menu-toggle');await click('#main-navigation a.header-cta');await ready();check(true,'Production header opens enabled shared booking '+width);
-  await set('#consultation-booking input[name=date]','2026-11-16');await until("document.querySelectorAll('#consultation-booking select[name=time] option').length>1&&!document.querySelector('#consultation-booking fieldset').disabled");
+  const metadata=await ev("fetch('/api/booking',{cache:'no-store'}).then(r=>r.json())");
+  const eligible=metadata.initialDate??metadata.today;
+  check(await ev(`document.querySelector('#consultation-booking input[name=date]').value===${JSON.stringify(eligible)}`),'Next eligible date selected automatically '+width);
+  await set('#consultation-booking input[name=date]',eligible);await until("document.querySelectorAll('#consultation-booking button[data-slot]').length>0&&!document.querySelector('#consultation-booking fieldset').disabled");
   check(await ev(`document.querySelector('#consultation-booking select[name=timezone]').value===${JSON.stringify(zone)}`),'Visitor timezone detected '+width);
-  check(await ev("[...document.querySelectorAll('#consultation-booking select[name=time] option')].some(o=>o.value==='2026-11-16T16:00:00.000Z')"),'Real approved-calendar availability loads '+width);
-  check(await ev(width===1440?"[...document.querySelectorAll('#consultation-booking select[name=time] option')].find(o=>o.value==='2026-11-16T16:00:00.000Z').textContent.includes('8:00')":"[...document.querySelectorAll('#consultation-booking select[name=time] option')].find(o=>o.value==='2026-11-16T16:00:00.000Z').textContent.includes('Nov 17')"),'Time/date convert clearly for visitor '+width);
+  const slots=await ev("[...document.querySelectorAll('#consultation-booking button[data-slot]')].map(b=>({start:b.dataset.slot,label:b.textContent}))");
+  check(slots.length>0&&slots.length<=4&&slots.every(slot=>['10:00','11:30','13:30','15:00'].includes(new Intl.DateTimeFormat('en-GB',{timeZone:'America/Costa_Rica',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(slot.start)))),'Real approved-calendar fixed-window availability loads '+width);
+  const expected=new Intl.DateTimeFormat('en',{timeZone:zone,month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZoneName:'shortOffset'}).format(new Date(slots[0].start));
+  check(slots[0].label===expected,'Time/date convert clearly for visitor '+width);
   check(await ev("!document.querySelector('#consultation-booking input[type=checkbox]').checked&&document.querySelector('#consultation-booking button[type=submit]').disabled"),'No appointment without explicit confirmation '+width);
   check(await ev("(()=>{const p=document.querySelector('#consultation-booking'),r=p.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight&&p.scrollWidth<=p.clientWidth})()"),'Production dialog fits viewport '+width);await shot('production-booking-'+width);await close();
   check(await ev(width===390?"document.activeElement.matches('.menu-toggle')":"document.activeElement.matches('#main-navigation a.header-cta')"),'Closing restores appropriate trigger focus '+width);
