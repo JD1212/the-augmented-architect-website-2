@@ -3,11 +3,13 @@ export type AssistantStarter = { label: string; href: string; message: string };
 /** All public Scout interface copy lives here. */
 export const assistantContent = {
   name: 'Scout',
-  subtitle: 'AI Architecture Guide',
+  subtitle: 'Your AI website guide',
   launcherLabel: 'Open Scout, AI Architecture Guide',
   closeLabel: 'Minimize Scout',
-  greeting: 'Welcome! What brings you here today?',
-  supporting: 'I can help you explore the right technology for your business.',
+  greeting: "Hi, I'm Scout. Welcome!",
+  supporting: 'I can help you explore our services, answer questions about what we build, and find the right solution for your business.',
+  schedulingWelcome: "When you're ready, I can also schedule, reschedule, or cancel your free 30-minute consultation.",
+  welcomeClosing: 'Just ask me anything.',
   startersLabel: 'Explore a starting point',
   previewLabel: 'A starting point for your next idea',
   availability: 'Scout can make mistakes. Please don’t share sensitive information.',
@@ -42,11 +44,16 @@ export const assistantContent = {
   sessionRecoveryFailure: 'Scout could not establish a secure session. Please allow cookies for this site, then retry. Your message has been kept.',
   contactLabel: 'Go to Contact',
   bookingLinkLabel: 'Book Consultation',
+  bookingEntry: {
+    introduction: "I'd be happy to schedule your free 30-minute consultation! Just tell me your name, email address, and a day and time that works for you. I'll check availability and take care of the rest.",
+    manual: 'Use the booking form instead',
+    tooLong: 'Please shorten your booking details slightly, then send again. Your draft has been kept.',
+  },
   starters: [
-    { label: 'Explore AI solutions', href: '/ai-solutions', message: 'How can AI help my business, and where should I start?' },
-    { label: 'Salesforce consulting', href: '/salesforce', message: 'How can you help modernize our Salesforce org?' },
-    { label: 'Custom software', href: '/ai-solutions#capabilities', message: 'What do your custom business applications include, and how much do they cost?' },
-    { label: 'Discuss my project', href: '/contact', message: 'I would like to discuss a project. What would be useful to tell you first?' },
+    { label: 'What can you build for my business?', href: '/custom-applications', message: 'What can you build for my business?' },
+    { label: 'Tell me about your AI solutions', href: '/ai-solutions', message: 'Tell me about your AI solutions' },
+    { label: 'How do you modernize Salesforce?', href: '/salesforce', message: 'How do you modernize Salesforce?' },
+    { label: 'Book a free consultation', href: '/book', message: 'Book a free consultation' },
   ] satisfies AssistantStarter[],
 } as const;
 
@@ -60,4 +67,6 @@ export type AssistantMessageData = {
 export const assistantWelcome: readonly AssistantMessageData[] = [
   { id: 'welcome', role: 'assistant', content: assistantContent.greeting },
   { id: 'supporting', role: 'assistant', content: assistantContent.supporting },
+  { id: 'scheduling', role: 'assistant', content: assistantContent.schedulingWelcome },
+  { id: 'invitation', role: 'assistant', content: assistantContent.welcomeClosing },
 ];

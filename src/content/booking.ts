@@ -2,6 +2,7 @@
 export const bookingCopy = {
   title: 'Book a Free Consultation',
   introduction: "Let's discuss your project in a free 30-minute video call.",
+  manual: 'Use the booking form instead',
   open: 'Book Consultation', close: 'Close consultation booking',
   name: 'Name', email: 'Email', date: 'Preferred date', timezone: 'Your timezone',
   time: 'Available time', description: 'Brief project description (optional)',

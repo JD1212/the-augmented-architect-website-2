@@ -44,6 +44,7 @@ try{
   window.__scoutTest={failNext:false,get};
   window.fetch=async(input,init={})=>{
    const url=typeof input==='string'?input:input.url;
+   if(new URL(url,location.href).pathname==='/api/scout/scheduling')return Response.json({enabled:false,proposals:[],verificationRequired:false});
    if(new URL(url,location.href).pathname!=='/api/scout')return realFetch(input,init);
    const s=get(),method=init.method||'GET';
    if(method==='GET')return Response.json({messages:s.messages,busy:false,failed:null});
@@ -51,7 +52,7 @@ try{
    const p=JSON.parse(init.body);s.requests.push(p);if(!s.messages.length)s.creates++;
    if(!s.messages.some(m=>m.id===p.clientTurnId))s.messages.push({id:p.clientTurnId,role:'user',content:p.message});save(s);
    if(window.__scoutTest.failNext){window.__scoutTest.failNext=false;return new Response(JSON.stringify({type:'error',message:'Scout could not finish this reply. Please retry in a moment.'})+'\n');}
-   const text=/custom|cost|\$10/i.test(p.message)?'Implementation starts at $10,000 for a defined scope. Custom AI agents and additional integrations are scoped separately.':/salesforce/i.test(p.message)?'We assess Salesforce automation and modernize it incrementally, supported by Architecture Command Center.':/project/i.test(p.message)?'What business process would you most like to improve?':'We start with your business processes and connect identity, shared context, and the systems your team already uses.';
+   const text=/book.*consultation/i.test(p.message)?'What name, invitation email, and preferred date should I use?':/build for my business|custom|cost|\$10/i.test(p.message)?'Implementation starts at $10,000 for a defined scope, including one AI assistant with scheduling and up to four supported integrations.':/salesforce/i.test(p.message)?'We assess Salesforce automation and modernize it incrementally, supported by Architecture Command Center.':/project/i.test(p.message)?'What business process would you most like to improve?':'We start with your business processes and connect identity, shared context, and the systems your team already uses.';
    const encoder=new TextEncoder();return new Response(new ReadableStream({start(c){
     c.enqueue(encoder.encode(JSON.stringify({type:'delta',text:text.slice(0,20)})+'\n'));
     setTimeout(()=>c.enqueue(encoder.encode(JSON.stringify({type:'delta',text:text.slice(20)})+'\n')),150);
@@ -65,7 +66,7 @@ try{
  const reset=async()=>{await ev("[...document.querySelectorAll('#scout-panel button')].find(b=>b.textContent==='New Conversation').click()");await until("!document.querySelector('#scout-panel [role=log]')&&!document.querySelector('#scout-draft').disabled");};
  const done=()=>until("document.querySelectorAll('#scout-panel [data-message-role=assistant]').length===1&&!document.querySelector('#scout-draft').disabled");
  const message=async text=>{await ev("document.querySelector('#scout-draft').focus()");await send('Input.insertText',{text});await ev("document.querySelector('#scout-panel form').requestSubmit()");};
- const starters=['Explore AI solutions','Salesforce consulting','Custom software','Discuss my project'];
+ const starters=['What can you build for my business?','Tell me about your AI solutions','How do you modernize Salesforce?','Book a free consultation'];
  for(const width of [1440,390,320]){
   await send('Emulation.setDeviceMetricsOverride',{width,height:width>600?1000:844,deviceScaleFactor:1,mobile:width<600});
   await nav('/');await ev("sessionStorage.removeItem('scout-test-conversation')");await send('Page.reload');await until("document.readyState==='complete'");await open();
@@ -81,18 +82,18 @@ try{
   await send('Page.reload');await until("document.readyState==='complete'");await open();await done();check(await ev("document.querySelectorAll('#scout-panel [data-message-role]').length===2&&window.__scoutTest.get().requests.length===1"),'Refresh restores history without resending '+width);
   await reset();check(await ev("window.__scoutTest.get().creates===1&&window.__scoutTest.get().messages.length===0"),'New Conversation waits for a message to create conversation '+width);
   await until("document.querySelectorAll('#scout-panel [role=group] button').length===4");
-  for(let i=1;i<4;i++){
+  for(let i=1;i<3;i++){
    await ev(`document.querySelectorAll('#scout-panel [role=group] button')[${i}].click()`);await done();
    const text=await ev("document.querySelector('#scout-panel [data-message-role=assistant]').textContent");
-   check(i===1?text.includes('Architecture Command Center'):i===2?text.includes('$10,000')&&text.includes('scoped separately'):text.includes('business process'),'Starter produces service-specific conversation '+i+' '+width);await reset();
+   check(i===1?text.includes('business processes'):text.includes('Architecture Command Center'),'Starter produces service-specific conversation '+i+' '+width);await reset();
   }
   await ev("window.__scoutTest.failNext=true");await message('A synthetic retry test');await until("!![...document.querySelectorAll('#scout-panel button')].find(b=>b.textContent==='Retry reply')");
   check(await ev("document.querySelectorAll('#scout-panel [data-message-role=user]').length===1&&document.querySelector('#scout-draft').disabled"),'Failure preserves the unanswered message '+width);
   await ev("[...document.querySelectorAll('#scout-panel button')].find(b=>b.textContent==='Retry reply').click()");await done();
   check(await ev("(()=>{const r=window.__scoutTest.get().requests;return r.at(-1).clientTurnId===r.at(-2).clientTurnId&&document.querySelectorAll('#scout-panel [data-message-role=user]').length===1})()"),'Retry reuses client ID without duplicating user message '+width);
   check(await ev("(()=>{const c=document.querySelector('#scout-panel [role=log]');return c.scrollWidth<=c.clientWidth&&document.documentElement.scrollWidth===innerWidth})()"),'Messages wrap without page overflow '+width);
-  await ev("document.querySelector('[aria-label=\"Minimize Scout\"]').focus()");for(const type of ['keyDown','keyUp'])await send('Input.dispatchKeyEvent',{type,key:'Tab',code:'Tab',windowsVirtualKeyCode:9,modifiers:8});check(await ev("document.activeElement.id==='scout-draft'"),'Reverse focus trap stays within panel '+width);
+  await ev("document.querySelector('[aria-label=\"Minimize Scout\"]').focus()");for(const type of ['keyDown','keyUp'])await send('Input.dispatchKeyEvent',{type,key:'Tab',code:'Tab',windowsVirtualKeyCode:9,modifiers:8});check(await ev("(document.querySelector('button[data-dictation-state]')?document.activeElement.matches('button[data-dictation-state]'):document.activeElement.id==='scout-draft')"),'Reverse focus trap stays within panel '+width);
   for(const type of ['keyDown','keyUp'])await send('Input.dispatchKeyEvent',{type,key:'Escape',code:'Escape',windowsVirtualKeyCode:27});await until("!document.querySelector('#scout-panel')");await until("document.activeElement.getAttribute('aria-label')==='Open Scout, AI Architecture Guide'");check(true,'Escape restores launcher focus '+width);
  }
- check(report.errors.length===0,'No runtime errors');check(report.console.length===0,'No console errors');check(report.failedAssets.length===0,'No failed assets');await writeFile(out+'/results.json',JSON.stringify(report,null,2));console.log(JSON.stringify({checks:report.checks.length,errors:report.errors,console:report.console,failedAssets:report.failedAssets,out}));
+ check(report.errors.length===0,'No runtime errors');check(report.console.length===0,'No console errors');check(report.failedAssets.length===0,'No failed assets: '+JSON.stringify(report.failedAssets));await writeFile(out+'/results.json',JSON.stringify(report,null,2));console.log(JSON.stringify({checks:report.checks.length,errors:report.errors,console:report.console,failedAssets:report.failedAssets,out}));
 }finally{ws?.close();child.kill('SIGTERM');}

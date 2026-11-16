@@ -5,6 +5,15 @@ draft and never sends it. Tap once to start and again to stop; use Send normally
 Existing typed text is retained, interim results replace their own speech span,
 and manual edits take precedence over subsequent recognition corrections.
 
+During listening, a horizontal waveform visually replaces the live text. The
+same draft continues updating underneath; stopping reveals the complete editable
+transcript. Focusing the input also reveals it for editing. A separate, local
+Web Audio analyser uses actual microphone RMS amplitude for bar height, without
+recording, playback or transmission. If metering is unavailable or denied, only
+a small baseline ripple is shown. Meter tracks/context are released on stop or
+unmount, including late permission resolution. Reduced motion uses static bars
+and does not acquire a visual-meter stream. Recognition and send logic are unchanged.
+
 The small microphone appears only when `SpeechRecognition` or
 `webkitSpeechRecognition` is available. Permission is requested by the browser on
 an explicit tap. Recognition errors leave typing available. Startup, silence and

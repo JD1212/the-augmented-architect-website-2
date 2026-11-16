@@ -62,7 +62,8 @@ test('permission denial, service/network errors, and startup exceptions preserve
 });
 test('silence and missing browser end events cannot leave recognition stuck', async () => {
   const f=fixture({timeouts:{startup:15,silence:15,stop:15}});f.controller.start('Kept');f.instances[0].onstart();
-  await new Promise(r=>setTimeout(r,55));assert.equal(f.errors.at(-1),'noSpeech');assert.equal(f.statuses.at(-1),'idle');assert.equal(f.instances[0].stops,1);assert.equal(f.instances[0].aborts,1);assert.equal(f.changes.length,0);
+  // Give the silence callback and its subsequently scheduled stop fallback separate turns.
+  await new Promise(r=>setTimeout(r,20));await new Promise(r=>setTimeout(r,20));assert.equal(f.errors.at(-1),'noSpeech');assert.equal(f.statuses.at(-1),'idle');assert.equal(f.instances[0].stops,1);assert.equal(f.instances[0].aborts,1);assert.equal(f.changes.length,0);
   f.controller.start('Kept');await new Promise(r=>setTimeout(r,25));assert.equal(f.errors.at(-1),'unavailable');assert.equal(f.statuses.at(-1),'idle');f.controller.dispose();
 });
 test('cancel/dispose abort once, detach callbacks, and reject stale events after send, navigation or unmount', () => {
