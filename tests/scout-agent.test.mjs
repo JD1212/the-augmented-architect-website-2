@@ -5,7 +5,7 @@ import { loadScoutModule } from './helpers/scout-loader.mjs';
 
 test('official Agents SDK consumes mocked Responses API streaming with bounded execution and no tools/tracing', async () => {
   const requests=[];
-  const text='Implementations start at $10,000 for a defined scope. Custom AI agents are scoped separately.';
+  const text='Implementations start at $10,000 for a defined scope, including one customer-facing AI assistant with real appointment scheduling. Additional agents and advanced workflows are scoped separately.';
   const message={id:'msg_mock',type:'message',role:'assistant',status:'completed',content:[{type:'output_text',text,annotations:[]}]};
   const response={id:'resp_mock',object:'response',created_at:1,status:'completed',model:'mock-scout-model',output:[message],usage:{input_tokens:20,output_tokens:15,total_tokens:35}};
   const streamEvents=[

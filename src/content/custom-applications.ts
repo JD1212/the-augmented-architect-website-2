@@ -8,6 +8,7 @@ type CustomApplicationsContent = {
   problem: SectionCopy & { points: readonly string[] };
   solution: SectionCopy & { layers: readonly TextPair[]; diagram: { label: string; steps: readonly string[]; existing: string; caption: string } };
   package: SectionCopy & { capabilities: readonly TextPair[]; note: string; examplesTitle: string; examplesNote: string; examples: readonly { title: string; steps: readonly string[] }[] };
+  assistant: SectionCopy & { capabilities: readonly TextPair[]; boundaries: string };
   faq: ServiceFaqCopy;
   future: SectionCopy & { capabilities: readonly string[]; protocols: string; boundaries: string; platform: string; linkLabel: string; linkHref: string };
   approach: SectionCopy & { stages: readonly TextPair[] };
@@ -18,18 +19,18 @@ export const customApplications = {
   href: '/custom-applications', navigationLabel: 'Custom Business Applications', name: 'AI-Ready Business Platform',
   seo: {
     title: 'Custom Business Applications & Customer Portals',
-    description: 'AI-ready business applications for small and midsize businesses: modern websites, customer portals, and connected workflows. Implementations starting at $10,000.',
+    description: 'AI-ready business applications for small and midsize businesses: modern websites, secure portals, one AI assistant with appointment scheduling, and a connected workflow. Starting at $10,000.',
   },
   hero: {
     eyebrow: 'CUSTOM BUSINESS APPLICATIONS', title: 'Your website is just the beginning.',
-    subtitle: 'Turn your website into a connected business application.',
-    description: 'We build modern digital experiences that connect your customers, employees, and existing business tools—giving your business a practical foundation for automation and AI.',
+    subtitle: 'Turn your website into a connected, intelligent business application.',
+    description: 'We connect your website, customer portal, and private team workspace with structured business data, one customer-facing AI assistant, and real appointment scheduling—built around a defined business workflow.',
     tagline: "Your business. Connected. Ready for what's next.",
     cta: 'Book a Free Consultation', secondary: "See What's Included",
     price: 'Implementation starting at $10,000',
-    clarification: 'Defined-scope implementation. Additional integrations, advanced AI features, and ongoing support quoted separately.',
+    clarification: 'Includes one AI assistant with appointment scheduling. Additional agents, integrations, complex workflows, and ongoing support are separately scoped.',
     packageLabel: 'A FOCUSED IMPLEMENTATION',
-    foundation: ['Your public website', 'Customer access', 'A private team workspace', 'One connected business workflow'],
+    foundation: ['Public website & secure customer portal', 'Private workspace, data & permissions', 'One AI assistant & appointment scheduling', 'One business integration & defined workflow'],
   },
   problem: {
     eyebrow: 'WHEN YOUR TOOLS WORK APART', title: "Your website shouldn't be disconnected from your business.",
@@ -38,7 +39,7 @@ export const customApplications = {
   },
   solution: {
     eyebrow: 'ONE BUSINESS · A CONNECTED FOUNDATION', title: 'One connected experience for your customers and your team.',
-    description: 'We transform traditional business websites into modern, connected applications—with customer access, a private team workspace, integrated business workflows, and a foundation for future AI.',
+    description: 'We transform traditional business websites into connected applications—with defined customer access, a private team workspace, one working AI assistant, real appointment scheduling, and an agreed business integration and workflow.',
     layers: [
       ['Your public website', 'A professionally designed, mobile-friendly website that represents your business, communicates its services, and captures customer interest.'],
       ['Your customer portal', 'Secure login and a defined customer experience. Depending on the agreed scope, customers might access requests, booking information, project status, or account details.'],
@@ -53,19 +54,19 @@ export const customApplications = {
   },
   package: {
     eyebrow: 'THE STARTING IMPLEMENTATION', title: 'A connected business foundation. Starting at $10,000.',
-    description: 'An initial implementation tailored to one defined business workflow and an agreed, bounded scope. We shape the customer experience, team workspace, and integration around that practical starting point.',
+    description: 'A defined-scope launch package connecting your public website, customer portal, private workspace, business data, and one customer-facing AI assistant with real appointment scheduling. It also includes one agreed supported business-system integration and one end-to-end workflow.',
     capabilities: [
       ['Modern business website', 'A responsive, search-friendly public website within an agreed page and design scope. This can include replacing an existing WordPress marketing site.'],
-      ['Customer access', 'Basic secure customer authentication and a defined customer-facing portal experience.'],
-      ['Team workspace', 'Secure employee/admin login and a practical dashboard for managing the agreed business workflow.'],
-      ['Connected business data', 'A structured database for customers, inquiries, and a defined set of operational records.'],
-      ['Identity and permissions foundation', 'Customer and employee profiles, basic role-based access, and references to records in connected systems where applicable.'],
-      ['One business integration', 'One supported, agreed integration with an existing CRM, scheduling system, or other business application, subject to available APIs and project scope.'],
-      ['One working business workflow', 'An end-to-end process connecting customer access, the team workspace, and agreed data—for example, a service inquiry becoming a managed customer request.'],
-      ['AI-ready architecture', 'Documented data relationships, defined integration boundaries, and a technical foundation for future AI agents and additional automation.'],
-      ['Deployment and handoff', 'Initial deployment configuration, implementation documentation, and basic administrator orientation.'],
+      ['Defined secure customer portal', 'Secure customer authentication and a defined portal experience for the agreed customer journey. Portal modules and customer-visible records are specified during discovery.'],
+      ['Private team/admin workspace', 'Secure employee/admin access and a practical workspace for managing the agreed business records and workflow.'],
+      ['Structured data, identity & permissions', 'A structured foundation for customers, inquiries, and agreed operational records, with customer/team identities, role-based permissions, and references to connected systems where applicable.'],
+      ['One customer-facing AI assistant', 'One assistant, similar to Scout, configured with approved business information to answer questions, help customers discover services, and use its agreed authorized tools.'],
+      ['Real conversational appointment scheduling', 'The included assistant checks real calendar availability and helps customers schedule appointments through one supported, authorized calendar connection. Booking rules, confirmation, verification, and supported appointment-management actions are defined in scope.'],
+      ['One business integration & workflow', 'In addition to the scheduling calendar connection, one agreed supported external business-system integration and one defined end-to-end workflow—for example, a service inquiry becoming a managed customer request. Available APIs, access, and agreed scope determine the boundary.'],
+      ['Architecture for further automation', 'Documented data relationships, integration boundaries, and agent-tool permissions support adding further integrations, agents, and business automation without promising unlimited functionality.'],
+      ['Deployment, documentation & handoff', 'Initial deployment configuration, implementation documentation, and basic administrator handoff for the agreed launch scope.'],
     ],
-    note: 'The starting package is tailored to a defined business workflow and agreed implementation scope. Complex integrations, extensive data migration, additional portal modules, custom AI agents, and ongoing support are quoted separately.',
+    note: 'Standard appointment scheduling includes one agreed supported calendar connection, separate from the one included external business-system integration. Provider support, API permissions, workflow boundaries, and acceptance criteria are confirmed during discovery. Additional agents, advanced multi-agent systems, complex workflows, further integrations, extensive migration, extra portal modules, and ongoing hosting, service usage, or support are separately scoped.',
     examplesTitle: 'A practical starting point for your business.',
     examplesNote: 'Illustrative workflows. These are possible applications, not claims of completed client projects or features included in every implementation.',
     examples: [
@@ -73,6 +74,17 @@ export const customApplications = {
       { title: 'Contractors', steps: ['Website inquiry', 'Customer profile', 'Project/job tracking', 'Staff coordination'] },
       { title: 'Tourism and hospitality', steps: ['Experience inquiry', 'Booking information', 'Guest record', 'Team operations'] },
     ],
+  },
+  assistant: {
+    eyebrow: 'INCLUDED AT LAUNCH', title: 'An AI assistant that connects the conversation to your business.',
+    description: 'Your starting package includes one customer-facing assistant, similar to Scout, configured with your approved business information and a defined set of authorized tools. It helps customers move from asking a question to taking a practical next step.',
+    capabilities: [
+      ['Answer business questions', 'Help customers understand your services, agreed package details, and business information. The assistant works from approved content and acknowledges what it does not know.'],
+      ['Help customers discover services', 'Guide visitors toward relevant services and offer a consultation when appropriate, without repeatedly pushing them to book.'],
+      ['Schedule through real tools', 'Check actual availability, apply the agreed booking rules, and request explicit confirmation before creating an appointment through the authorized calendar integration. Supported cancellation or rescheduling uses defined ownership verification.'],
+      ['Operate within clear boundaries', 'Knowledge, tool access, permissions, and the initial workflow are agreed during discovery. The assistant does not receive unrestricted access to business systems or promise unsupported actions.'],
+    ],
+    boundaries: 'The standard scheduling calendar connection is included separately from the one agreed external business-system integration. Additional assistants, specialized agent tools, advanced multi-agent systems, complex workflows, and further integrations are separately scoped. Ongoing hosting and provider/service usage are not included in the starting implementation fee.',
   },
   faq: {
     title: 'Questions Before You Modernize',
@@ -84,7 +96,7 @@ export const customApplications = {
         paragraphs: [
           'Yes. Modern development tools and AI-assisted engineering have made custom applications much more accessible than they once were.',
           "The value isn't simply writing code faster. It's having an experienced software architect who knows how to design secure systems, connect business data, and use AI-assisted development effectively.",
-          'Our starting $10,000 engagement delivers a complete, production-ready application for an agreed initial scope—including the modern website, customer access, internal workspace, business data foundation, and a defined operational workflow.',
+          'Our starting $10,000 engagement includes a modern public website, defined secure customer portal, private team/admin workspace, structured data and permissions, one customer-facing AI assistant with real appointment scheduling, one agreed supported business-system integration, one defined end-to-end workflow, deployment, documentation, and basic administrator handoff.',
           'Additional capabilities can be introduced as the business grows.',
         ],
       },
@@ -111,7 +123,7 @@ export const customApplications = {
           "There's nothing inherently wrong with starting with one AI agent. For some businesses, that's an appropriate first step.",
           'But an agent becomes much more useful when it can securely access relevant business information.',
           'If your customer records, scheduling information, projects, and communications are disconnected, the agent may lack the context necessary to provide meaningful assistance.',
-          'We focus on creating a connected business foundation so that future agents can work with authorized customer information, business records, and workflows.',
+          'Our starting package includes one customer-facing assistant, similar to Scout, configured with approved business information and real appointment scheduling. We give it defined tools and permissions within a connected business foundation; broader access to customer records or additional operations must be explicitly scoped and authorized.',
         ],
       },
       {
@@ -120,7 +132,7 @@ export const customApplications = {
           'Business context is the information that helps your systems understand who a customer is, what their relationship with your business involves, and what work is taking place.',
           'A customer journey is the sequence of interactions someone has with your business—from discovering your services and making an inquiry through receiving service and becoming a returning customer.',
           'We design applications that connect those interactions and preserve useful context across supported systems.',
-          'That creates a better experience for customers, employees, and future AI agents.',
+          'That supports the included assistant and creates a clearer foundation for customers, employees, and additional agents as your business grows.',
         ],
       },
       {
@@ -128,7 +140,7 @@ export const customApplications = {
         paragraphs: [
           'Usually not. The goal is to connect the systems that already work well while improving the parts of your operation that are fragmented or inefficient.',
           'We can integrate supported CRMs, scheduling applications, and other business software through their available APIs.',
-          'The starting package includes one agreed, supported integration. Additional integrations are scoped separately.',
+          'The starting package includes the standard scheduling calendar connection plus one separate, agreed supported business-system integration and one defined end-to-end workflow. Support depends on available APIs and authorized access; further integrations are separately scoped.',
         ],
       },
       {
@@ -136,25 +148,25 @@ export const customApplications = {
         paragraphs: [
           'Yes. A modern application can provide a foundation for future capabilities such as content management, AI-assisted article drafting, workflow automation, and intelligent customer support.',
           'SEO improvements and content strategy should prioritize useful, original information and human review rather than automatically publishing large volumes of low-quality articles.',
-          'Advanced content automation, additional integrations, and custom AI agents are optional services, not automatically included in the $10,000 starting package.',
+          'One customer-facing AI assistant with real appointment scheduling is included at launch. Additional agents, advanced multi-agent systems, complex workflows, content automation, and further integrations are separately scoped and not automatically included in the $10,000 starting package.',
         ],
       },
       {
         question: 'What exactly does the $10,000 starting price include?',
         paragraphs: [
-          'It covers a defined initial implementation: a modern public website, basic secure customer and team access, a structured business database, one agreed integration, one end-to-end business workflow, deployment, and initial handoff.',
+          'It includes a modern public business website, defined secure customer portal access, a private team/admin workspace, structured data, identity and permissions, one customer-facing AI assistant using approved business information, real conversational appointment scheduling, one agreed supported business-system integration and one defined end-to-end workflow, extensible architecture, deployment, documentation, and basic administrator handoff.',
           'We define the exact scope during discovery so there are clear expectations about what will be delivered.',
-          'Complex migrations, extensive custom features, multiple integrations, ongoing hosting/support, and custom AI agents are quoted separately.',
+          'The standard scheduling calendar connection is included separately from the one external business-system integration. Additional agents, advanced multi-agent systems, complex workflows, further integrations, extensive migrations, extra functionality, and ongoing hosting, service usage, or support are separately scoped.',
         ],
       },
     ],
   },
   future: {
-    eyebrow: 'BUILT FOR THE FUTURE OF AI', title: 'Build the foundation now. Add intelligence as your business grows.',
-    description: 'AI becomes more useful when it has controlled access to connected business information, customer identities, relevant context, and authorized operations. A clearer foundation makes future expansion more practical.',
-    capabilities: ['Customer assistants that help people navigate services and request information.', 'Agents that retrieve authorized business context.', 'Automation connecting scheduling, CRM, operations, and customer workflows.', 'Coordinated intelligent workflows across supported applications.', 'Operational visibility and future agent management capabilities.'],
+    eyebrow: 'BUILT FOR THE FUTURE OF AI', title: 'Launch with one AI assistant. Expand as your business grows.',
+    description: 'One working customer-facing AI assistant with real appointment scheduling is included at launch. Structured business data, defined identities, permissions, and authorized tools provide the foundation for adding further intelligence as your needs grow.',
+    capabilities: ['Included at launch: one assistant using approved business information and real appointment scheduling.', 'Defined data, identity, permission, and tool boundaries for the agreed implementation.', 'Architecture for adding supported integrations and agent tools.', 'Additional agents and advanced multi-agent systems are separately scoped.', 'Complex workflows, broader automation, and further integrations are separately scoped.'],
     protocols: 'Where appropriate, MCP can standardize tool access and A2A can support communication between compatible agents. They are interoperability protocols, not business applications or guaranteed connectivity. Not every system supports them or the required APIs; A2A is not needed for ordinary integrations or single-agent workflows.',
-    boundaries: 'We choose integration methods around your actual business systems. AI-ready means the foundation supports later expansion—not that custom agents or distributed workflows are included at launch.',
+    boundaries: 'AI-ready means a working assistant is included at launch. Its approved knowledge, scheduling tools, and access boundaries are defined in scope. Additional agents, advanced multi-agent systems, complex workflows, broader automation, and further integrations require separate assessment and agreement.',
     platform: 'Augmented Enterprises is our broader platform direction, currently in development. It is not a dependency or a promised completed feature of this implementation.',
     linkLabel: 'Explore AI Solutions & Architecture', linkHref: '/ai-solutions',
   },
@@ -164,8 +176,8 @@ export const customApplications = {
     stages: [
       ['DISCOVER', 'Understand your business, current website, applications, and most important workflow.'],
       ['DESIGN', 'Define the customer experience, business workspace, integration boundaries, and agreed implementation scope.'],
-      ['BUILD & CONNECT', 'Develop the website, portal, admin workspace, and selected integration and workflow.'],
-      ['LAUNCH & EXPAND', 'Deploy, validate, train, and identify sensible future automation or AI improvements.'],
+      ['BUILD & CONNECT', 'Develop the website, portal, admin workspace, included assistant and scheduling, and agreed business integration and workflow.'],
+      ['LAUNCH & EXPAND', 'Validate the agreed workflow and assistant, deploy, document, provide basic administrator handoff, and identify sensible next steps.'],
     ],
   },
   closing: {

@@ -14,7 +14,7 @@ import {writeFile,mkdir} from 'node:fs/promises';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 const origin=process.argv[2]||'http://localhost:3100',out=process.env.SCOUT_LIVE_REVIEW_DIR||join(tmpdir(),'aa-scout-live',origin.startsWith('https:')?'production':'local');await mkdir(out,{recursive:true});
-let posts=0;const report={origin,syntheticSessionHashes:[],checks:[],layouts:[],errors:[],console:[],failedAssets:[]},sleep=ms=>new Promise(r=>setTimeout(r,ms));
+let posts=0;const report={origin,responses:[],syntheticSessionHashes:[],checks:[],layouts:[],errors:[],console:[],failedAssets:[]},sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const child=spawn(findChrome(),['--headless','--no-sandbox','--remote-debugging-port=19691','--user-data-dir='+out+'/profile','about:blank'],{stdio:'ignore'});let ws;
 try{
  let targets;for(let i=0;i<50;i++){try{targets=await(await fetch('http://localhost:19691/json')).json();if(targets.length)break;}catch{}await sleep(100);}assert(targets?.length);ws=new WebSocket(targets[0].webSocketDebuggerUrl);await new Promise((r,j)=>{ws.onopen=r;ws.onerror=j});let id=0;const pending=new Map();
@@ -48,12 +48,13 @@ try{
   assert(cookie);check(cookie.httpOnly,'Session cookie is HttpOnly '+width);if(origin.startsWith('https:'))check(cookie.secure,'Production cookie is Secure '+width);
   report.syntheticSessionHashes.push(createHash('sha256').update(cookie.value).digest('hex'));
   await writeFile(out+'/synthetic-session-hashes.json',JSON.stringify(report.syntheticSessionHashes));
-  const text=width===1440?'What does the $10,000 starting implementation include, and are custom AI agents included?':'Can Salesforce be modernized incrementally without abandoning Flows?';
+  const text=width===1440?'What does the $10,000 starting package include? Is one AI assistant with appointment scheduling included, and which extras are separately scoped?':'Can Salesforce be modernized incrementally without abandoning Flows?';
   await ev("document.querySelector('#scout-draft').focus()");await send('Input.insertText',{text});await ev("document.querySelector('#scout-panel form').requestSubmit()");
   await until("!!document.querySelector('#scout-panel [role=log]')");
   await until("document.querySelectorAll('#scout-panel [data-message-role=assistant]').length===1&&!document.querySelector('#scout-draft').disabled");await sleep(350);
   const reply=await ev("document.querySelector('#scout-panel [data-message-role=assistant]').textContent");
-  check(width===1440?reply.includes('$10,000')&&/separat|not included/i.test(reply):/Flow/i.test(reply)&&/increment|object|workflow|rebuild/i.test(reply),'Real agent answers offering and scope accurately '+width);
+  report.responses.push({width,prompt:text,reply});
+  check(width===1440?reply.includes('$10,000')&&/one|single|1/i.test(reply)&&/assistant|agent/i.test(reply)&&/schedul|appointment/i.test(reply)&&/separat|additional|advanced|extra/i.test(reply):/Flow/i.test(reply)&&/increment|object|workflow|rebuild/i.test(reply),'Real agent answers offering and scope accurately '+width);
   check(await ev("(()=>{const p=document.querySelector('#scout-panel'),r=p.getBoundingClientRect();return p.offsetWidth===Math.min(360,innerWidth-24)&&p.offsetHeight===600&&r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight&&p.scrollWidth<=p.clientWidth})()"),'Real conversation fits approved panel '+width);
   await shot('real-conversation-'+width);await close();await open();check(await ev("document.querySelectorAll('#scout-panel [data-message-role]').length===2"),'Real transcript survives minimize/reopen '+width);await close();
   await ev("document.querySelector('#main-navigation a[href=\"/salesforce\"]').click()");await until("location.pathname==='/salesforce'");await open();check(await ev("document.querySelectorAll('#scout-panel [data-message-role]').length===2"),'Real transcript survives client navigation '+width);await close();

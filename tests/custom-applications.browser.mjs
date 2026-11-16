@@ -37,16 +37,17 @@ try{
  await send('Page.enable');await send('Runtime.enable');await send('Network.enable');await send('Page.addScriptToEvaluateOnNewDocument',{source:"sessionStorage.setItem('aa.scout.introduction.v1','1')"});
 
  const key=async(name,code,modifiers=0)=>{for(const type of ['keyDown','keyUp'])await send('Input.dispatchKeyEvent',{type,key:name,code:name,windowsVirtualKeyCode:code,modifiers});};
- const sections=['custom-hero','custom-problem','custom-solution','custom-package','custom-ai','custom-approach','custom-consultation'];
+ const sections=['custom-hero','custom-problem','custom-solution','custom-package','custom-assistant','custom-ai','custom-approach','custom-consultation'];
  for(const width of [1920,1440,1280,1191,1190,1100,1051,1050,900,800,768,600,390,320]){
   await send('Emulation.setDeviceMetricsOverride',{width,height:1000,deviceScaleFactor:1,mobile:width<540});await nav('/custom-applications');await sleep(180);
   check(await ev('document.documentElement.scrollWidth===innerWidth'),'No page overflow '+width);
-  check(await ev("document.querySelectorAll('main > section').length===7&&document.querySelectorAll('h1').length===1"),'Seven focused sections and one h1 '+width);
+  check(await ev("document.querySelectorAll('main > section').length===8&&document.querySelectorAll('h1').length===1"),'Eight focused sections and one h1 '+width);
   check(await ev("document.querySelector('h1').textContent==='Your website is just the beginning.'"),'Exact offer headline '+width);
   for(const id of sections)check(await ev(`!!document.getElementById('${id}')`),'Section '+id+' '+width);
+  check(await ev("document.querySelector('aside').textContent.includes('One AI assistant & appointment scheduling')&&document.querySelectorAll('#included-assistant dl > div').length===4"),'Assistant visible in price card and dedicated section '+width);
   check(await ev("document.querySelector('main').textContent.includes('Implementation starting at $10,000')&&document.querySelector('#custom-package').textContent.includes('Starting at $10,000')"),'Starting implementation price '+width);
-  check(await ev("document.querySelectorAll('main dl > div').length===9&&[...document.querySelectorAll('main dl dt')].some(e=>e.textContent.includes('One business integration'))&&[...document.querySelectorAll('main dl dt')].some(e=>e.textContent.includes('One working business workflow'))"),'Nine scoped baseline capabilities '+width);
-  check(await ev("document.querySelector('main').textContent.includes('Complex integrations, extensive data migration, additional portal modules, custom AI agents, and ongoing support are quoted separately.')"),'Scope exclusions preserved '+width);
+  check(await ev("document.querySelectorAll('#whats-included dl > div').length===9&&document.querySelector('#whats-included').textContent.includes('One business integration & workflow')&&document.querySelector('#whats-included').textContent.includes('Real conversational appointment scheduling')&&document.querySelector('#whats-included').textContent.includes('One customer-facing AI assistant')"),'Nine scoped baseline capabilities '+width);
+  check(await ev("document.querySelector('#included-assistant').textContent.includes('separate')&&document.querySelector('#included-assistant').textContent.includes('one agreed external business-system integration')&&document.querySelector('main').textContent.includes('advanced multi-agent systems')&&document.querySelector('main').textContent.includes('separately scoped')"),'Scope exclusions preserved '+width);
   check(await ev("document.querySelectorAll('main article').length===3&&document.querySelector('main').textContent.includes('not claims of completed client projects')"),'Three clearly illustrative workflows '+width);
   check(await ev("document.querySelectorAll('figure').length===1&&!document.querySelector('main img,main iframe,main input,main form')"),'Architecture graphic without fake application UI or live integration '+width);
   check(await ev("document.querySelector('main').textContent.includes('interoperability protocols')&&document.querySelector('main').textContent.includes('A2A is not needed')&&document.querySelector('main').textContent.includes('not a dependency or a promised completed feature')"),'Accurate AI interoperability and platform boundaries '+width);
@@ -64,7 +65,7 @@ try{
   if([1440,390].includes(width)){
    await shot('custom-applications-'+width,'main');await shot('custom-hero-'+width,'main > section:first-child');await shot('custom-diagram-'+width,'figure');
    await ev("document.querySelector('a[href=\"#whats-included\"]').click()");await until("location.hash==='#whats-included'");check(true,'Included-package anchor works '+width);
-   await ev("document.querySelector('main a[href=\"/book\"]').click()");await until("location.pathname==='/book'");check(true,'Consultation CTA opens existing booking page '+width);
+   await ev("document.querySelector('main a[href=\"/book\"]').click()");await until("!!document.querySelector('#consultation-booking[open]')");check(await ev("location.pathname==='/custom-applications'"),'Consultation CTA opens existing shared booking modal '+width);await ev("document.querySelector('#consultation-booking button[aria-label=\"Close consultation booking\"]').click()");
    await nav('/');const menuVisible=await ev("getComputedStyle(document.querySelector('.menu-toggle')).display!=='none'");if(menuVisible)await ev("document.querySelector('.menu-toggle').click()");await ev("document.querySelector('#main-navigation a[href=\"/custom-applications\"]').click()");await until("location.pathname==='/custom-applications'");check(await ev("document.querySelector('.menu-toggle').getAttribute('aria-expanded')==='false'"),'Main navigation reaches offering and closes menu '+width);
   }
  }

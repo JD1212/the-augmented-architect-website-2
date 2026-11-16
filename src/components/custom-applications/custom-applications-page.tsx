@@ -32,6 +32,11 @@ export function CustomApplicationsPage() {
       <p className={styles.scopeNote}>{copy.package.note}</p>
       <div className={styles.examples}><h3>{copy.package.examplesTitle}</h3><div className={styles.exampleGrid}>{copy.package.examples.map(example => <article key={example.title}><h4>{example.title}</h4><ol>{example.steps.map((step, index) => <li key={step}>{index > 0 && <span aria-hidden="true">→</span>}{step}</li>)}</ol></article>)}</div><p className={styles.small}>{copy.package.examplesNote}</p></div>
     </div></section>
+    <section id="included-assistant" className="section" aria-labelledby="custom-assistant"><div className="container">
+      <div className={styles.heading}><p className="eyebrow">{copy.assistant.eyebrow}</p><h2 id="custom-assistant">{copy.assistant.title}</h2><p>{copy.assistant.description}</p></div>
+      <dl className={styles.capabilities}>{copy.assistant.capabilities.map(([title, description], index) => <div key={title}><dt><span aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>{title}</dt><dd>{description}</dd></div>)}</dl>
+      <p className={styles.scopeNote}>{copy.assistant.boundaries}</p>
+    </div></section>
     <section className={`section ${styles.future}`} aria-labelledby="custom-ai"><div className="container">
       <div className={styles.heading}><p className="eyebrow">{copy.future.eyebrow}</p><h2 id="custom-ai">{copy.future.title}</h2><p>{copy.future.description}</p></div>
       <div className={styles.futureGrid}><ul className={styles.futureCapabilities}>{copy.future.capabilities.map(item => <li key={item}>{item}</li>)}</ul><div className={styles.futureBoundaries}><p>{copy.future.protocols}</p><p>{copy.future.boundaries}</p><p>{copy.future.platform}</p><Link className="text-link" href={copy.future.linkHref}>{copy.future.linkLabel}<Arrow /></Link></div></div>
