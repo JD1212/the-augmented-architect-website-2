@@ -108,10 +108,14 @@
   .root *, .panel::backdrop { animation: none !important; transition: none !important; }
 }
 
-.composer .bookingAction { display:block; width:auto; height:auto; margin:0 2px 10px auto; border:0; padding:0; background:transparent; color:var(--assistant-graphite); font:inherit; font-size:11px; text-decoration:underline; text-underline-offset:3px; }
+.composer .bookingAction { display:flex; align-items:center; justify-content:center; width:auto; min-height:44px; height:auto; margin:0 2px 10px auto; border:1px solid var(--assistant-border); border-radius:8px; padding:8px 12px; background:var(--ivory); color:var(--assistant-graphite); font:inherit; font-size:12px; font-weight:600; text-decoration:none; }
 
 .scheduling:empty { display: none; }
 .scheduling { font-size: .85rem; }
 .scheduling section, .scheduling form { border: 1px solid var(--blue); border-radius: .75rem; padding: .8rem; margin-top: .75rem; }
 .scheduling p { margin: .4rem 0; overflow-wrap: anywhere; }
 .scheduling input { display: block; width: 100%; max-width: 12rem; margin: .5rem 0; border: 1px solid var(--blue); border-radius: .4rem; padding: .5rem; font: inherit; background: var(--ivory); color: var(--graphite); }
+
+.schedulingAction { display:inline-flex; align-items:center; justify-content:center; min-height:44px; margin-top:8px; padding:8px 12px; border:1px solid var(--assistant-graphite); border-radius:8px; background:var(--assistant-graphite); color:var(--ivory); font:inherit; font-size:12px; line-height:1.4; font-weight:600; text-decoration:none; cursor:pointer; }
+.schedulingAction:disabled { opacity:.5; cursor:default; }
+.schedulingAction:focus-visible, .composer .bookingAction:focus-visible { outline:2px solid var(--focus-ring); outline-offset:3px; }

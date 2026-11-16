@@ -1,8 +1,9 @@
 import 'server-only';
+import { schedulingDisplay } from '@/lib/display-timezone';
 import { tool } from '@openai/agents';
 import { BookingError } from '@/lib/booking/types';
 import type { createSchedulingService } from '@/lib/booking/scheduling';
-export type SchedulingContext={ownerHash:string;signal:AbortSignal};
+export type SchedulingContext={ownerHash:string;signal:AbortSignal;visitorTimezone?:string};
 type Scheduling=ReturnType<typeof createSchedulingService>;
 // JSON Schema is supported by the installed SDK. Business inputs are validated again by the service.
 const text={type:'string'} as const, nullable={type:['string','null']} as const;
@@ -13,7 +14,7 @@ export function createSchedulingTools(service:Scheduling){
       async execute(input,context){
         const scope=context?.context as SchedulingContext|undefined;
         if(!scope?.ownerHash||scope.signal.aborted)return {status:'error',message:'Scheduling authorization is unavailable.'};
-        try{return await execute(args(input),scope.ownerHash);}catch(error){return {status:'error',message:error instanceof BookingError?error.message:'Scheduling is temporarily unavailable. Retry the same operation.'};}
+        try{return schedulingDisplay(await execute(args(input),scope.ownerHash),scope.visitorTimezone);}catch(error){return {status:'error',message:error instanceof BookingError?error.message:'Scheduling is temporarily unavailable. Retry the same operation.'};}
       },errorFunction:()=>JSON.stringify({status:'error',message:'The scheduling request was invalid. Please check its details.'})});
   }
   return [

@@ -48,13 +48,13 @@ try{
   assert(cookie);check(cookie.httpOnly,'Session cookie is HttpOnly '+width);if(origin.startsWith('https:'))check(cookie.secure,'Production cookie is Secure '+width);
   report.syntheticSessionHashes.push(createHash('sha256').update(cookie.value).digest('hex'));
   await writeFile(out+'/synthetic-session-hashes.json',JSON.stringify(report.syntheticSessionHashes));
-  const text=width===1440?'What does the $10,000 starting package include? Is one AI assistant with appointment scheduling included, and which extras are separately scoped?':'Can Salesforce be modernized incrementally without abandoning Flows?';
+  const text=width===1440?'What does the $10,000 business application foundation include? How many supported integrations are included, does the calendar count, and is a website AI assistant included?':'Can Salesforce be modernized incrementally without abandoning Flows?';
   await ev("document.querySelector('#scout-draft').focus()");await send('Input.insertText',{text});await ev("document.querySelector('#scout-panel form').requestSubmit()");
   await until("!!document.querySelector('#scout-panel [role=log]')");
   await until("document.querySelectorAll('#scout-panel [data-message-role=assistant]').length===1&&!document.querySelector('#scout-draft').disabled");await sleep(350);
   const reply=await ev("document.querySelector('#scout-panel [data-message-role=assistant]').textContent");
   report.responses.push({width,prompt:text,reply});
-  check(width===1440?reply.includes('$10,000')&&/one|single|1/i.test(reply)&&/assistant|agent/i.test(reply)&&/schedul|appointment/i.test(reply)&&/separat|additional|advanced|extra/i.test(reply):/Flow/i.test(reply)&&/increment|object|workflow|rebuild/i.test(reply),'Real agent answers offering and scope accurately '+width);
+  check(width===1440?reply.includes('$10,000')&&/one|single|1/i.test(reply)&&/assistant|agent/i.test(reply)&&/schedul|appointment/i.test(reply)&&/four|4/i.test(reply)&&/calendar|integration/i.test(reply):/Flow/i.test(reply)&&/increment|object|workflow|rebuild/i.test(reply),'Real agent answers offering and scope accurately '+width);
   check(await ev("(()=>{const p=document.querySelector('#scout-panel'),r=p.getBoundingClientRect();return p.offsetWidth===Math.min(360,innerWidth-24)&&p.offsetHeight===600&&r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight&&p.scrollWidth<=p.clientWidth})()"),'Real conversation fits approved panel '+width);
   await shot('real-conversation-'+width);await close();await open();check(await ev("document.querySelectorAll('#scout-panel [data-message-role]').length===2"),'Real transcript survives minimize/reopen '+width);await close();
   await ev("document.querySelector('#main-navigation a[href=\"/salesforce\"]').click()");await until("location.pathname==='/salesforce'");await open();check(await ev("document.querySelectorAll('#scout-panel [data-message-role]').length===2"),'Real transcript survives client navigation '+width);await close();

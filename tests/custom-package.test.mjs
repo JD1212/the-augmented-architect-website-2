@@ -4,27 +4,18 @@ import {loadScoutModule} from './helpers/scout-loader.mjs';
 const cache=new Map();
 const {customApplications:copy}=loadScoutModule('src/content/custom-applications.ts',{},cache);
 const {scoutKnowledge,scoutInstructions}=loadScoutModule('src/lib/scout/knowledge.ts',{},cache);
-test('approved starting package includes all nine launch capabilities and keeps the price',()=>{
- assert.equal(copy.hero.price,'Implementation starting at $10,000');
- assert.equal(copy.package.capabilities.length,9);
- const titles=copy.package.capabilities.map(([title])=>title);
- for(const expected of ['Modern business website','Defined secure customer portal','Private team/admin workspace','Structured data, identity & permissions','One customer-facing AI assistant','Real conversational appointment scheduling','One business integration & workflow','Architecture for further automation','Deployment, documentation & handoff'])assert(titles.includes(expected));
- assert(copy.hero.foundation.some(s=>s.includes('AI assistant & appointment scheduling')));
+test('starting offer leads with the application foundation, supported management and one included assistant',()=>{
+ assert.equal(copy.hero.title,'Your website is just the beginning.');assert.equal(copy.hero.price,'Implementation starting at $10,000');assert.equal(copy.package.capabilities.length,9);
+ for(const title of ['Modern business website','Defined secure customer portal','Private team/admin workspace','Structured data, identity & permissions','Integration driver & management interface','Supported agent connection management','AI sales assistant & real scheduling','Architecture for business growth','Deployment, documentation & handoff'])assert(copy.package.capabilities.some(([t])=>t===title));
+ assert.match(copy.hero.foundation.join(' '),/up to four/);
 });
-test('calendar scheduling and external integration are distinct; advanced capabilities remain bounded',()=>{
- assert.match(copy.package.note,/calendar connection, separate from the one included external business-system integration/);
- assert.match(copy.package.note,/Provider support, API permissions/);
- assert.match(copy.future.boundaries,/working assistant is included at launch/);
- for(const text of ['Additional agents','advanced multi-agent systems','complex workflows','further integrations'])assert(copy.future.boundaries.includes(text));
- assert.match(copy.assistant.boundaries,/hosting and provider\/service usage are not included/);
- assert(!JSON.stringify(copy).includes('not that custom agents or distributed workflows are included at launch'));
+test('four-connection allowance includes the calendar and unverified monitoring is not sold as complete',()=>{
+ assert.match(copy.package.note,/up to four agreed, supported integrations in total/);assert.match(copy.package.note,/scheduling\/calendar connection counts toward/);
+ assert.match(copy.future.boundaries,/not verified launch features/);assert.match(copy.package.capabilities[5][1],/not a completed launch capability/);
+ assert(!JSON.stringify(copy).includes('separate from the one included external business-system integration'));
 });
-test('Scout uses the existing approved content registry, including the assistant section and precise scope rules',()=>{
- assert.equal(scoutKnowledge.applications.package,copy.package);
- assert.equal(scoutKnowledge.applications.assistant,copy.assistant);
- assert.equal(scoutKnowledge.applications.faqs,copy.faq);
- assert.match(scoutInstructions,/INCLUDES one customer-facing AI assistant/);
- assert.match(scoutInstructions,/real conversational appointment scheduling/);
- assert.match(scoutInstructions,/in addition to one agreed supported external business-system integration/);
- assert(!scoutInstructions.includes('Distinguish its AI-ready foundation from separately scoped custom AI-agent development'));
+test('Scout uses the existing registry and the revised sales/scheduling role without overpromising',()=>{
+ assert.equal(scoutKnowledge.applications.package,copy.package);assert.equal(scoutKnowledge.applications.assistant,copy.assistant);assert.equal(scoutKnowledge.applications.faqs,copy.faq);
+ assert.match(scoutInstructions,/UP TO FOUR agreed supported integrations TOTAL/);assert.match(scoutInstructions,/ONE customer-facing AI sales\/website assistant/);assert.match(scoutInstructions,/website guide, product expert, sales assistant, and scheduling assistant/);
+ assert.match(scoutInstructions,/immediately begin the existing scheduling workflow/);assert.match(scoutInstructions,/do not repeat an invitation after a decline/);assert.match(scoutInstructions,/discovery interviews/);
 });

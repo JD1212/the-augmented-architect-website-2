@@ -1,3 +1,4 @@
+import { browserTimezone } from '@/lib/display-timezone';
 import { assistantContent as copy } from '@/content/assistant';
 import type { ScoutMessage } from './contracts';
 
@@ -21,7 +22,7 @@ export async function fetchScoutSnapshot(signal?: AbortSignal, request: Fetch = 
 export async function submitScoutTurn(turn: { id: string; message: string }, signal: AbortSignal, reset: () => void, request: Fetch = fetch) {
   for (let attempt = 0; attempt < 2; attempt++) {
     const response = await request('/api/scout', { method: 'POST', credentials: 'same-origin', signal,
-      headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: turn.message, clientTurnId: turn.id }) });
+      headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: turn.message, clientTurnId: turn.id, timezone: browserTimezone() }) });
     if (response.status !== 401 && response.status !== 410) return response;
     const failure = await response.json();
     if (failure.code !== 'scout_session_reset') throw new Error(failure.error || copy.failure);

@@ -14,6 +14,6 @@ export const bookingCopy = {
   pending: 'We are checking the result of your booking. Please retry this request; do not submit a second booking. Your details have been kept.',
   retry: 'Check booking status', confirmed: 'Your consultation is confirmed',
   invitation: 'A calendar invitation has been requested for your email address.',
-  meet: 'Join Google Meet', schedule: 'Consultation calendar timezone:',
+  meet: 'Join Google Meet', schedule: 'Consultation office timezone:',
   privacy: 'Your name, email, and optional project description are used to arrange this consultation. Please do not include sensitive information.',
 } as const;

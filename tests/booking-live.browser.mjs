@@ -54,7 +54,7 @@ try{
   check(await ev(`document.querySelector('#consultation-booking select[name=timezone]').value===${JSON.stringify(zone)}`),'Visitor timezone detected '+width);
   const slots=await ev("[...document.querySelectorAll('#consultation-booking button[data-slot]')].map(b=>({start:b.dataset.slot,label:b.textContent}))");
   check(slots.length>0&&slots.length<=4&&slots.every(slot=>['10:00','11:30','13:30','15:00'].includes(new Intl.DateTimeFormat('en-GB',{timeZone:'America/Costa_Rica',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(slot.start)))),'Real approved-calendar fixed-window availability loads '+width);
-  const expected=new Intl.DateTimeFormat('en',{timeZone:zone,month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZoneName:'shortOffset'}).format(new Date(slots[0].start));
+  const expected=new Intl.DateTimeFormat('en',{timeZone:zone,month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}).format(new Date(slots[0].start));
   check(slots[0].label===expected,'Time/date convert clearly for visitor '+width);
   check(await ev("!document.querySelector('#consultation-booking input[type=checkbox]').checked&&document.querySelector('#consultation-booking button[type=submit]').disabled"),'No appointment without explicit confirmation '+width);
   check(await ev("(()=>{const p=document.querySelector('#consultation-booking'),r=p.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight&&p.scrollWidth<=p.clientWidth})()"),'Production dialog fits viewport '+width);await shot('production-booking-'+width);await close();

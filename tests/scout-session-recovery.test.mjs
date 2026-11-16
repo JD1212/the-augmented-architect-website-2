@@ -36,7 +36,7 @@ test('legacy seven-day narrow-path cookie is removed and welcome handshake estab
 test('expiration during submit recovers automatically once using the same draft and turn ID',async()=>{
   const s=setup({legacyPath:'/'});await seedLegacy(s);const turn={id:randomUUID(),message:'hi'};let resets=0;
   const r=await submitScoutTurn(turn,new AbortController().signal,()=>resets++,s.request);await r.text();
-  const sends=s.requests.filter(r=>r.method==='POST').map(r=>JSON.parse(r.body));assert.deepEqual(sends,[{message:'hi',clientTurnId:turn.id},{message:'hi',clientTurnId:turn.id}]);assert.equal(resets,1);assert.equal(r.status,200);assert.equal(s.f.conversations.length,2);assert.equal(s.f.model.calls,2);
+  const sends=s.requests.filter(r=>r.method==='POST').map(r=>JSON.parse(r.body));assert.deepEqual(sends.map(value=>({message:value.message,clientTurnId:value.clientTurnId})),[{message:'hi',clientTurnId:turn.id},{message:'hi',clientTurnId:turn.id}]);assert(sends[0].timezone);assert.equal(sends[0].timezone,sends[1].timezone);assert.equal(resets,1);assert.equal(r.status,200);assert.equal(s.f.conversations.length,2);assert.equal(s.f.model.calls,2);
 });
 test('ambiguous duplicate credentials never select either old owner',async()=>{
   const s=setup();await seedLegacy(s);s.jar.set('/','b'.repeat(43));const state=await fetchScoutSnapshot(undefined,s.request);

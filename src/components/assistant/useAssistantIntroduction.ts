@@ -2,56 +2,38 @@
 
 import { useCallback, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
-import { createIntroductionSession, introductionDelayMs } from '@/lib/assistant-introduction';
+import { createIntroductionVisit, introductionDelayMs } from '@/lib/assistant-introduction';
 
-/** Introduce Scout on a quiet homepage visit; other pages cannot consume that opportunity. */
+/** Each homepage entry/refresh is eligible. Scrolling never controls opening. */
 export function useAssistantIntroduction(ready: boolean, onOpen: () => void) {
   const pathname = usePathname();
-  const sessionRef = useRef<ReturnType<typeof createIntroductionSession> | null>(null);
-  const interruptedRef = useRef(false);
-  const finishIntroduction = useCallback(() => { sessionRef.current?.consume(); }, []);
+  const visit = useRef<ReturnType<typeof createIntroductionVisit> | null>(null);
+  const finishIntroduction = useCallback(() => { visit.current?.consume(); }, []);
 
   useEffect(() => {
-    let storage: Storage | null = null;
-    try { storage = window.sessionStorage; } catch { /* Privacy settings can deny access. */ }
-    sessionRef.current = createIntroductionSession(storage);
-  }, []);
-
-  useEffect(() => {
-    if (pathname !== '/') return;
-    interruptedRef.current = document.visibilityState !== 'visible';
-    if (sessionRef.current?.isConsumed()) return;
-
-    // Observe user input rather than scroll events: Next.js restores scroll on navigation.
-    const events = ['pointerdown', 'click', 'keydown', 'wheel', 'touchstart', 'focusin', 'popstate', 'visibilitychange', 'blur'] as const;
-    function removeListeners() {
-      for (const event of events) window.removeEventListener(event, onActivity, true);
-    }
-    function onActivity(event: Event) {
-      if (event.type === 'focusin' && event.target === document.body) return;
-      if (event.type === 'visibilitychange' && document.visibilityState === 'visible') return;
-      interruptedRef.current = true;
-      removeListeners();
-    }
-    for (const event of events) window.addEventListener(event, onActivity, { capture: true, passive: true });
-    return removeListeners;
+    visit.current = pathname === '/' ? createIntroductionVisit() : null;
+    return () => { visit.current = null; };
   }, [pathname]);
 
   useEffect(() => {
     if (!ready || pathname !== '/') return;
-    const timer = setTimeout(() => {
-      const session = sessionRef.current;
-      if (!session || session.isConsumed() || interruptedRef.current) return;
+    let timer: ReturnType<typeof setTimeout>;
+    function attempt() {
+      const current = visit.current;
+      if (!current || current.isConsumed()) return;
+      if (document.querySelector('#scout-panel[open]')) { current.consume(); return; }
       const active = document.activeElement;
-      // The home link can keep focus after navigation; it is not an active editor.
-      const hasActiveControl = active !== null && active !== document.body && active !== document.documentElement &&
-        !active.closest('.site-header a[href="/"]');
-      const busy = document.visibilityState !== 'visible' || !document.hasFocus() || hasActiveControl ||
-        !!window.location.hash || !!document.querySelector('dialog[open], .navigation.is-open');
-      // Persist only an actual opening or explicit manual handling, never a skipped visit.
-      if (!busy && session.consume()) onOpen();
-    }, introductionDelayMs);
-    return () => clearTimeout(timer);
+      const editing = active?.matches('input, textarea, select, [contenteditable="true"]');
+      // Defer for another modal, navigation, or active typing; never suppress for scroll.
+      const busy = document.visibilityState !== 'visible' || !document.hasFocus() || editing ||
+        !!document.querySelector('dialog[open], .navigation.is-open');
+      if (busy) { timer = setTimeout(attempt, 500); return; }
+      if (current.consume()) onOpen();
+    }
+    timer = setTimeout(attempt, introductionDelayMs);
+    const onReturn = (event: PageTransitionEvent) => { if(event.persisted){visit.current=createIntroductionVisit();clearTimeout(timer);timer=setTimeout(attempt,introductionDelayMs);} };
+    window.addEventListener('pageshow',onReturn);
+    return () => {clearTimeout(timer);window.removeEventListener('pageshow',onReturn);};
   }, [ready, onOpen, pathname]);
 
   return finishIntroduction;

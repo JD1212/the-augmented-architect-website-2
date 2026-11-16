@@ -35,7 +35,7 @@ export function createScoutService(store: ScoutStore, model: ScoutModel, modelNa
       if (turns.some(t => ['running', 'pending'].includes(t.status))) throw new ScoutError(409, 'Please wait for the current reply before starting a new conversation.');
       await store.close(conversation.id);
     },
-    async prepare(hash: string, message: string, clientTurnId: string) {
+    async prepare(hash: string, message: string, clientTurnId: string, visitorTimezone?: string) {
       // Verify model access before making any persistent conversation or turn.
       try { await model.verify(); } catch { throw new ScoutError(503, 'Scout cannot connect right now. Please try again later.'); }
       const now = new Date(clock()).toISOString();
@@ -67,7 +67,7 @@ export function createScoutService(store: ScoutStore, model: ScoutModel, modelNa
             characters += text.length;
             if (characters > scoutLimits.outputCharacters || signal.aborted) throw new Error('Reply interrupted');
             emit({ type: 'delta', text });
-          }, {ownerHash:hash});
+          }, {ownerHash:hash,visitorTimezone});
           if (!reply.text.trim() || reply.text.length > scoutLimits.outputCharacters || signal.aborted) throw new Error('Incomplete response');
           await store.finish(claimed, reply.text, { model: modelName, usage: reply.usage });
           emit({ type: 'done', expiresInMs: scoutLimits.sessionSeconds * 1000, messages: turnMessages([...turns.filter(t => t.id !== claimed.id), { ...claimed, status: 'completed', assistant_message: reply.text }]) });

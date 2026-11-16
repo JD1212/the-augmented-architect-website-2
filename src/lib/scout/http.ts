@@ -1,6 +1,6 @@
 import 'server-only';
 import { schedulingEnabled, schedulingService } from '@/lib/booking/scheduling-server';
-import { BookingError } from '@/lib/booking/types';
+import { BookingError, validTimezone } from '@/lib/booking/types';
 import { createHash, randomBytes } from 'node:crypto';
 import { scoutLimits } from './contracts';
 import { ScoutError, temporaryFailure } from './errors';
@@ -96,9 +96,10 @@ export function createScoutHandlers(getService: () => Service, limit: RequestLim
         try { parsed = JSON.parse(body); } catch { throw new ScoutError(400, 'Please enter a valid message.'); }
         if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new ScoutError(400, 'Please enter a valid message.');
         const input = parsed as Record<string, unknown>;
-        if (Object.keys(input).some(key => !['message', 'clientTurnId'].includes(key)) || typeof input.message !== 'string' || !input.message.trim() || input.message.trim().length > scoutLimits.inputCharacters || typeof input.clientTurnId !== 'string' || !uuid.test(input.clientTurnId)) throw new ScoutError(400, 'Please enter a message under 1,000 characters.');
+        if (Object.keys(input).some(key => !['message', 'clientTurnId', 'timezone'].includes(key)) || typeof input.message !== 'string' || !input.message.trim() || input.message.trim().length > scoutLimits.inputCharacters || typeof input.clientTurnId !== 'string' || !uuid.test(input.clientTurnId)) throw new ScoutError(400, 'Please enter a message under 1,000 characters.');
         if(schedulingEnabled()){try{await schedulingService().verification.blockCodeInChat(digest(token),input.message.trim());}catch(error){if(error instanceof BookingError)throw new ScoutError(error.status,error.message);throw error;}}
-        const prepared = await getService().prepare(digest(token), input.message.trim(), input.clientTurnId);
+        if(input.timezone!==undefined&&!validTimezone(input.timezone))throw new ScoutError(400,'Please select a valid timezone.');
+        const prepared = await getService().prepare(digest(token), input.message.trim(), input.clientTurnId, input.timezone as string|undefined);
         const controller = new AbortController();
         const signal = AbortSignal.any([request.signal, controller.signal, AbortSignal.timeout(scoutLimits.executionMs)]);
         const encoder = new TextEncoder();
