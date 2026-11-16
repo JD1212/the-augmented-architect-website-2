@@ -37,7 +37,7 @@ export const site: SiteContent = {
     salesforce: { title: 'Salesforce Modernization', description: "Clean up messy orgs, simplify flows and triggers, and prepare Salesforce for AI and what's next." },
     about: { title: 'About The Augmented Architect', description: 'We help organizations design and deliver practical, scalable solutions that connect people, data, and AI—so you can operate more efficiently, serve customers better, and grow with confidence.' },
     contact: { title: 'Contact', description: 'We build connected business systems, intelligent agents, and modern Salesforce foundations that help your team move faster, work smarter, and create lasting value.', notice: 'Contact details will be added here. This initial website does not yet accept inquiries.' },
-    book: { title: 'Book a Consultation', description: 'Turn technology into measurable business value.', notice: 'Consultation scheduling is not connected yet. Booking details will be added here; no appointment can be submitted through this initial website.' },
+    book: { title: 'Book a Consultation', description: 'Turn technology into measurable business value.', notice: 'Use Book Consultation to choose an available time and explicitly confirm a free 30-minute video consultation. The booking interface provides the confirmed appointment and Google Meet details.' },
   },
   seo: {
     home: { title: 'Architecture for the AI future', description: 'Connected business systems, intelligent agents, and modern Salesforce foundations from The Augmented Architect.' },
@@ -45,6 +45,6 @@ export const site: SiteContent = {
     salesforce: { title: 'Salesforce Architecture Assessment & Modernization', description: 'Assess, clean up, and modernize Salesforce automation with hands-on architecture expertise, AI-assisted development, and proprietary managed tools. Start with one object.' },
     about: { title: 'About', description: 'Learn about The Augmented Architect and our approach to connecting people, data, and AI.' },
     contact: { title: 'Contact', description: 'Contact information for The Augmented Architect. Inquiry setup is coming soon.' },
-    book: { title: 'Book a Consultation', description: 'Consultation information for The Augmented Architect. Online scheduling is not yet available.' },
+    book: { title: 'Book a Consultation', description: 'Book a free 30-minute video consultation with The Augmented Architect. Choose an available appointment and receive Google Meet details after confirmation.' },
   },
 };

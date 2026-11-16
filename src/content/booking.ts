@@ -1,0 +1,19 @@
+/** Public booking interface copy; no credentials or private calendar settings. */
+export const bookingCopy = {
+  title: 'Book a Free Consultation',
+  introduction: "Let's discuss your project in a free 30-minute video call.",
+  open: 'Book Consultation', close: 'Close consultation booking',
+  name: 'Name', email: 'Email', date: 'Preferred date', timezone: 'Your timezone',
+  time: 'Available time', description: 'Brief project description (optional)',
+  choose: 'Choose an available time', loading: 'Checking calendar availability…',
+  noSlots: 'No appointments are available on this date. Please choose another date.',
+  unavailable: 'Online booking is not available yet. Please try again later. No appointment has been created.',
+  failure: 'We could not complete this step. Please try again.',
+  confirm: 'Confirm this 30-minute appointment', submit: 'Confirm appointment',
+  submitting: 'Confirming your appointment…',
+  pending: 'We are checking the result of your booking. Please retry this request; do not submit a second booking. Your details have been kept.',
+  retry: 'Check booking status', confirmed: 'Your consultation is confirmed',
+  invitation: 'A calendar invitation has been requested for your email address.',
+  meet: 'Join Google Meet', schedule: 'Consultation calendar timezone:',
+  privacy: 'Your name, email, and optional project description are used to arrange this consultation. Please do not include sensitive information.',
+} as const;

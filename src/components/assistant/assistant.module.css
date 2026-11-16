@@ -107,3 +107,5 @@
 @media (prefers-reduced-motion: reduce) {
   .root *, .panel::backdrop { animation: none !important; transition: none !important; }
 }
+
+.composer .bookingAction { display:block; width:auto; height:auto; margin:0 2px 10px auto; border:0; padding:0; background:transparent; color:var(--assistant-graphite); font:inherit; font-size:11px; text-decoration:underline; text-underline-offset:3px; }

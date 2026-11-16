@@ -4,6 +4,7 @@ import { Footer } from '@/components/footer';
 import { FloatingConsultation } from '@/components/floating-consultation';
 import { AssistantLauncher } from '@/components/assistant/AssistantLauncher';
 import { site } from '@/content/site';
+import { BookingProvider } from '@/components/booking/booking-provider';
 import './globals.css';
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
@@ -11,5 +12,5 @@ export const metadata: Metadata = {
   description: site.seo.home.description,
 };
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return <html lang="en"><body><a className="skip-link" href="#main">{site.accessibility.skip}</a><div className="site-content"><Header />{children}<Footer /></div><FloatingConsultation /><AssistantLauncher /></body></html>;
+  return <html lang="en"><body><BookingProvider><a className="skip-link" href="#main">{site.accessibility.skip}</a><div className="site-content"><Header />{children}<Footer /></div><FloatingConsultation /><AssistantLauncher /></BookingProvider></body></html>;
 }

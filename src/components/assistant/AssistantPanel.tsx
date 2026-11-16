@@ -7,8 +7,11 @@ import { AssistantMessage } from './AssistantMessage';
 import { useGreetingSequence, useReducedMotion } from './useAssistant';
 import type { ScoutConversationState } from './useScoutConversation';
 import styles from './assistant.module.css';
+import { bookingCopy } from '@/content/booking';
+import { useBooking } from '@/components/booking/booking-provider';
 
 export function AssistantPanel({ onClose, conversation }: { onClose: (restoreFocus: boolean) => void; conversation: ScoutConversationState }) {
+  const openBooking = useBooking();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const feedbackRef = useRef<HTMLDivElement>(null);
@@ -87,6 +90,7 @@ export function AssistantPanel({ onClose, conversation }: { onClose: (restoreFoc
         <div ref={feedbackRef} />
       </div>
       <footer className={styles.composer}>
+        <button type="button" className={styles.bookingAction} onClick={openBooking}>{bookingCopy.open}</button>
         <p id="scout-availability" className={styles.availability}>{copy.availability}</p>
         <form onSubmit={event => { event.preventDefault(); void send(); }}>
           <label htmlFor="scout-draft" className={styles.srOnly}>{copy.inputLabel}</label>

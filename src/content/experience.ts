@@ -122,7 +122,7 @@ export const experience = {
       { title: 'The outcome you need', description: 'What should work differently, and what constraints do we need to respect?' },
     ],
     contactTitle: 'Contact details are being prepared.', contactNote: 'A direct contact method has not yet been configured on this website. No inquiry is submitted from this page.',
-    bookTitle: 'Online scheduling is not connected yet.', bookNote: 'A scheduling link will be added once it is available. No appointment is created from this page.',
+    bookTitle: 'Book a free 30-minute consultation.', bookNote: 'Choose an available time and explicitly confirm your appointment to receive Google Meet details.',
     contactLink: { label: 'View consultation details', href: '/book' }, bookLink: { label: 'Explore our services', href: '/#services' },
   },
 };
