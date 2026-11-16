@@ -47,7 +47,7 @@ export function FaqDialog({ content, consultation, triggerRef, onClose, dialogId
         <h3 id={`${dialogId}-question-${index + 1}`}>{item.question}</h3>
         {item.paragraphs.map(paragraph => <p key={paragraph}>{paragraph}</p>)}
       </section>)}
-      <div className={styles.consultation}><Link className="button" href={consultation.href} onNavigate={onClose}>{consultation.label}<Arrow /></Link></div>
+      <div className={styles.consultation}><Link className="button" href={consultation.href} onClick={onClose}>{consultation.label}<Arrow /></Link></div>
     </div>
   </dialog>;
 }

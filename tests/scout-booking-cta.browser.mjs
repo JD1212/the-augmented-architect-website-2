@@ -22,7 +22,7 @@ try{
  const ev=async expression=>{const r=await send('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});if(r.exceptionDetails)throw Error(JSON.stringify(r.exceptionDetails));return r.result.value;};
  const until=async expression=>{for(let i=0;i<350;i++){if(await ev(expression))return;await sleep(50)}throw Error('Timeout '+expression)};
  const check=(value,label)=>{assert(value,label);report.checks.push(label);console.log('PASS '+label)};
- const nav=async path=>{await send('Page.navigate',{url:origin+path});await until("document.readyState==='complete'&&!!document.querySelector('main')");await ev("document.querySelectorAll('img').forEach(i=>i.loading='eager')");await until("[...document.images].every(i=>i.complete)");};
+ const nav=async path=>{await send('Page.navigate',{url:origin+path});await until("document.readyState==='complete'&&!!document.querySelector('main')");await ev("document.querySelectorAll('img').forEach(i=>i.loading='eager')");await until("[...document.images].every(i=>i.complete)");await until("!!document.querySelector('[aria-label=\"Open Scout, AI Architecture Guide\"]')");};
  const shot=async(name,selector)=>{
   let params={format:'png',captureBeyondViewport:false};
   // A mobile scroll container clips beyond-viewport screenshots. Expand it only
@@ -72,6 +72,11 @@ try{
    await click('.site-footer a[href="/book"]');await checkEntry('footer '+path+' '+width);await close();
    const count=await ev("document.querySelectorAll('main a[href=\"/book\"]').length");for(let i=0;i<count;i++){await ev(`document.querySelectorAll('main a[href="/book"]')[${i}].click()`);await checkEntry('page CTA '+i+' '+path+' '+width);await close();}
    if(path==='/book'){await click('main button.button');await checkEntry('direct booking page '+width);await close();}
+   if(path==='/contact'){await until("!!document.querySelector('.consultation-dock a[href=\"/book\"]')");await click('.consultation-dock a[href="/book"]');await checkEntry('floating CTA '+width);await close();}
+   if(['/ai-solutions','/salesforce','/custom-applications'].includes(path)){
+    await until("!!document.querySelector('[data-faq-launcher]')");await click('[data-faq-launcher]');await until("!!document.querySelector('[data-service-faq-dialog][open]')");await click('[data-service-faq-dialog] a[href="/book"]');await checkEntry('FAQ CTA '+path+' '+width);
+    check(await ev("!document.querySelector('[data-service-faq-dialog][open]')&&document.querySelectorAll('dialog[open]').length===1"),'FAQ closes when its consultation CTA opens Scout '+path+' '+width);await close();
+   }
   }
   // All details together, in a deliberately natural/non-form order.
   messages=[];posts=[];resets=0;proposals=[];await nav('/about');await click('.site-footer a[href="/book"]');await opened();
