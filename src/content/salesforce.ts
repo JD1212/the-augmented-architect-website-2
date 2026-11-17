@@ -42,7 +42,7 @@ export const salesforceOffering = {
     },
     benefits: [
       ['Separate responsibilities', 'Individual Apex handlers and compatible auto-launched Flows hold distinct business logic. Developers can maintain separate implementations without repeatedly editing the same trigger source.'],
-      ['Change the plan, not the trigger', 'Custom Metadata selects eligible active actions for each object and trigger operation, with explicit execution ordering. Registry changes do not require changing the trigger source.'],
+      ['Change the plan, not the trigger', 'Custom Metadata selects eligible active actions for each object and trigger operation, with explicit execution ordering. Registration Manager provides a practical interface for maintaining supported registrations. Registry changes do not require changing the trigger source.'],
     ],
     boundary: 'Metadata writes still require proper authorization and deployment. Runtime orders registered actions, not every native Flow or automation; Salesforce controls its overall order of execution. Handler and Flow implementations require testing and review.',
   },

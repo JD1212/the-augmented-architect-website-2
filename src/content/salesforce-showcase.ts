@@ -81,3 +81,66 @@ export const captureAssets: Readonly<Record<number, CaptureAsset>> = {
   13: {"src": "/images/salesforce-showcase/13-wizard-register.png", "width": 1935, "height": 580, "alt": "Inactive registration review for My_Account_Handler_AFTER_INSERT"},
   14: {"src": "/images/salesforce-showcase/14-registration-success.png", "width": 2046, "height": 1082, "alt": "Captured fourth inactive Account action, under AFTER_INSERT at order 100"},
 };
+
+export type MarketingCapture = { title: string; description: string; asset: CaptureAsset };
+
+export const realSalesforceShowcase = {
+  enlarge: 'Enlarge screenshot',
+  actual: 'Actual product capture from a fictional scratch org. Captured controls are not interactive on this website.',
+  workflowLabel: 'A PRACTICAL DEVELOPMENT WORKFLOW',
+  workflow: ['Discover', 'Inspect', 'Open in VS Code', 'Develop with AI assistance', 'Review and validate'],
+  discoveryTitle: 'Less time hunting through automation. More time improving it.',
+  discoveryDescription: 'Use Salesforce metadata and Tooling API capabilities to explore available Apex triggers, record-triggered Flows, and related metadata for a selected object. Inspect confirmed relationships where supported before planning a change.',
+  fieldsLabel: 'Inspect referenced fields',
+  registrationsLabel: 'See the Registration Manager example',
+  captureBoundary: 'These are fictional scratch-org examples. The new Account Explorer shows four registered actions; the earlier Registration Manager example shows three inactive actions at orders 100, 200, and 300. The Explorer reports no matching record-triggered Flows. Inactive registrations do not demonstrate executed automation, and dependency inspection is not exhaustive.',
+  workspaceTitle: 'From Salesforce trigger to AI-ready workspace.',
+  workspaceDescription: 'Open relevant available source and metadata in a focused VS Code workspace. Generated AUGARCH_CONTEXT.md, AGENTS.md, and related guidance give your preferred AI coding assistant a clearer starting point for investigation, refactoring, code and test development.',
+  workspaceBoundary: 'The captures show retrieved files, a manifest, and a generated context snapshot—not completed AI debugging or successful deployment. Developers still review changes, run tests, obtain authorization, and deploy through a controlled process.',
+  overview: {
+    title: 'Architecture Command Center',
+    description: 'A starting point for object-level discovery, dependency inspection, and supported Trigger Action registration workflows.',
+    asset: { src: '/images/salesforce-showcase-2/command-center-overview.png', width: 2035, height: 520, alt: 'Architecture Command Center home with Architecture Explorer, Registration Manager, Automation Portfolio and Audit Center entry points' },
+  },
+  explorer: {
+    title: 'Discover object-level automation',
+    description: 'Account architecture with one inactive Apex trigger, no matching record-triggered Flows, and four registered Trigger Actions. The action list continues beyond the captured viewport.',
+    asset: { src: '/images/salesforce-showcase-2/architecture-explorer.png', width: 2048, height: 886, alt: 'Account Architecture Explorer with object, phase, operation and status filters, one inactive trigger, zero matching Flows and four Trigger Actions' },
+  },
+  dependencies: {
+    title: 'Inspect confirmed relationships',
+    description: 'The Opportunity trigger inspector identifies DemoLegacySalesPolicyService, the Opportunity object, and supported referenced fields.',
+    asset: { src: '/images/salesforce-showcase-2/trigger-dependencies.png', width: 1190, height: 1468, alt: 'Inactive Opportunity trigger dependency inspector showing before-insert and before-update contexts and confirmed Apex service, object and field relationships' },
+  },
+  fields: {
+    title: 'Referenced field detail',
+    description: 'A closer look at the six referenced Opportunity fields in this captured dependency tree.',
+    asset: { src: '/images/salesforce-showcase-2/metadata-field-dependencies.png', width: 872, height: 1364, alt: 'Confirmed relationships to the Opportunity service class, object and six demo custom fields' },
+  },
+  registrations: {
+    title: 'Maintain independent Trigger Actions',
+    description: 'The earlier Registration Manager capture shows three inactive BEFORE_UPDATE actions at configured orders 100, 200, and 300. Custom Metadata records define supported registrations, order, and active state.',
+    asset: captureAssets[2],
+  },
+  open: {
+    title: 'Open in VS Code',
+    description: 'Use the captured inspector action to hand the selected context to the optional local extension.',
+    asset: { src: '/images/salesforce-showcase-2/open-in-vscode-action.png', width: 746, height: 117, alt: 'Actual inspector footer with Close and Open in VS Code buttons' },
+  },
+  source: {
+    title: 'Retrieve a focused working set',
+    description: 'The workspace includes the Opportunity trigger, its supporting Apex service, a retrieval manifest, and development guidance. The editor shown here contains package.xml.',
+    asset: { src: '/images/salesforce-showcase-2/vscode-source-files.png', width: 1973, height: 1025, alt: 'VS Code Explorer with retrieved Opportunity trigger and Apex service files, AGENTS.md, AUGARCH_CONTEXT.md and an open package.xml manifest' },
+  },
+  context: {
+    title: 'Give AI assistants architecture context',
+    description: 'AUGARCH_CONTEXT.md records the selected trigger, metadata context, and retrieved working set. It is a timestamped snapshot; org identity details have been redacted.',
+    asset: { src: '/images/salesforce-showcase-2/vscode-ai-context.png', width: 1770, height: 1390, alt: 'Generated AUGARCH_CONTEXT.md in VS Code showing its snapshot caveat, trigger context and supporting source paths, with org identity rows redacted' },
+  },
+} as const satisfies {
+  enlarge: string; actual: string; workflowLabel: string; workflow: readonly string[];
+  discoveryTitle: string; discoveryDescription: string; fieldsLabel: string; registrationsLabel: string; captureBoundary: string;
+  workspaceTitle: string; workspaceDescription: string; workspaceBoundary: string;
+  overview: MarketingCapture; explorer: MarketingCapture; dependencies: MarketingCapture; fields: MarketingCapture;
+  registrations: MarketingCapture; open: MarketingCapture; source: MarketingCapture; context: MarketingCapture;
+};

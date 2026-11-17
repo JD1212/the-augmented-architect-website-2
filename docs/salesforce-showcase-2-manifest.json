@@ -1,0 +1,137 @@
+{
+  "method": "Deterministic crop and opaque pixel redaction; lossless PNG, no resampling, generated UI, color grading or metadata retention.",
+  "sources": "Original ZIP archived intact in ignored .local-assets/salesforce-website-captures/salesforce-showcase-2/. Raw temporary extractions are outside public/.",
+  "images": [
+    {
+      "source": "01-command-center-home.png",
+      "file": "command-center-overview.png",
+      "crop": {
+        "left": 9,
+        "top": 120,
+        "width": 2035,
+        "height": 520
+      },
+      "note": "Remove Salesforce shell, unrelated Personal Information tab, and excess lower background; keep all four workspace tiles.",
+      "sourceSha256": "06192884e2c410950e4f67eaac3f485f3efcd7f3167987c8e1910b2abb789d36",
+      "outputSha256": "77da9e897e10c3c4c0512e8ecfbdd7f918df02eaf5eff303dca504c2de80c495",
+      "originalBytes": 470896,
+      "outputBytes": 368727
+    },
+    {
+      "source": "02-architecture-explorer-account.png",
+      "file": "architecture-explorer.png",
+      "crop": {
+        "left": 0,
+        "top": 105,
+        "width": 2048,
+        "height": 886
+      },
+      "note": "Remove Salesforce shell and hover tooltip. Captured viewport shows one inactive trigger, zero matching Flows, four Trigger Actions; action list continues below viewport.",
+      "sourceSha256": "7b3ddb9858f693c0972fcb90bbe43b812c6656fbc4ad95f2c15fd9c0f4d6de7c",
+      "outputSha256": "637a243cef5ecdac26cee26dcb79ea2ac7d2d0eca35fabe5d3c42671d605a023",
+      "originalBytes": 465908,
+      "outputBytes": 429230
+    },
+    {
+      "source": "08-opportunity-confirmed-dependencies.png",
+      "file": "trigger-dependencies.png",
+      "crop": {
+        "left": 0,
+        "top": 0,
+        "width": 1190,
+        "height": 1468
+      },
+      "note": "Keep inspector identity, inactive status, operation contexts, confirmed service and metadata relationships. Remove partial last field at source bottom.",
+      "sourceSha256": "c1bf603e918f77b7c7da738b326b3f8d456f6cdd4792d5f64a8d29003e7b0b8f",
+      "outputSha256": "7b27641077484cde95f2fed5f1f6ee8e87d3afcbb35ae5bd3337b96d76d8e224",
+      "originalBytes": 205497,
+      "outputBytes": 198152
+    },
+    {
+      "source": "09-opportunity-field-dependencies-detail.png",
+      "file": "metadata-field-dependencies.png",
+      "crop": {
+        "left": 0,
+        "top": 0,
+        "width": 872,
+        "height": 1364
+      },
+      "note": "Retain complete supplied field-dependency detail at native resolution.",
+      "sourceSha256": "f02c114ebbecb4a3f287381db41da3d05ee700620ab61bbc8a6ec78847f1bca0",
+      "outputSha256": "007fc353b070c7fa36f3aaf0d56f073e5ab100dc1e5d0d8a284e9e0680fe0bbb",
+      "originalBytes": 156516,
+      "outputBytes": 155154
+    },
+    {
+      "source": "06-open-in-vscode-action.png",
+      "file": "open-in-vscode-action.png",
+      "crop": {
+        "left": 0,
+        "top": 245,
+        "width": 746,
+        "height": 117
+      },
+      "note": "Isolate authentic Close/Open in VS Code controls. This is a supporting detail, not proof of successful retrieval by itself.",
+      "sourceSha256": "ddbdaf4ee8738e0dfab1dfa1b7f0488214d28837215f2e6dd3afa25d26118b81",
+      "outputSha256": "71e31ce64af4f46475c539cf0064b3584826ffd8252c69435c6bd7716c5d98f1",
+      "originalBytes": 17982,
+      "outputBytes": 9652
+    },
+    {
+      "source": "10-vscode-opportunity-source-files.png",
+      "file": "vscode-source-files.png",
+      "crop": {
+        "left": 75,
+        "top": 45,
+        "width": 1973,
+        "height": 1025
+      },
+      "note": "Remove OS title bar, activity rail, and lower empty area; preserve retrieved class/trigger tree, manifest, support documents and authentic Git status indicators. Editor shows package.xml, not Apex source body.",
+      "sourceSha256": "71568ffd1ab07a14ad214c4ba3dbaf2fa2fc116ba949216458ee30eaf5d4c1f3",
+      "outputSha256": "cb3b541cb7e0c2f50feda90cb460baa23a3c8ae1fdddc8d87a628fee7411b10b",
+      "originalBytes": 396942,
+      "outputBytes": 338863
+    },
+    {
+      "source": "11-vscode-ai-context-sensitive.png",
+      "file": "vscode-ai-context.png",
+      "crop": {
+        "left": 75,
+        "top": 58,
+        "width": 1770,
+        "height": 1390
+      },
+      "redactions": [
+        {
+          "left": 738,
+          "top": 604,
+          "width": 1107,
+          "height": 170
+        }
+      ],
+      "note": "Opaque redaction removes source org ID, alias, username and wrapped instance URL rows. Crop excludes entire minimap to prevent duplicate identity exposure. Preserve snapshot caveat, context and retrieved working-set paths.",
+      "sourceSha256": "a45be020b9497cacaf4e760b08b1083953ead4a226a797744f562c3a35ded8f6",
+      "outputSha256": "0ef166c63b4090249d420b0f62eb252c744111c358fcedaf2802437d4b5b2fb4",
+      "originalBytes": 819998,
+      "outputBytes": 657091
+    }
+  ],
+  "excluded": [
+    {
+      "source": "03-apex-inspector-error-exclude.png",
+      "reason": "Visible Disconnected or Canceled error."
+    },
+    {
+      "source": "04-apex-dependencies-account-error-exclude.png",
+      "reason": "Visible Disconnected or Canceled error."
+    },
+    {
+      "source": "05-vscode-account-trigger-metadata.png",
+      "reason": "Red XML diagnostic underline and single diagnostic; weaker than the clean Opportunity workspace. No error was retouched away."
+    },
+    {
+      "source": "07-architecture-explorer-account-wide.png",
+      "reason": "Near duplicate of 02; top controls and lower action content already clipped. 02 preserves more complete top navigation."
+    }
+  ]
+}

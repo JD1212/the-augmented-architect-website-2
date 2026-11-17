@@ -1,34 +1,39 @@
-import { salesforceOffering } from '@/content/salesforce';
-import { actions } from '@/content/salesforce-showcase';
-import { ActionRow, Badge, Panel } from './product-interfaces';
-import product from './showcase.module.css';
+import { realSalesforceShowcase as content, type MarketingCapture } from '@/content/salesforce-showcase';
+import { CaptureImage } from './showcase-controls';
 import styles from './consulting-proof.module.css';
+import product from './showcase.module.css';
 
-// Focused, read-only portions of the already captured interfaces. No simulated
-// application controls or org operations are mounted on the consulting page.
+function Proof({ capture, compact = false }: { capture: MarketingCapture; compact?: boolean }) {
+  return <figure className={compact ? styles.compact : styles.proof} data-product-proof>
+    <CaptureImage asset={capture.asset} title={capture.title} notice={content.actual} hint={content.enlarge} className={styles.imageTrigger} imageClassName={styles.image} />
+    <figcaption><h3>{capture.title}</h3><p>{capture.description}</p></figcaption>
+  </figure>;
+}
+
 export function ConsultingProof() {
-  const content = salesforceOffering.tools;
-  return <div>
-    <div className={styles.grid}>
-      {content.proofs.map((proof, index) => <figure key={proof.title} className={styles.proof} data-product-proof>
-        <div className={product.showcase}>
-          <div className={styles.scroll} role="region" tabIndex={0} aria-label={`${proof.title}: focused capture reconstruction; scroll horizontally if needed`}>
-            <div className={styles.application}>
-              <header><span>{proof.title}</span><span>{index === 0 ? content.discovery.context : content.sequence.context}</span></header>
-              {index === 0 ? <>
-                <h3>{content.discovery.title}</h3>
-                <div className={styles.discovery}>
-                  <div><Panel title={content.discovery.triggerLabel} count={1}><strong>{content.discovery.trigger}</strong><div className={product.badges}><Badge>APEX</Badge><Badge tone="inactive">{content.discovery.status}</Badge></div><p className={styles.operation}>BEFORE_UPDATE</p></Panel></div>
-                  <div><Panel title={content.discovery.flowLabel} count={Number(content.discovery.flowCount)}><p>{content.discovery.flowNote}</p></Panel></div>
-                </div>
-                <div className={styles.registered}><strong>{content.discovery.actionsLabel} <span>{content.discovery.actionCount}</span></strong><ul>{actions.map(action => <li key={action.name}><span>{action.name}</span><Badge tone="inactive">{content.discovery.status}</Badge></li>)}</ul></div>
-              </> : <><h3>{content.sequence.title}</h3>{actions.map(action => <ActionRow key={action.name} action={action} compact />)}</>}
-            </div>
-          </div>
-        </div>
-        <figcaption><h3>{proof.title}</h3><p>{proof.description}</p><small>{content.proofLabel}</small></figcaption>
-      </figure>)}
+  return <div className={`${product.palette} ${styles.showcase}`}>
+    <div className={styles.overview}><Proof capture={content.overview} /></div>
+    <div className={styles.workflow}>
+      <p className="eyebrow">{content.workflowLabel}</p>
+      <ol>{content.workflow.map((step, index) => <li key={step}><span aria-hidden="true">0{index + 1}</span>{step}</li>)}</ol>
     </div>
-    <p className={styles.note}>{content.proofNote}</p>
+    <div className={styles.heading}><h3>{content.discoveryTitle}</h3><p>{content.discoveryDescription}</p></div>
+    <div className={styles.grid}>
+      <div>
+        <Proof capture={content.explorer} />
+        <details className={styles.detail}><summary>{content.registrationsLabel}</summary><Proof capture={content.registrations} /></details>
+      </div>
+      <div>
+        <Proof capture={content.dependencies} />
+        <details className={styles.detail}><summary>{content.fieldsLabel}</summary><Proof capture={content.fields} /></details>
+      </div>
+    </div>
+    <p className={styles.note}>{content.captureBoundary}</p>
+    <div className={styles.workspaceHeading}>
+      <div className={styles.heading}><h3>{content.workspaceTitle}</h3><p>{content.workspaceDescription}</p></div>
+      <Proof capture={content.open} compact />
+    </div>
+    <div className={styles.grid}><Proof capture={content.source} /><Proof capture={content.context} /></div>
+    <p className={styles.note}>{content.workspaceBoundary}</p>
   </div>;
 }
