@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { site } from '@/content/site';
-import { salesforceOffering as content } from '@/content/salesforce';
+import { salesforcePageOffering as content } from '@/content/salesforce';
 import { Arrow } from '@/components/icon';
 import { ConsultingProof } from './consulting-proof';
 import { SalesforceCommercialOffer } from './commercial-offer';
@@ -47,18 +47,18 @@ export function SalesforcePage() {
       <div className={styles.sectionHeading}><p className="eyebrow">{content.architecture.eyebrow}</p><h2 id="sf-architecture">{content.architecture.title}</h2><p>{content.architecture.description}</p></div>
       <RegistryDiagram />
       <div className={styles.architectureBenefits}>{content.architecture.benefits.map(([title, description]) => <div key={title}><h3>{title}</h3><p>{description}</p></div>)}</div>
+      <p className={styles.ownership}>{content.architecture.ownership}</p>
       <p className={styles.boundary}>{content.architecture.boundary}</p>
     </div></section>
     <section id="salesforce-tools" className={`section ${styles.tools}`} aria-labelledby="sf-tools"><div className="container">
       <div className={styles.sectionHeading}><p className="eyebrow">{content.tools.eyebrow}</p><h2 id="sf-tools">{content.tools.title}</h2><p>{content.tools.description}</p></div>
       <ConsultingProof />
-      <div className={styles.toolCapabilities}>{content.tools.capabilities.map(([title, description]) => <div key={title}><h3>{title}</h3><p>{description}</p></div>)}</div>
       <p className={styles.context}>{content.tools.context}</p><p className={styles.small}>{content.tools.relationship}</p>
     </div></section>
     <section className={`section ${styles.approach}`} aria-labelledby="sf-approach"><div className="container">
       <div className={styles.sectionHeading}><p className="eyebrow">{content.approach.eyebrow}</p><h2 id="sf-approach">{content.approach.title}</h2><p>{content.approach.description}</p></div>
       <ol className={styles.stages}>{content.approach.stages.map(([title, description], index) => <li key={title}><span className={styles.stageNumber}>0{index + 1}</span><h3>{title}</h3><p>{description}</p></li>)}</ol>
-      <div className={styles.aiNote}><p>{content.approach.ai}</p><p>{content.approach.aiBoundary}</p></div>
+      <div className={styles.aiNote}><p>{content.approach.aiBoundary}</p></div>
     </div></section>
     {trialEnabled && <SalesforceCommercialOffer />}
     <section className={`section consultation-section ${styles.closing}`} aria-labelledby="sf-consultation"><div className="container consultation-inner"><div><h2 id="sf-consultation">{content.closing.title}</h2><p>{content.closing.description}</p></div><div className="consultation-action"><ConsultationLink /></div></div></section>

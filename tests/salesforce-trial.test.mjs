@@ -30,7 +30,7 @@ function scheduling(){
 }
 test('owner-approved guided trial booking is public without package licensing prerequisites',()=>{
  assert.equal(copy.trialBookingEnabled,true);assert.equal(trial.salesforceTrialEnabled(),true);
- assert.match(copy.trial.arrangement,/personally handle eligibility, installation/);
+ assert.match(copy.trial.arrangement,/free 30-minute appointment/);assert.match(copy.trial.arrangement,/guided evaluation/);
  assert.match(copy.trial.eventDetails,/does not automatically install, activate, or expire/);
  const standard=readFileSync('src/lib/scout/skills/consultation-scheduling/SKILL.md','utf8');
  const {loadSchedulingSkill}=loadScoutModule('src/lib/scout/scheduling-skill.ts');

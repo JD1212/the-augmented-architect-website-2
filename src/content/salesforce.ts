@@ -103,3 +103,43 @@ export const salesforceFaq = {
     { question: 'How does Salesforce modernization prepare us for AI?', paragraphs: ['Clearer automation boundaries, reliable business data, well-defined permissions, and maintainable integration points help create a better foundation for introducing AI capabilities into business workflows.'] },
   ],
 } as const satisfies ServiceFaqCopy;
+
+/** Page presentation copy; keep the existing Scout knowledge source unchanged. */
+export const salesforcePageOffering = {
+  ...salesforceOffering,
+  hero: {
+    ...salesforceOffering.hero,
+    description: "Stop spending hours tracing automation through triggers, Flows, and scattered code.",
+    supporting: "Our proprietary tools bring your Salesforce architecture into one workspace, help developers understand dependencies, and make modernization more manageable.",
+    emphasis: "Modernize your architecture. Keep the foundation.",
+  },
+  problem: {
+    ...salesforceOffering.problem,
+    title: "Why does one small Salesforce change take so much work?",
+    description: "Your Salesforce org may be running just fine. But years of customization can make even simple updates complicated, expensive, and risky.",
+    points: [
+      "A simple change requires hours of investigation.",
+      "Nobody wants to touch an old trigger because they're afraid of breaking something.",
+      "Developers spend more time understanding existing code than building new features.",
+      "Automation is scattered across Apex, Flows, and configuration.",
+      "Multiple developers have to work in the same shared files.",
+      "Every change requires extra coordination and careful regression testing."
+    ],
+  },
+  architecture: {
+    ...salesforceOffering.architecture,
+    title: "One trigger. Independent responsibilities. Easier changes.",
+    description: "Our proprietary Trigger Runtime connects one thin Apex trigger to independent handlers and supported auto-launched Flows. Developers can work on separate business responsibilities without repeatedly changing the same large trigger.",
+    ownership: "When we implement this architecture for your business, you keep the working Trigger Runtime foundation—even if you don't continue with our optional management software.",
+  },
+  tools: {
+    ...salesforceOffering.tools,
+    title: "Your Salesforce architecture, in one workspace.",
+    description: "Architecture Command Center connects object-level discovery, dependency inspection, and supported registration management with a focused VS Code development workflow.",
+  },
+  approach: {
+    ...salesforceOffering.approach,
+    title: "A focused engagement, from assessment to handoff.",
+    description: "Start with one object and a defined plan. Validate each change before expanding, without committing to an entire org rewrite.",
+  },
+} as const;
