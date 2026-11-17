@@ -45,9 +45,8 @@ export const assistantContent = {
   contactLabel: 'Go to Contact',
   bookingLinkLabel: 'Book Consultation',
   bookingEntry: {
-    introduction: "I'd be happy to schedule your free 30-minute consultation! Just tell me your name, email address, and a day and time that works for you. I'll check availability and take care of the rest.",
+    request: "I'd like to book a free 30-minute consultation.",
     manual: 'Use the booking form instead',
-    tooLong: 'Please shorten your booking details slightly, then send again. Your draft has been kept.',
   },
   starters: [
     { label: 'What can you build for my business?', href: '/custom-applications', message: 'What can you build for my business?' },

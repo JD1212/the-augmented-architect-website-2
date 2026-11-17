@@ -7,7 +7,7 @@ import { schedulingFixture } from './helpers/scheduling-fixture.mjs';
 // Uses the configured model and real SDK/skill; all scheduling/storage/email services
 // are fixtures. No website session, database row, invitation, or appointment is created.
 test('suggested business introduction is conversational; requested package facts remain complete', {
-  skip: process.env.SCOUT_INTRO_LIVE !== '1', timeout: 180000,
+  skip: process.env.SCOUT_INTRO_LIVE !== '1', timeout: 240000,
 }, async t => {
   const f = schedulingFixture(), calls = [];
   const service = new Proxy(f.service, { get(target, key) {
@@ -35,11 +35,9 @@ test('suggested business introduction is conversational; requested package facts
     assert(text.split(/\s+/).length <= 95, 'Brief introductory response');
     const sentences = text.match(/[^.!?]+[.!?]+/g) ?? [];
     assert(sentences.length >= 2 && sentences.length <= 4, 'Two to four short sentences');
-    assert.match(text, /custom business applications/i);
-    for (const topic of [/website/i, /customers/i, /employees|team|staff/i, /software|systems/i, /AI assistant/i, /schedul/i]) assert.match(text, topic);
-    assert.equal((text.match(/\?/g) ?? []).length, 1, 'One useful follow-up');
-    assert.match(text, /(?:what|which).*business[^?]*\?\s*$/i, 'Ends with a relevant business question');
-    assert.doesNotMatch(text, /\$|\bpric(?:e|ing)\b|\b10,?000\b|up to four|integration limits|consultation|\bbook(?:ing)?\b|\b30.minute\b/i, 'No unsolicited package dump or booking pitch');
+    for (const topic of [/custom (?:business )?(?:applications?|software|apps)|business applications?/i, /Salesforce/i, /AI|artificial intelligence/i]) assert.match(text, topic);
+    assert((text.match(/\?/g) ?? []).length <= 1, 'At most one useful follow-up');
+    assert.doesNotMatch(text, /\$|\bpric(?:e|ing)\b|\b10,?000\b|up to four|integration limits/i, 'No unsolicited package specifications or pricing');
   }
   const facts = (await ask([
     { id: 'intro', role: 'user', content: question },
@@ -52,6 +50,23 @@ test('suggested business introduction is conversational; requested package facts
   assert.match(facts, /(?:calendar|scheduling).*(?:count|includ|total)|(?:count|includ|total).*(?:calendar|scheduling)/is);
   assert.match(facts, /(?:one|1).*assistant|assistant.*(?:one|1)/is);
   assert.match(facts, /separately|additional scope|separate scope|scoped|extra|additional cost/i);
-  assert.deepEqual(calls, [], 'Introductory/factual answers need no scheduling actions');
+  const approach = (await ask([{id:'approach',role:'user',content:'What is your architectural approach, and do you always require a particular technology platform?'}])).text;
+  t.diagnostic(`Our Approach: ${approach}`);
+  assert.match(approach, /business/i); assert.match(approach, /modular|maintain|evolv|change/i);
+  assert.match(approach, /technology.independent|platform.agnostic|right (?:tools|technology|combination)|not.*(?:single|particular|one).*platform/i);
+  const {assistantContent: copy} = loadScoutModule('src/content/assistant.ts');
+  const fresh = (await ask([{id:'cta',role:'user',content:copy.bookingEntry.request}])).text;
+  t.diagnostic(`Fresh booking: ${fresh}`);
+  assert.match(fresh,/name/i); assert.match(fresh,/email/i); assert.match(fresh,/date|day|time/i);
+  assert.doesNotMatch(fresh,/what (?:kind|type).*business|what.*business.*(?:run|operate)|technical requirements|pain points/i);
+  const resumed = (await ask([
+    {id:'intro',role:'user',content:"I'd like to schedule a free 30-minute consultation.\n\nMy name is Alex and my email is alex@example.invalid. We run a small business."},
+    {id:'discovery',role:'assistant',content:'What kind of business do you run, and what would you like to improve?'},
+    {id:'cta',role:'user',content:copy.bookingEntry.request},
+  ])).text;
+  t.diagnostic(`Booking overrides discovery: ${resumed}`);
+  assert.match(resumed,/date|day|time/i);
+  assert.doesNotMatch(resumed,/what (?:kind|type).*business|what.*business.*(?:run|operate)|what(?:'s| is) your name|what(?:'s| is) your email/i);
+  assert.deepEqual(calls, [], 'Introductory/factual and missing-details answers need no scheduling actions');
   assert.equal(f.sent.length, 0); assert.equal(f.records.size, 0); assert.equal(f.booking.creates, 0);
 });

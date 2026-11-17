@@ -8,7 +8,7 @@ import { readScoutStream } from '@/lib/scout/stream';
 import { fetchScoutSnapshot, submitScoutTurn } from '@/lib/scout/transport';
 import { createScoutVisit } from '@/lib/scout/visit';
 
-type FailedTurn = { id: string; message: string };
+type FailedTurn = { id: string; message: string; preserveDraft?: boolean };
 export function useScoutConversation() {
   const [messages, setMessages] = useState<ScoutMessage[]>([]);
   const [draft, setDraft] = useState('');
@@ -108,12 +108,13 @@ export function useScoutConversation() {
     return () => clearInterval(timer);
   }, [busy, restore]);
 
-  async function send(message = draft, retry = false) {
+  async function send(message = draft, retry = false, preserveDraft = false) {
     if (active.current || busy || loading || returning || restoreFailed || !message.trim()) return;
     active.current = true;
-    const turn = retry && failed ? failed : { id: crypto.randomUUID(), message: message.trim() };
+    const turn = retry && failed ? failed : { id: crypto.randomUUID(), message: message.trim(), preserveDraft };
+    const keepDraft = turn.preserveDraft === true;
     const abort = new AbortController(); controller.current = abort;
-    setBusy(true); setError(''); setPartial(''); setFailed(null); setDraft('');
+    setBusy(true); setError(''); setPartial(''); setFailed(null); if (!keepDraft) setDraft('');
     visit.current?.accept();
     setMessages(previous => previous.some(m => m.id === turn.id) ? previous : [...previous, { id: turn.id, role: 'user', content: turn.message }]);
     let completed = false;
@@ -131,7 +132,7 @@ export function useScoutConversation() {
         if (event.type === 'done') { completed = true; setMessages(event.messages); setPartial(''); setExpiresAt(typeof event.expiresInMs === 'number' ? Date.now() + event.expiresInMs : null); }
       });
     } catch (e) {
-      if (mounted.current && !leaving.current && visit.current?.isVisible()) { setError(e instanceof Error ? e.message : copy.failure); setFailed(turn); setPartial(''); setDraft(turn.message); }
+      if (mounted.current && !leaving.current && visit.current?.isVisible()) { setError(e instanceof Error ? e.message : copy.failure); setFailed(turn); setPartial(''); if (!keepDraft) setDraft(turn.message); }
     } finally {
       active.current = false;
       if (mounted.current && !leaving.current && visit.current?.isVisible()) { setBusy(false); if (!completed) setFailed(turn); }

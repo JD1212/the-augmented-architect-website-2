@@ -7,6 +7,7 @@ import { AssistantPanel } from './AssistantPanel';
 import { useAssistantEntrance } from './useAssistant';
 import { useAssistantIntroduction } from './useAssistantIntroduction';
 import { useScoutBookingRegistration } from '@/components/booking/booking-provider';
+import { hasBookingRequest } from '@/lib/assistant/booking-entry';
 import { useScoutConversation } from './useScoutConversation';
 import styles from './assistant.module.css';
 
@@ -22,26 +23,46 @@ function ScoutLauncher() {
   const finishIntroduction = useAssistantIntroduction(ready, openPanel);
   const launcherRef = useRef<HTMLButtonElement>(null);
   const trigger = useRef<HTMLElement | null>(null);
+  const restoreFocus = useRef(false);
   const registerBooking = useScoutBookingRegistration();
-  const [bookingEntry,setBookingEntry] = useState<{ focus: object; pending: boolean } | null>(null);
-  const freshConversation=!conversation.messages.length&&!conversation.returning&&!conversation.loading;
+  const [bookingEntry,setBookingEntry] = useState<{ focus: object } | null>(null);
+  const bookingRequested = useRef(false);
   const enterBooking = useCallback((origin: HTMLElement | null) => {
     trigger.current = origin; finishIntroduction(); setOpen(true);
-    setBookingEntry(previous => ({ focus: {}, pending: freshConversation ? true : previous?.pending ?? true }));
-  }, [finishIntroduction,freshConversation]);
+    bookingRequested.current = true;
+    setBookingEntry({focus:{}});
+  }, [finishIntroduction]);
   useEffect(() => registerBooking(enterBooking), [registerBooking,enterBooking]);
-  const consumeBooking = () => setBookingEntry(previous => previous ? {...previous,pending:false} : null);
+  useEffect(() => {
+    if (!bookingRequested.current || conversation.loading || conversation.busy || conversation.restoreFailed) return;
+    // This explicit CTA continues the existing session; restoration is not a reset.
+    if (conversation.returning) { void conversation.resume(); return; }
+    bookingRequested.current = false;
+    if (!hasBookingRequest(conversation.messages)) {
+      void conversation.send(copy.bookingEntry.request, false, true).finally(() => {
+        // Disabling the composer during the reply can blur its initial focus.
+        setBookingEntry(previous => previous ? {focus:{}} : null);
+      });
+    }
+  }, [bookingEntry,conversation]);
 
-  const close = useCallback((restoreFocus: boolean) => {
+  const close = useCallback((shouldRestoreFocus: boolean) => {
     finishIntroduction();
+    restoreFocus.current = shouldRestoreFocus;
     setOpen(false);
-    if (restoreFocus) requestAnimationFrame(() => {
+  }, [finishIntroduction]);
+  useEffect(() => {
+    if (open || !restoreFocus.current) return;
+    restoreFocus.current = false;
+    // Wait for the dialog to unmount and the launcher to become visible.
+    const frame = requestAnimationFrame(() => {
       const target=trigger.current;trigger.current=null;
       if(target?.isConnected&&target.getClientRects().length)target.focus({preventScroll:true});
       else if(target?.closest('#main-navigation'))document.querySelector<HTMLButtonElement>('.menu-toggle')?.focus({preventScroll:true});
       else launcherRef.current?.focus({preventScroll:true});
     });
-  }, [finishIntroduction]);
+    return () => cancelAnimationFrame(frame);
+  }, [open]);
 
   if (!ready && !open) return null;
   return <div className={styles.root}>
@@ -49,6 +70,6 @@ function ScoutLauncher() {
       aria-label={copy.launcherLabel} aria-haspopup="dialog" aria-expanded={open} aria-controls={open ? 'scout-panel' : undefined}>
       <AssistantAvatar /><span className={styles.launcherName}>{copy.name}</span>
     </button>
-    {open && <AssistantPanel onClose={close} conversation={conversation} bookingEntry={bookingEntry} onBookingConsumed={consumeBooking} onBookingReset={(keepBooking=false) => setBookingEntry(previous => keepBooking && previous ? {focus:{},pending:true} : null)} />}
+    {open && <AssistantPanel onClose={close} conversation={conversation} bookingEntry={bookingEntry} onBookingReset={(keepBooking=false) => { bookingRequested.current=keepBooking&&!!bookingEntry;setBookingEntry(keepBooking&&bookingEntry ? {focus:{}} : null); }} />}
   </div>;
 }

@@ -1,6 +1,7 @@
-/** An explicit booking CTA supplies user intent, not new agent instructions. */
-export const consultationIntent = "I'd like to schedule a free 30-minute consultation.\n\n";
-export function consultationMessage(details: string): string | null {
-  const message = consultationIntent + details.trim();
-  return details.trim() && message.length <= 1000 ? message : null;
+import type { ScoutMessage } from '@/lib/scout/contracts';
+
+/** UI deduplication only; the existing agent decides which booking details are missing. */
+export function hasBookingRequest(messages: readonly ScoutMessage[]): boolean {
+  return messages.some(message => message.role === 'user' &&
+    /^(?:i(?:'d| would) like to|i want to|please)?\s*(?:book|schedule)\b.{0,60}\b(?:consultation|appointment)[.!?]?\s*$/i.test(message.content.trim()));
 }

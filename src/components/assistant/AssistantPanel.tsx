@@ -12,19 +12,16 @@ import { useGreetingSequence, useReducedMotion } from './useAssistant';
 import type { ScoutConversationState } from './useScoutConversation';
 import styles from './assistant.module.css';
 import { bookingCopy } from '@/content/booking';
-import { consultationMessage } from '@/lib/assistant/booking-entry';
 import { useBooking, useManualBooking } from '@/components/booking/booking-provider';
 
-export function AssistantPanel({ onClose, conversation, bookingEntry, onBookingConsumed, onBookingReset }: {
+export function AssistantPanel({ onClose, conversation, bookingEntry, onBookingReset }: {
   onClose: (restoreFocus: boolean) => void; conversation: ScoutConversationState;
-  bookingEntry: { focus: object; pending: boolean } | null;
-  onBookingConsumed: () => void; onBookingReset: (keepBooking?: boolean) => void;
+  bookingEntry: { focus: object } | null;
+  onBookingReset: (keepBooking?: boolean) => void;
 }) {
   const openBooking = useBooking();
   const openManual = useManualBooking();
-  const [bookingError,setBookingError] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
-  const bookingIntro = useRef<HTMLDivElement>(null);
   const focusedBooking = useRef<object | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -36,8 +33,7 @@ export function AssistantPanel({ onClose, conversation, bookingEntry, onBookingC
   const inputDisabled = busy || loading || !!failed || returning || restoreFailed;
   const dictation = useSpeechDictation(draft, setDraft, inputDisabled || closing);
   const hasConversation = messages.length > 0;
-  const bookingMode=!!bookingEntry&&(bookingEntry.pending||hasConversation||returning||loading);
-  const welcome = !hasConversation && !returning && !bookingMode;
+  const welcome = !hasConversation && !returning;
   const recording = dictation.status !== 'idle';
   const restoreFocusRef = useRef(true);
 
@@ -61,7 +57,6 @@ export function AssistantPanel({ onClose, conversation, bookingEntry, onBookingC
   useEffect(() => {
     if (!bookingEntry || inputDisabled || focusedBooking.current===bookingEntry.focus) return;
     const frame=requestAnimationFrame(() => {
-      bookingIntro.current?.scrollIntoView({block:'nearest',behavior:'instant'});
       inputRef.current?.focus({preventScroll:true});
       focusedBooking.current=bookingEntry.focus;
     });
@@ -69,11 +64,8 @@ export function AssistantPanel({ onClose, conversation, bookingEntry, onBookingC
   }, [bookingEntry,inputDisabled]);
   function submitDraft() {
     if (inputDisabled || !draft.trim()) return;
-    const message=bookingEntry?.pending ? consultationMessage(draft) : draft;
-    if (!message) { setBookingError(copy.bookingEntry.tooLong);return; }
-    setBookingError('');dictation.cancel();
-    if (bookingEntry?.pending) onBookingConsumed();
-    void send(message);
+    dictation.cancel();
+    void send(draft);
   }
 
   function close(restoreFocus = true) {
@@ -104,15 +96,14 @@ export function AssistantPanel({ onClose, conversation, bookingEntry, onBookingC
       </header>
       <div className={`${styles.conversation} ${welcome ? styles.welcome : ''}`}>
         {!welcome && <p className={styles.kicker}>{copy.previewLabel}</p>}
-        {hasConversation && <button type="button" className={styles.newConversation} onClick={() => { dictation.cancel();onBookingReset();setBookingError(''); void reset(); }} disabled={busy || loading}>{copy.newConversationLabel}</button>}
-        {bookingEntry?.pending && <div ref={bookingIntro} className={styles.bookingIntro} data-scout-booking-intro>
-          <p>{copy.bookingEntry.introduction}</p>
+        {hasConversation && <button type="button" className={styles.newConversation} onClick={() => { dictation.cancel();onBookingReset();void reset(); }} disabled={busy || loading}>{copy.newConversationLabel}</button>}
+        {bookingEntry && <div className={styles.bookingIntro} data-scout-booking-entry>
           <button type="button" className={styles.bookingFallback} onClick={() => {dictation.cancel();openManual();}}>{copy.bookingEntry.manual}</button>
         </div>}
         <div className={styles.messages} aria-label={copy.conversationLabel} role={hasConversation ? 'log' : undefined} aria-live={hasConversation ? 'polite' : undefined} aria-relevant="additions" aria-busy={busy}>
           {returning ? <AssistantMessage message={{ id: 'returning', role: 'assistant', content: copy.returningGreeting }} /> : !hasConversation ? <>
-            {!bookingMode && <AssistantMessage message={assistantWelcome[0]} visibleCharacters={sequence.characters} />}
-            {!bookingMode && sequence.showSupport && <div className={styles.welcomeCopy}><p>{copy.supporting}</p><p>{copy.schedulingWelcome}</p><p><strong>{copy.welcomeClosing}</strong></p></div>}
+            <AssistantMessage message={assistantWelcome[0]} visibleCharacters={sequence.characters} />
+            {sequence.showSupport && <div className={styles.welcomeCopy}><p>{copy.supporting}</p><p>{copy.schedulingWelcome}</p><p><strong>{copy.welcomeClosing}</strong></p></div>}
           </> : <>
             {messages.map(message => <AssistantMessage key={message.id} message={message} conversation />)}
             {partial && <AssistantMessage message={{ id: 'streaming', role: 'assistant', content: partial }} conversation />}
@@ -120,7 +111,7 @@ export function AssistantPanel({ onClose, conversation, bookingEntry, onBookingC
         </div>
         {returning && <div className={styles.starters} aria-label={copy.returningGreeting} role="group">
           <button type="button" className={`${styles.starter} ${styles.choice}`} disabled={busy || loading} onClick={() => void resume()}>{copy.continueLabel}</button>
-          <button type="button" className={`${styles.starter} ${styles.choice}`} disabled={busy || loading} onClick={() => { dictation.cancel();onBookingReset(!!bookingEntry);setBookingError(''); void reset(); }}>{copy.startNewLabel}</button>
+          <button type="button" className={`${styles.starter} ${styles.choice}`} disabled={busy || loading} onClick={() => { dictation.cancel();onBookingReset(!!bookingEntry);void reset(); }}>{copy.startNewLabel}</button>
         </div>}
         {welcome && <div className={styles.starters} aria-label={copy.startersLabel} role="group">
           {copy.starters.slice(0, sequence.starterCount).map((starter, index) => <button type="button" key={starter.href} disabled={busy || loading || restoreFailed} onClick={() => { dictation.cancel(); if (starter.href === '/book') openBooking(); else void send(starter.message); }} className={styles.starter}>
@@ -147,7 +138,6 @@ export function AssistantPanel({ onClose, conversation, bookingEntry, onBookingC
           </button>
         </form>
         <span id="scout-dictation-status" className={styles.srOnly} role="status">{dictation.error ? copy.dictation.errors[dictation.error] : dictation.status !== 'idle' ? copy.dictation[dictation.status] : !dictation.available ? copy.dictation.unsupported : ''}</span>
-        {bookingError && <p className={styles.dictationFeedback} role="status">{bookingError}</p>}
         {dictation.error && <p className={styles.dictationFeedback}>{copy.dictation.errors[dictation.error]}</p>}
       </footer>
     </div>
