@@ -1,4 +1,6 @@
 import 'server-only';
+import { salesforceCommercial } from '@/content/salesforce-commercial';
+import { isSalesforceTrialDescription } from '@/lib/salesforce/trial';
 import { createHash } from 'node:crypto';
 import { BookingError, type BookingInput, type Busy, type Slot } from './types';
 import type { bookingConfig } from './config';
@@ -54,7 +56,7 @@ export function createGoogleCalendar(config: Config, request: typeof fetch = fet
       if(!response.ok)throw unavailable(); return response.json();
     },
     async create(id,input,end,fingerprint) {
-      const response = await call(`calendars/${encodeURIComponent(config.calendarId)}/events?conferenceDataVersion=1&sendUpdates=all`,{method:'POST',body:JSON.stringify({id,summary:'Free consultation — The Augmented Architect',description:input.description || '30-minute project consultation.',start:{dateTime:input.start,timeZone:config.policy.timezone},end:{dateTime:end,timeZone:config.policy.timezone},attendees:[{email:input.email,displayName:input.name}],extendedProperties:{private:{websiteBookingId:input.requestId,websiteBookingFingerprint:fingerprint}},conferenceData:{createRequest:{requestId:id,conferenceSolutionKey:{type:'hangoutsMeet'}}}})});
+      const response = await call(`calendars/${encodeURIComponent(config.calendarId)}/events?conferenceDataVersion=1&sendUpdates=all`,{method:'POST',body:JSON.stringify({id,summary:isSalesforceTrialDescription(input.description)?salesforceCommercial.trial.eventTitle:'Free consultation — The Augmented Architect',description:isSalesforceTrialDescription(input.description)?input.description+'\n\n'+salesforceCommercial.trial.eventDetails:input.description || '30-minute project consultation.',start:{dateTime:input.start,timeZone:config.policy.timezone},end:{dateTime:end,timeZone:config.policy.timezone},attendees:[{email:input.email,displayName:input.name}],extendedProperties:{private:{websiteBookingId:input.requestId,websiteBookingFingerprint:fingerprint}},conferenceData:{createRequest:{requestId:id,conferenceSolutionKey:{type:'hangoutsMeet'}}}})});
       if (response.status === 409) { const existing = await this.get(id); if (existing) return existing; }
       if (!response.ok) throw unavailable(); return response.json();
     },

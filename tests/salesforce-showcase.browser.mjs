@@ -43,7 +43,7 @@ try{
  for(const width of [1440,1100,900,768,600,390,320]){
   await send('Emulation.setDeviceMetricsOverride',{width,height:1000,deviceScaleFactor:1,mobile:width<540});await nav('/salesforce');await sleep(250);
   check(await ev('document.documentElement.scrollWidth===innerWidth'),'No page overflow '+width);
-  check(await ev("document.querySelectorAll('main > section').length===6"),'Six existing consulting sections '+width);
+  check(await ev("document.querySelectorAll('main > section').length===7&&!!document.getElementById('sf-commercial')"),'Six consulting sections plus concise commercial offer '+width);
   for(const id of sections)check(await ev(`!!document.getElementById('${id}')`),'Section preserved '+id+' '+width);
   check(await ev("document.querySelectorAll('h1').length===1&&document.querySelector('h1').textContent==='Make your Salesforce org easier to change.'"),'Approved hero unchanged '+width);
   check(await ev("!document.querySelector('#salesforce-product-showcase,#create-trigger-action,main [role=tablist]')"),'No product simulator or new walkthrough '+width);

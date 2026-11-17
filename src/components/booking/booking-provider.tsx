@@ -2,8 +2,9 @@
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { BookingDialog } from './booking-dialog';
-type ScoutOpener = (trigger: HTMLElement | null) => void;
-type BookingActions = { openScout: () => void; openManual: () => void; registerScout: (opener: ScoutOpener) => () => void };
+import type { BookingIntent } from '@/content/salesforce-commercial';
+type ScoutOpener = (trigger: HTMLElement | null, intent?: BookingIntent) => void;
+type BookingActions = { openScout: () => void; openTrial: () => void; openManual: () => void; registerScout: (opener: ScoutOpener) => () => void };
 const BookingContext = createContext<BookingActions | null>(null);
 function useBookingActions() {
   const actions = useContext(BookingContext);
@@ -12,23 +13,26 @@ function useBookingActions() {
 }
 /** All existing consultation actions now enter Scout; the manual form remains explicit. */
 export function useBooking() { return useBookingActions().openScout; }
+export function useSalesforceTrialBooking() { return useBookingActions().openTrial; }
 export function useManualBooking() { return useBookingActions().openManual; }
 export function useScoutBookingRegistration() { return useBookingActions().registerScout; }
 export function BookingProvider({ children }: { children: React.ReactNode }) {
   const [open,setOpen] = useState(false);
   const trigger = useRef<HTMLElement | null>(null);
-  const scout = useRef<ScoutOpener | null>(null), queued = useRef(false);
-  const openScout = useCallback(() => {
+  const scout = useRef<ScoutOpener | null>(null), queued = useRef<BookingIntent | null>(null);
+  const enterScout = useCallback((intent: BookingIntent) => {
     trigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    if (scout.current) scout.current(trigger.current); else queued.current = true;
+    if (scout.current) scout.current(trigger.current,intent); else queued.current = intent;
   }, []);
+  const openScout = useCallback(() => enterScout('consultation'), [enterScout]);
+  const openTrial = useCallback(() => enterScout('salesforce-trial'), [enterScout]);
   const openManual = useCallback(() => {
     trigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setOpen(true);
   }, []);
   const registerScout = useCallback((opener: ScoutOpener) => {
     scout.current = opener;
-    if (queued.current) { queued.current = false; opener(trigger.current); }
+    if (queued.current) { const intent=queued.current; queued.current = null; opener(trigger.current,intent); }
     return () => { if (scout.current === opener) scout.current = null; };
   }, []);
   useEffect(() => {
@@ -38,7 +42,7 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
       const url=new URL(anchor.href);if(url.origin!==location.origin || url.pathname!=='/book' || url.search || url.hash)return;
       // Keep genuine links for modified clicks and the direct /book fallback page.
       event.preventDefault();
-      if (scout.current) scout.current(anchor); else { trigger.current=anchor;queued.current=true; }
+      if (scout.current) scout.current(anchor); else { trigger.current=anchor;queued.current='consultation'; }
     }
     document.addEventListener('click',onClick,true);return()=>document.removeEventListener('click',onClick,true);
   },[]);
@@ -51,5 +55,5 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
       if(menu?.getClientRects().length)menu.focus({preventScroll:true});
     }
   }
-  return <BookingContext.Provider value={{openScout,openManual,registerScout}}>{children}<BookingDialog open={open} onClose={hide} /></BookingContext.Provider>;
+  return <BookingContext.Provider value={{openScout,openTrial,openManual,registerScout}}>{children}<BookingDialog open={open} onClose={hide} /></BookingContext.Provider>;
 }

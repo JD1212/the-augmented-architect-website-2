@@ -3,6 +3,10 @@ import { site } from '@/content/site';
 import { salesforceOffering as content } from '@/content/salesforce';
 import { Arrow } from '@/components/icon';
 import { ConsultingProof } from './consulting-proof';
+import { SalesforceCommercialOffer } from './commercial-offer';
+import { SalesforceTrialCta } from './trial-cta';
+import { salesforceCommercial } from '@/content/salesforce-commercial';
+import { salesforceTrialEnabled } from '@/lib/salesforce/trial';
 import styles from './salesforce.module.css';
 
 function ConsultationLink() {
@@ -25,11 +29,13 @@ function RegistryDiagram() {
 }
 
 export function SalesforcePage() {
+  const trialEnabled = salesforceTrialEnabled();
   return <main id="main">
     <section className={`service-hero ${styles.heroSection}`} aria-labelledby="sf-hero">
       <div className={`container ${styles.hero}`}>
         <div><p className="eyebrow">{content.hero.eyebrow}</p><h1 id="sf-hero">{content.hero.title}</h1><p className="hero-description">{content.hero.description}</p><p className={styles.supporting}>{content.hero.supporting}</p><div className="hero-actions"><ConsultationLink /><a className="text-link" href="#salesforce-architecture">{content.hero.secondary} <span aria-hidden="true">↓</span></a></div></div>
         <aside className={styles.heroAside}><p className={styles.kicker}>{content.hero.asideLabel}</p><h2>{content.hero.asideTitle}</h2><ul>{content.hero.offers.map((offer, index) => <li key={offer}><span aria-hidden="true">0{index + 1}</span>{offer}</li>)}</ul><p className={styles.experience}>{content.hero.experience}</p></aside>
+        {trialEnabled && <div className={styles.trialRow}><SalesforceTrialCta /><small>{salesforceCommercial.trial.arrangement}</small></div>}
         <p className={styles.emphasis}>{content.hero.emphasis}</p>
       </div>
     </section>
@@ -54,6 +60,7 @@ export function SalesforcePage() {
       <ol className={styles.stages}>{content.approach.stages.map(([title, description], index) => <li key={title}><span className={styles.stageNumber}>0{index + 1}</span><h3>{title}</h3><p>{description}</p></li>)}</ol>
       <div className={styles.aiNote}><p>{content.approach.ai}</p><p>{content.approach.aiBoundary}</p></div>
     </div></section>
+    {trialEnabled && <SalesforceCommercialOffer />}
     <section className={`section consultation-section ${styles.closing}`} aria-labelledby="sf-consultation"><div className="container consultation-inner"><div><h2 id="sf-consultation">{content.closing.title}</h2><p>{content.closing.description}</p></div><div className="consultation-action"><ConsultationLink /></div></div></section>
   </main>;
 }

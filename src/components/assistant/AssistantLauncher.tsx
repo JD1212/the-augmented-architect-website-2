@@ -7,6 +7,7 @@ import { AssistantPanel } from './AssistantPanel';
 import { useAssistantEntrance } from './useAssistant';
 import { useAssistantIntroduction } from './useAssistantIntroduction';
 import { useScoutBookingRegistration } from '@/components/booking/booking-provider';
+import { salesforceCommercial, type BookingIntent } from '@/content/salesforce-commercial';
 import { hasBookingRequest } from '@/lib/assistant/booking-entry';
 import { useScoutConversation } from './useScoutConversation';
 import styles from './assistant.module.css';
@@ -25,23 +26,24 @@ function ScoutLauncher() {
   const trigger = useRef<HTMLElement | null>(null);
   const restoreFocus = useRef(false);
   const registerBooking = useScoutBookingRegistration();
-  const [bookingEntry,setBookingEntry] = useState<{ focus: object } | null>(null);
-  const bookingRequested = useRef(false);
-  const enterBooking = useCallback((origin: HTMLElement | null) => {
+  const [bookingEntry,setBookingEntry] = useState<{ focus: object; intent: BookingIntent } | null>(null);
+  const bookingRequested = useRef<BookingIntent | null>(null);
+  const enterBooking = useCallback((origin: HTMLElement | null, intent: BookingIntent = 'consultation') => {
     trigger.current = origin; finishIntroduction(); setOpen(true);
-    bookingRequested.current = true;
-    setBookingEntry({focus:{}});
+    bookingRequested.current = intent;
+    setBookingEntry({focus:{},intent});
   }, [finishIntroduction]);
   useEffect(() => registerBooking(enterBooking), [registerBooking,enterBooking]);
   useEffect(() => {
     if (!bookingRequested.current || conversation.loading || conversation.busy || conversation.restoreFailed) return;
     // This explicit CTA continues the existing session; restoration is not a reset.
     if (conversation.returning) { void conversation.resume(); return; }
-    bookingRequested.current = false;
-    if (!hasBookingRequest(conversation.messages)) {
-      void conversation.send(copy.bookingEntry.request, false, true).finally(() => {
+    const intent = bookingRequested.current;
+    bookingRequested.current = null;
+    if (!hasBookingRequest(conversation.messages,intent)) {
+      void conversation.send(intent === 'salesforce-trial' ? salesforceCommercial.trial.request : copy.bookingEntry.request, false, true).finally(() => {
         // Disabling the composer during the reply can blur its initial focus.
-        setBookingEntry(previous => previous ? {focus:{}} : null);
+        setBookingEntry(previous => previous ? {...previous,focus:{}} : null);
       });
     }
   }, [bookingEntry,conversation]);
@@ -70,6 +72,6 @@ function ScoutLauncher() {
       aria-label={copy.launcherLabel} aria-haspopup="dialog" aria-expanded={open} aria-controls={open ? 'scout-panel' : undefined}>
       <AssistantAvatar /><span className={styles.launcherName}>{copy.name}</span>
     </button>
-    {open && <AssistantPanel onClose={close} conversation={conversation} bookingEntry={bookingEntry} onBookingReset={(keepBooking=false) => { bookingRequested.current=keepBooking&&!!bookingEntry;setBookingEntry(keepBooking&&bookingEntry ? {focus:{}} : null); }} />}
+    {open && <AssistantPanel onClose={close} conversation={conversation} bookingEntry={bookingEntry} onBookingReset={(keepBooking=false) => { bookingRequested.current=keepBooking&&bookingEntry ? bookingEntry.intent : null;setBookingEntry(keepBooking&&bookingEntry ? {...bookingEntry,focus:{}} : null); }} />}
   </div>;
 }

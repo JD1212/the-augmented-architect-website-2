@@ -36,6 +36,7 @@ export function ScoutScheduling({revision,disabled,onSend}:{revision:string;disa
     </form>}
     {state.proposals.filter(p=>p.state!=='done').map(p=><section key={p.id} aria-label="Appointment confirmation">
       <strong>{p.action==='book'?'Confirm consultation':p.action==='cancel'?'Confirm cancellation':'Confirm rescheduling'}</strong>
+      {p.purposeLabel&&<p>{p.purposeLabel}</p>}
       {p.name&&<p>{p.name} · {p.email}</p>}
       <p>{summary(p)} · 30 minutes</p>
       <button type="button" className={styles.schedulingAction} disabled={busy||disabled} onClick={()=>void action({action:'approve',proposalId:p.id})}>{p.state==='pending'?'Retry this same operation':p.action==='book'?'Confirm booking':p.action==='cancel'?'Confirm cancellation':'Confirm new time'}</button>

@@ -1,15 +1,17 @@
 import 'server-only';
+import { salesforceCommercial } from '@/content/salesforce-commercial';
+import { isSalesforceTrialDescription, salesforceTrialEnabled } from '@/lib/salesforce/trial';
 import { randomUUID } from 'node:crypto';
 import { BookingError, parseBooking, type BookingInput } from './types';
 import type { SchedulingRecord, SchedulingState } from './scheduling-state';
 import type { createBookingService } from './service';
 import type { createAppointmentVerification } from './verification';
 import type { createAppointmentManagement } from './management';
-export type SchedulingProposal = {id:string;action:'book'|'cancel'|'reschedule';name?:string;email?:string;start:string;end:string;timezone:string;appointmentId?:string;state:'prepared'|'approved'|'pending'|'done';result?:unknown};
+export type SchedulingProposal = {id:string;action:'book'|'cancel'|'reschedule';name?:string;email?:string;start:string;end:string;timezone:string;appointmentId?:string;state:'prepared'|'approved'|'pending'|'done';purposeLabel?:string;result?:unknown};
 export type SchedulingUI = {proposals:SchedulingProposal[];verificationRequired:boolean};
 export function createSchedulingService(state:SchedulingState,booking:ReturnType<typeof createBookingService>,verification:ReturnType<typeof createAppointmentVerification>,management:ReturnType<typeof createAppointmentManagement>,clock=()=>Date.now()) {
   const read=async(owner:string,id:string)=>{if(!/^[0-9a-f-]{36}$/i.test(id))throw new BookingError(400,'Invalid proposal.');const record=await state.get('proposal:'+id,owner);if(!record)throw new BookingError(403,'That proposal is unavailable.');return record;};
-  const view=(record:SchedulingRecord)=>{const p=record.payload;return {id:p.id,action:p.action,name:p.name,email:p.email,start:p.start,end:p.end,timezone:p.timezone,appointmentId:p.appointmentId,state:p.state,result:p.result} as SchedulingProposal;};
+  const view=(record:SchedulingRecord)=>{const p=record.payload;return {id:p.id,action:p.action,name:p.name,email:p.email,start:p.start,end:p.end,timezone:p.timezone,appointmentId:p.appointmentId,state:p.state,result:p.result,...(p.action==='book'&&isSalesforceTrialDescription(String((p.input as BookingInput|undefined)?.description??''))?{purposeLabel:salesforceCommercial.trial.eventTitle}:{})} as SchedulingProposal;};
   async function save(owner:string,payload:Record<string,unknown>){
     const previous=await state.list(owner,'proposal');
     const pending=previous.find(r=>r.payload.state==='pending');
@@ -60,6 +62,7 @@ export function createSchedulingService(state:SchedulingState,booking:ReturnType
     },
     async prepareBooking(owner:string,value:Omit<BookingInput,'requestId'|'confirmed'>){
       const input=parseBooking({...value,requestId:randomUUID(),confirmed:true});
+      if (isSalesforceTrialDescription(input.description) && !salesforceTrialEnabled()) throw new BookingError(503,'Salesforce trial setup is not available for booking yet. General consultations remain available.');
       const date=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Costa_Rica',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(input.start));
       if(!(await booking.availability(date)).some(s=>s.start===input.start))throw new BookingError(409,'That time is unavailable. Please choose another.');
       return save(owner,{id:input.requestId,action:'book',name:input.name,email:input.email,start:input.start,end:new Date(Date.parse(input.start)+1800000).toISOString(),timezone:input.timezone,input,state:'prepared',until:clock()+10*60000});

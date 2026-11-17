@@ -1,4 +1,6 @@
 import 'server-only';
+import { salesforceCommercial } from '@/content/salesforce-commercial';
+import { isSalesforceTrialDescription, salesforceTrialEnabled } from '@/lib/salesforce/trial';
 import { createHash } from 'node:crypto';
 import { availableSlots, candidateSlots, localParts } from './policy';
 import { calendarEventId, eventMatches, meetingUrl, type BookingCalendar } from './calendar';
@@ -13,9 +15,9 @@ export interface BookingStore {
   busy(start: string, end: string, calendarId: string): Promise<{start:string;end:string}[]>;
 }
 export function createBookingService(calendar: BookingCalendar, store: BookingStore, policy: BookingPolicy, calendarId: string, clock = () => Date.now()) {
-  const confirmed = (r: Reservation): BookingResult => {
+  const confirmed = (r: Reservation, description: string): BookingResult => {
     if (!r.calendar_meet_url || !meetingUrl({id:r.calendar_event_id,conferenceData:{entryPoints:[{entryPointType:'video',uri:r.calendar_meet_url}]}})) throw new BookingError(503,'Booking confirmation is temporarily unavailable.');
-    return {status:'confirmed',start:r.requested_start_at,end:r.booking_end_at,timezone:r.timezone,meetUrl:r.calendar_meet_url};
+    return {status:'confirmed',start:r.requested_start_at,end:r.booking_end_at,timezone:r.timezone,meetUrl:r.calendar_meet_url,...(isSalesforceTrialDescription(description)?{purposeLabel:salesforceCommercial.trial.eventTitle,preparationMessage:salesforceCommercial.trial.preparation}:{})};
   };
   return {
     async hasReservation(reference:string,owner:string){return !!await store.find(reference,owner);},
@@ -35,13 +37,14 @@ export function createBookingService(calendar: BookingCalendar, store: BookingSt
       let reservation = await store.find(input.requestId,owner);
       if (reservation && reservation.booking_payload_hash !== fingerprint) throw new BookingError(409,'This request belongs to different booking details. Please resolve it before starting another booking.','request_mismatch');
       if (!reservation) {
+        if (isSalesforceTrialDescription(input.description) && !salesforceTrialEnabled()) throw new BookingError(503,'Salesforce trial setup is not available for booking yet. General consultations remain available.');
         const date = localParts(Date.parse(input.start),policy.timezone).date;
         const slot = candidateSlots(date,policy,clock()).find(s => s.start === input.start);
         if (!slot) throw new BookingError(409,'That appointment is no longer available. Please choose another time.','slot_unavailable');
         reservation = await store.reserve(input,owner,fingerprint,calendarId,slot.end,policy.bufferMinutes);
       }
       if (reservation.booking_owner_hash !== owner || reservation.booking_payload_hash !== fingerprint) throw new BookingError(409,'This request belongs to different booking details. Please resolve it before starting another booking.','request_mismatch');
-      if (reservation.booking_state === 'confirmed') return confirmed(reservation);
+      if (reservation.booking_state === 'confirmed') return confirmed(reservation,input.description);
       if (reservation.booking_state === 'failed' || reservation.booking_state === 'cancelled') throw new BookingError(409,'That appointment could not be booked. Please choose another time.','slot_unavailable');
       const lease = await store.claim(reservation.id,owner); if (!lease) return {status:'pending'};
       const eventId = calendarEventId(calendarId,input.requestId), slot = {start:input.start,end:reservation.booking_end_at};
@@ -64,7 +67,7 @@ export function createBookingService(calendar: BookingCalendar, store: BookingSt
           await store.finish(reservation.id,owner,lease,'reconciliation_required'); return {status:'pending'};
         }
         await store.finish(reservation.id,owner,lease,'confirmed',meet);
-        return confirmed({...reservation,calendar_meet_url:meet});
+        return confirmed({...reservation,calendar_meet_url:meet},input.description);
       } catch (error) {
         if (error instanceof BookingError && error.status === 409) throw error;
         // Do not release an uncertain slot or invent success. A retry recovers

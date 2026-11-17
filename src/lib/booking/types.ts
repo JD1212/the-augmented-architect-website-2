@@ -1,6 +1,6 @@
 export type Slot = { start: string; end: string };
 export type BookingInput = { requestId: string; name: string; email: string; start: string; timezone: string; description: string; confirmed: true };
-export type BookingResult = { status: 'confirmed'; start: string; end: string; timezone: string; meetUrl: string } | { status: 'pending' };
+export type BookingResult = { status: 'confirmed'; start: string; end: string; timezone: string; meetUrl: string; purposeLabel?: string; preparationMessage?: string } | { status: 'pending' };
 export type BookingPolicy = { timezone: string; hours: Record<string, [string, string][]>; bufferMinutes: number; noticeMinutes: number; horizonDays: number; candidateTimes?: readonly string[]; dailyLimit?: number };
 export type Busy = { start: string; end: string };
 export class BookingError extends Error { constructor(public status: number, message: string, public code?: 'slot_unavailable' | 'request_mismatch') { super(message); } }

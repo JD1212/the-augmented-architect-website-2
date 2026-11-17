@@ -1,4 +1,6 @@
 import 'server-only';
+import { salesforceCommercial } from '@/content/salesforce-commercial';
+import { salesforceTrialEnabled } from '@/lib/salesforce/trial';
 import { schedulingDisplay } from '@/lib/display-timezone';
 import { tool } from '@openai/agents';
 import { BookingError } from '@/lib/booking/types';
@@ -19,7 +21,7 @@ export function createSchedulingTools(service:Scheduling){
   }
   return [
     registered('check_consultation_availability','Return real available 30-minute consultations for one Costa Rica calendar date. Never includes private event details.',{date:text,timezone:nullable,appointmentId:nullable},async (i,owner)=>({status:'available',date:i.date,timezone:'America/Costa_Rica',slots:await service.availability(String(i.date),owner,i.appointmentId)})),
-    registered('prepare_consultation_booking','Validate name/email/selected slot and create a session-owned proposal. Does not book. Requires explicit application confirmation.',{name:text,email:text,start:text,timezone:text,description:text},async(i,owner)=>({status:'confirmation_required',proposal:await service.prepareBooking(owner,{name:String(i.name),email:String(i.email),start:String(i.start),timezone:String(i.timezone),description:String(i.description)})})),
+    registered('prepare_consultation_booking','Validate name/email/selected slot and create a session-owned proposal. Does not book. Requires explicit application confirmation.' + (salesforceTrialEnabled() ? ` For an explicitly requested Salesforce sandbox trial setup, begin description with this exact title on its own line: ${salesforceCommercial.trial.eventTitle}` : ''),{name:text,email:text,start:text,timezone:text,description:text},async(i,owner)=>({status:'confirmation_required',proposal:await service.prepareBooking(owner,{name:String(i.name),email:String(i.email),start:String(i.start),timezone:String(i.timezone),description:String(i.description)})})),
     registered('confirm_consultation_booking','Execute only an application-approved proposal. Textual assent never authorizes booking. Retry the same proposal after pending results.',{proposalId:text},(i,owner)=>service.confirmBooking(owner,String(i.proposalId))),
     registered('request_appointment_verification','Send a verification code to the booking email. Does not disclose whether appointments exist. Code must be entered in the secure UI, never chat.',{email:text},(i,owner)=>service.verification.request(owner,String(i.email))),
     registered('get_verified_appointments','Return upcoming consultations only for the server-verified email. No model-selected owner is accepted.',{},(_,owner)=>service.appointments(owner)),
