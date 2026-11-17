@@ -53,50 +53,17 @@ Submit `https://theaugmentedarchitect.com/sitemap.xml`, inspect the homepage and
 service pages, check selected canonicals, and review indexing and Core Web Vitals.
 Indexing and rankings are not guaranteed by code or a successful deployment.
 
-## Analytics preparation — no tracker enabled yet
+## Analytics foundation
 
-No GA4/GTM, Vercel Web Analytics SDK, or client analytics collection was found in
-the repository. Google account properties cannot be inferred from source code.
-Reuse an existing GA4 account/property and web data stream if available; otherwise
-the owner must create one, select the reporting timezone/currency, and provide its
-real Measurement ID. Search Console and GA4 are separate services; link their
-properties in Google after ownership and permissions are verified.
+Search Console domain ownership and sitemap submission are confirmed by the owner.
+The consent-aware GA4 integration uses the approved Measurement ID `G-STBZV24WWN`.
+Basic consent mode blocks all optional Google requests before consent. Advertising
+remains disabled. Preview/development and identified automated traffic are excluded.
 
-Before enabling collection, agree the privacy/consent notice, retention, internal
-traffic filtering, and permitted geographic behavior. Do not assume a missing
-tracking ID is consent. Do not reuse Scout's Calendar/Gmail refresh tokens for
-analytics or Search Console reporting. This release installs no analytics service,
-transmits no new visitor data, and changes no credentials or environment settings.
-
-The next integration should have one central, consent-aware adapter and an explicit
-event/parameter allowlist. Prefer one GA4 collection path, not duplicate GTM and
-direct tags. Suggested measurement contract:
-
-| Event | Authoritative trigger | Deduplication / privacy |
-| --- | --- | --- |
-| `page_view` | Initial load and completed App Router navigation | Choose automatic history measurement OR manual route measurement, never both. Send only approved page paths/titles; strip fragments, arbitrary query strings and sensitive referrers. |
-| `consultation_start` | Visitor explicitly enters the booking flow | Once per flow, not every CTA click/reopen; not a confirmed lead. |
-| `scout_engaged` | First successfully accepted visitor message | Once per browsing session; exclude automatic greetings and automatic booking-intent messages. |
-| `consultation_booked` | Backend confirms the calendar booking succeeded | Canonical booking outcome only, deduplicated by the existing internal idempotency reference; never by both agent text and form submission. Do not send the reference to GA4. |
-| `consultation_cancelled` / `consultation_rescheduled` | Verified backend outcome | One event per successful operation; no duplicate events on retry. |
-
-Mark `consultation_booked` as the key conversion after fixture and DebugView tests.
-Do not count CTA clicks, prepared proposals, verification, or agent assertions as
-completed bookings. Decide how to count existing `scout_leads` separately from
-confirmed appointments; the current records are not proof of a distinct contact-form
-inquiry funnel. Avoid duplicating conversions with automatic form events.
-
-Never collect names, emails, message text, transcripts, dictated audio, verification
-codes, session cookies/tokens, conversation IDs, appointment IDs, Meet links, or
-calendar event details in analytics. Keep automatic site-search and form tracking
-disabled until their fields and URLs have been reviewed for personal data. Keep
-Preview/test traffic out of the Production stream. Validate fresh visits, soft
-navigation, refresh, repeated clicks, retries, restored chats, and both booking paths.
-
-Traffic/referrals and funnels belong in GA4; search queries/clicks/impressions and
-average position belong in Search Console. Use Search Console Core Web Vitals and
-PageSpeed Insights initially; add consent-compatible field performance reporting
-only after collection and retention decisions are approved.
+See [analytics and marketing operations](analytics-and-marketing.md) for the current
+event taxonomy, privacy boundaries, Google settings, verification steps, known
+measurement limitations and phased owner-intelligence architecture. Do not add a
+second Google tag or enable automatic history/form/search measurement alongside it.
 
 ## Owner-only `/admin` — design proposal, not implemented
 

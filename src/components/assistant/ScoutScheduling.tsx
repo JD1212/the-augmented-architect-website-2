@@ -3,19 +3,21 @@ import { useEffect, useRef, useState } from 'react';
 import { appointmentLabel, browserTimezone } from '@/lib/display-timezone';
 import type { SchedulingUI, SchedulingProposal } from '@/lib/booking/scheduling';
 import styles from './assistant.module.css';
+import { armBooking, trackConfirmedBooking } from '@/lib/analytics';
 /** Secure controls are separate from chat: OTPs never enter send() or transcript state. */
 export function ScoutScheduling({revision,disabled,onSend}:{revision:string;disabled:boolean;onSend:(message:string)=>Promise<void>}){
   const controls=useRef<HTMLDivElement>(null);
   const [state,setState]=useState<(SchedulingUI&{enabled:boolean;visitorTimezone:string})|null>(null),[code,setCode]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('');
   useEffect(()=>{
     const abort=new AbortController();
-    fetch('/api/scout/scheduling',{cache:'no-store',signal:abort.signal}).then(async r=>{if(!r.ok)throw Error('Scheduling controls could not be loaded.');return r.json();}).then(data=>{if(!abort.signal.aborted)setState({...data,visitorTimezone:browserTimezone()});}).catch(()=>{/* Chat and the existing booking form remain available. */});
+    fetch('/api/scout/scheduling',{cache:'no-store',signal:abort.signal}).then(async r=>{if(!r.ok)throw Error('Scheduling controls could not be loaded.');return r.json();}).then(data=>{if(!abort.signal.aborted){setState({...data,visitorTimezone:browserTimezone()});for(const proposal of (data.proposals??[])){if(proposal.action==='book'&&proposal.state==='done'&&proposal.result?.status==='confirmed')trackConfirmedBooking(proposal.id,'scout');}}}).catch(()=>{/* Chat and the existing booking form remain available. */});
     return()=>abort.abort();
   },[revision]);
   const actionKey=state?.enabled ? `${state.verificationRequired}:${state.proposals.filter(p=>p.state!=='done').map(p=>p.id).join(',')}` : '';
   useEffect(()=>{if(actionKey&&actionKey!=='false:')controls.current?.scrollIntoView({block:'nearest',behavior:'instant'});},[actionKey]);
   async function action(payload:Record<string,string>){
     if(busy||disabled)return;setBusy(true);setError('');
+    if(payload.action==='approve'&&state?.proposals.some(proposal=>proposal.id===payload.proposalId&&proposal.action==='book'))armBooking(payload.proposalId);
     try{
       const response=await fetch('/api/scout/scheduling',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}),data=await response.json();
       if(!response.ok)throw Error(data.error||'Please retry this action.');

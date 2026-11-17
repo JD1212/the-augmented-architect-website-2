@@ -5,6 +5,7 @@ import { browserTimezone, timezoneLabel } from '@/lib/display-timezone';
 import { bookingCopy as copy } from '@/content/booking';
 import type { BookingResult, Slot } from '@/lib/booking/types';
 import styles from './booking.module.css';
+import { armBooking, trackConfirmedBooking } from '@/lib/analytics';
 type Availability = {timezone:string;today:string;initialDate?:string;lastDate:string;slots:Slot[]};
 export function BookingDialog({open,onClose}:{open:boolean;onClose:()=>void}) {
   const dialog=useRef<HTMLDialogElement>(null),close=useRef<HTMLButtonElement>(null),locked=useRef(false),requestId=useRef<string | null>(null);
@@ -33,12 +34,13 @@ export function BookingDialog({open,onClose}:{open:boolean;onClose:()=>void}) {
   async function submit() {
     if(!metadata || locked.current || !confirmed || !start)return;locked.current=true;setSubmitting(true);setError('');
     requestId.current ??= crypto.randomUUID();
+    armBooking(requestId.current);
     try {
       const response=await fetch('/api/booking',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({requestId:requestId.current,name,email,start,timezone,description,confirmed:true})});const data=await response.json();
       if(!response.ok){
         if([400,401,403,413,415].includes(response.status)||data.code==='slot_unavailable'){setAttempted(false);setResult(null);if(data.code==='slot_unavailable'){requestId.current=null;setSlots(previous=>previous.filter(slot=>slot.start!==start));setStart('');setConfirmed(false);}setError(data.error||copy.failure);return;}
         throw Error(data.error||copy.failure);
-      }setAttempted(true);setResult(data);
+      }if(data.status==='confirmed')trackConfirmedBooking(requestId.current,'form');setAttempted(true);setResult(data);
     }catch(e){setAttempted(true);setError(e instanceof Error?e.message:copy.failure);setResult({status:'pending'});}
     finally{locked.current=false;setSubmitting(false);}
   }

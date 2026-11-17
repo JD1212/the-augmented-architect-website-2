@@ -11,6 +11,7 @@ import { salesforceCommercial, type BookingIntent } from '@/content/salesforce-c
 import { hasBookingRequest } from '@/lib/assistant/booking-entry';
 import { useScoutConversation } from './useScoutConversation';
 import styles from './assistant.module.css';
+import { trackScoutOpen } from '@/lib/analytics';
 
 export function AssistantLauncher() {
   return <Suspense fallback={null}><ScoutLauncher /></Suspense>;
@@ -29,6 +30,7 @@ function ScoutLauncher() {
   const [bookingEntry,setBookingEntry] = useState<{ focus: object; intent: BookingIntent } | null>(null);
   const bookingRequested = useRef<BookingIntent | null>(null);
   const enterBooking = useCallback((origin: HTMLElement | null, intent: BookingIntent = 'consultation') => {
+    trackScoutOpen();
     trigger.current = origin; finishIntroduction(); setOpen(true);
     bookingRequested.current = intent;
     setBookingEntry({focus:{},intent});
@@ -68,7 +70,7 @@ function ScoutLauncher() {
 
   if (!ready && !open) return null;
   return <div className={styles.root}>
-    <button ref={launcherRef} type="button" className={`${styles.launcher} ${open ? styles.hidden : ''}`} onClick={() => { trigger.current=null;finishIntroduction(); openPanel(); }}
+    <button ref={launcherRef} type="button" className={`${styles.launcher} ${open ? styles.hidden : ''}`} onClick={() => { trackScoutOpen();trigger.current=null;finishIntroduction(); openPanel(); }}
       aria-label={copy.launcherLabel} aria-haspopup="dialog" aria-expanded={open} aria-controls={open ? 'scout-panel' : undefined}>
       <AssistantAvatar /><span className={styles.launcherName}>{copy.name}</span>
     </button>

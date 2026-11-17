@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { BookingDialog } from './booking-dialog';
 import type { BookingIntent } from '@/content/salesforce-commercial';
+import { trackConsultationStart } from '@/lib/analytics';
 type ScoutOpener = (trigger: HTMLElement | null, intent?: BookingIntent) => void;
 type BookingActions = { openScout: () => void; openTrial: () => void; openManual: () => void; registerScout: (opener: ScoutOpener) => () => void };
 const BookingContext = createContext<BookingActions | null>(null);
@@ -21,12 +22,14 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
   const trigger = useRef<HTMLElement | null>(null);
   const scout = useRef<ScoutOpener | null>(null), queued = useRef<BookingIntent | null>(null);
   const enterScout = useCallback((intent: BookingIntent) => {
+    trackConsultationStart();
     trigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     if (scout.current) scout.current(trigger.current,intent); else queued.current = intent;
   }, []);
   const openScout = useCallback(() => enterScout('consultation'), [enterScout]);
   const openTrial = useCallback(() => enterScout('salesforce-trial'), [enterScout]);
   const openManual = useCallback(() => {
+    trackConsultationStart();
     trigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setOpen(true);
   }, []);
@@ -42,6 +45,7 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
       const url=new URL(anchor.href);if(url.origin!==location.origin || url.pathname!=='/book' || url.search || url.hash)return;
       // Keep genuine links for modified clicks and the direct /book fallback page.
       event.preventDefault();
+      trackConsultationStart();
       if (scout.current) scout.current(anchor); else { trigger.current=anchor;queued.current='consultation'; }
     }
     document.addEventListener('click',onClick,true);return()=>document.removeEventListener('click',onClick,true);
