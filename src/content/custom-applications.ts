@@ -39,7 +39,7 @@ export const customApplications = {
   },
   solution: {
     eyebrow: 'ONE BUSINESS · A CONNECTED FOUNDATION', title: 'One connected experience for your customers and your team.',
-    description: 'We connect your customer experience and team operations around shared business information, clear permissions, and supported integrations. An included website assistant helps customers understand your services and book appointments through real tools.',
+    description: 'We specialize in custom-designed and custom-developed business applications that connect customer experiences and team operations around shared information, clear permissions, and supported integrations. We favor custom-built software because AI-assisted development helps us build, test, extend, and maintain it efficiently. An included website assistant helps customers understand your services and book appointments through real tools.',
     layers: [
       ['Your public website', 'A professionally designed, mobile-friendly website that represents your business, communicates its services, and captures customer interest.'],
       ['Your customer portal', 'Secure login and a defined customer experience. Depending on the agreed scope, customers might access requests, booking information, project status, or account details.'],
@@ -95,7 +95,7 @@ export const customApplications = {
         question: 'Can a small business really afford a full custom application?',
         paragraphs: [
           'Yes. Modern development tools and AI-assisted engineering have made custom applications much more accessible than they once were.',
-          "The value isn't simply writing code faster. It's having an experienced software architect who knows how to design secure systems, connect business data, and use AI-assisted development effectively.",
+          "Our preferred modern application stack is Next.js App Router with React and TypeScript, Supabase for PostgreSQL, authentication, and backend services, and Vercel for hosting and deployment. Your business requirements determine the architecture and final technology choices; this stack is a preference, not a restriction or a guarantee of fit or outcomes.",
           'Our starting $10,000 engagement delivers a defined business-application foundation: a modern website, secure customer portal, private team/admin workspace, structured data and permissions, integration management for up to four agreed supported connections, supported agent connection management, one customer-facing AI assistant with scheduling, and deployment, documentation, and basic handoff.',
           'Additional capabilities can be introduced as the business grows.',
         ],

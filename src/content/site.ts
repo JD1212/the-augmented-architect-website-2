@@ -14,8 +14,8 @@ type SiteContent = {
 };
 export const site: SiteContent = {
   name: 'The Augmented Architect', brandLines: ['THE AUGMENTED', 'ARCHITECT'], monogram: 'AA',
-  // Website 2.0 production origin; independent of the existing public domain.
-  url: 'https://the-augmented-architect-website-2.vercel.app',
+  // Canonical public origin for metadata, sitemap, and robots.
+  url: 'https://theaugmentedarchitect.com',
   navigation: [{ label: 'AI Solutions', href: '/ai-solutions' }, { label: 'Salesforce', href: '/salesforce' }, { label: 'Custom Business Applications', href: '/custom-applications' }, { label: 'Our Approach', href: '/our-approach' }, { label: 'About', href: '/about' }, { label: 'Contact', href: '/contact' }],
   consultation: { label: 'Book a Consultation', href: '/book' },
   accessibility: { skip: 'Skip to content', navigation: 'Main navigation', menu: 'Menu', home: 'The Augmented Architect home' },

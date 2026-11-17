@@ -109,7 +109,7 @@ export const experience = {
     eyebrow: 'THE THINKING BEHIND THE WORK', title: 'Architecture that serves the business.',
     description: 'We connect business goals with the systems, data, and technology needed to support them. Our approach is practical, technology-independent, and built around the ability to change.',
     principleTitle: 'A clear point of view. An open technology stack.',
-    principleDescription: 'Custom software, Salesforce, n8n, Microsoft Copilot Studio, and AI runtimes can all have a place. The right combination depends on the process, the people, and the constraints—not a preference for one platform.',
+    principleDescription: 'Our focus is custom software development, architecture, and business integrations. Salesforce Modernization is a separate specialty, not our default stack for new custom applications. We can work alongside n8n, Microsoft Copilot Studio, and other existing platforms when appropriate; they are not our primary development approach or preferred application stack. Business requirements determine the final technology choices.',
     link: { label: 'Read our philosophy', href: '/our-approach/philosophy' },
   },
   inquiry: {
