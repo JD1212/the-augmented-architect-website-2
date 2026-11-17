@@ -85,7 +85,14 @@ Event functions accept no free-form visitor data. No sensitive data is placed in
   verify Realtime/DebugView in the owner's account. No reporting credentials were
   provided to this application, and Google reporting visibility cannot be invented.
 
-## Proposed owner intelligence architecture (not implemented)
+## Owner intelligence roadmap
+
+The private owner dashboard, MFA/authorization boundary, read-only provider adapters
+and durable evidence schema are now implemented. Owner provisioning and dedicated
+Google reporting permissions must be configured and verified before release. See
+[Owner marketing dashboard](owner-marketing-dashboard.md) for exact setup, security
+boundaries, reporting semantics and the remaining SEO Analyst integration design.
+The scheduled analysis, agents and publishing workflow below remain future work.
 
 **Access boundary:** reuse the dedicated website Supabase project and the previous
 owner-portal plan: verified owner UUID, server-side authorization on every operation,

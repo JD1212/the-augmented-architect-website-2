@@ -65,42 +65,24 @@ event taxonomy, privacy boundaries, Google settings, verification steps, known
 measurement limitations and phased owner-intelligence architecture. Do not add a
 second Google tag or enable automatic history/form/search measurement alongside it.
 
-## Owner-only `/admin` — design proposal, not implemented
+## Owner-only marketing portal
 
-Read-only inspection of the dedicated project `cjldcaiybqguklzqtdjj` confirmed the
-four existing migration versions (Scout foundation, limits, booking, scheduling).
-All six Scout public tables have forced RLS and no SELECT grants to `anon` or
-`authenticated`. The code uses server-only credentials and anonymous session-token
-ownership. Booking email verification authorizes scheduling actions; it is not
-Supabase owner login. No SSR Auth client, owner role guard, or `/admin` route exists.
-The local customer-identity SQL proposal is still unapplied and must stay separate.
+The Phase 2 implementation adds `/admin/login` and `/admin/marketing` with
+request-scoped Supabase SSR Auth, exact owner UUID authorization, mandatory TOTP
+MFA/AAL2, tenant membership and live-session validation. Private page and API
+boundaries enforce access independently of the cookie-refresh proxy. No admin link
+is added to public navigation, and no private page is added to the sitemap.
 
-Recommended first private phase:
+The scoped marketing migration adds separate owner/reporting/evidence records with
+RLS; existing Scout tables and the pending customer-identity proposal are unchanged.
+Booking email verification remains separate from owner Auth. Read-only Google
+reporting credentials are separate from Calendar/Gmail authorization.
 
-- Manually onboard the owner into existing Supabase Auth; disable public owner
-  self-enrollment. Require MFA. Confirm owner UUID and recovery before rollout.
-- Use supported request-scoped Supabase SSR Auth. Verify tokens server-side with
-  `getClaims`/`getUser` as appropriate; never authorize from `getSession` payloads,
-  email matches, visitor cookies, query parameters, or editable `user_metadata`.
-- Authorize the immutable owner user UUID against a server-controlled allowlist
-  (or later a locked-down owner-membership table), and require verified MFA/AAL2.
-  Recheck authorization in every private page, API and server action, not only in
-  middleware or client navigation. Reject before any privileged query runs.
-- Keep existing Scout RLS restrictions. Use narrowly scoped, server-only reads
-  only after the owner check. Do not grant all authenticated users access to Scout
-  data or expose service credentials in the browser. Review a separate migration
-  only if membership/storage is needed; do not reuse the pending customer proposal.
-- No public signup, no cached private responses (`private, no-store`), no shared
-  Cache Components entries containing owner data, no indexing, no broad CORS.
-  Same-origin/CSRF protections, audit logs without secrets, pagination, masked
-  sensitive details, least-privilege Google reporting scopes and revocation tests.
-- Start read-only with aggregated bookings/leads and small GA4/Search Console
-  reports after account access exists. Deny anonymous, non-owner, expired,
-  revoked and insufficient-MFA sessions in tests. Customer account functionality
-  and Scout's current conversation lifecycle remain separate.
-
-No owner portal, login, new schema, reporting credentials, or analytics collection
-is enabled by this SEO release.
+See [owner marketing dashboard](owner-marketing-dashboard.md) for provisioning,
+configuration, privacy/security boundaries, tests, current reporting semantics and
+the next SEO Analyst design. Owner setup, MFA verification and real provider access
+are release gates; missing credentials must not be replaced with fabricated data or
+an authentication bypass. No agent, scheduler or publishing workflow is enabled.
 
 ## Primary references
 
