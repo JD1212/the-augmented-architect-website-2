@@ -14,6 +14,7 @@ import {writeFile,mkdir} from 'node:fs/promises';
 import assert from 'node:assert/strict';
 import {loadScoutModule} from './helpers/scout-loader.mjs';
 const {salesforceCommercial:copy}=loadScoutModule('src/content/salesforce-commercial.ts');
+const {parseBooking}=loadScoutModule('src/lib/booking/types.ts');
 const origin=process.argv[2]||'http://localhost:3100',out=process.env.BOOKING_CTA_REVIEW_DIR||join(tmpdir(),'aa-salesforce-trial',origin.startsWith('https:')?'live':'local');await mkdir(out,{recursive:true});
 const report={origin,checks:[],layouts:[],errors:[],console:[],failedAssets:[]},sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const child=spawn(findChrome(),['--headless','--no-sandbox','--use-fake-device-for-media-stream','--autoplay-policy=no-user-gesture-required','--remote-debugging-port=19905','--user-data-dir='+out+'/profile','about:blank'],{stdio:'ignore'});let ws;const abortedRequests=new Set();
@@ -49,8 +50,9 @@ try{
   else if(request.method==='POST'){
    const input=JSON.parse(request.postData);posts.push(input);messages.push({id:input.clientTurnId,role:'user',content:input.message});let answer;
    if(input.message===bookingRequest)answer='Great! I can help schedule your free Salesforce sandbox trial setup. What name should I use?';
-   else if(input.message.includes('visitor@example.invalid')){
-    proposals=[{id:'trial-fixture',action:'book',state:'prepared',purposeLabel:copy.trial.eventTitle,name:'Test Visitor',email:'visitor@example.invalid',start:'2026-11-20T16:00:00.000Z',end:'2026-11-20T16:30:00.000Z',timezone:'America/Costa_Rica'}];answer='Please review the Salesforce trial setup appointment and use Confirm booking.';
+   else if(input.message.includes('visitor @ example . invalid')){
+    const booking=parseBooking({requestId:crypto.randomUUID(),name:'Test Visitor',email:'visitor @ example . invalid',start:'2026-11-20T16:00:00.000Z',timezone:'America/Costa_Rica',description:copy.trial.eventTitle,confirmed:true});
+    proposals=[{id:'trial-fixture',action:'book',state:'prepared',purposeLabel:copy.trial.eventTitle,name:booking.name,email:booking.email,start:booking.start,end:'2026-11-20T16:30:00.000Z',timezone:booking.timezone}];answer='Please review the Salesforce trial setup appointment and use Confirm booking.';
    }else if(input.message==='Please confirm the consultation I just approved.'&&proposals[0]?.state==='approved'){proposals[0].state='done';answer=copy.trial.preparation;}
    else answer='Thanks. What date and time would work for you?';
    messages.push({id:crypto.randomUUID(),role:'assistant',content:answer});body=JSON.stringify({type:'done',messages,expiresInMs:86400000})+'\n';type='application/x-ndjson';
@@ -78,11 +80,13 @@ try{
   await close();await click('[data-salesforce-trial]');await opened();check(posts.length===1&&resets===0,'Repeated trial clicks preserve session and deduplicate '+width);
   await set('Tuesday works for me.');await ev("document.querySelector('#scout-draft').form.requestSubmit()");await opened();check(posts[1].message==='Tuesday works for me.','Typed message sent unchanged '+width);
   await set('');await click('button[data-dictation-state]');await until("document.querySelector('button[data-dictation-state]').dataset.dictationState==='listening'");
-  const details='Friday at 10 AM Costa Rica time, visitor@example.invalid. My name is Test Visitor.';
+  const details='Friday at 10 AM Costa Rica time, visitor @ example . invalid. My name is Test Visitor.';
   await ev(`window.__recognition.onresult({results:[{0:{transcript:${JSON.stringify(details)}},isFinal:true}]})`);await click('button[data-dictation-state]');await until("document.querySelector('button[data-dictation-state]').dataset.dictationState==='idle'");
   check(await ev(`document.querySelector('#scout-draft').value===${JSON.stringify(details)}`),'Completed dictation remains editable '+width);await ev("document.querySelector('#scout-draft').form.requestSubmit()");await opened();check(posts.at(-1).message===details,'Dictated details sent without hidden prefixes '+width);
   await until("[...document.querySelectorAll('#scout-panel button')].some(b=>b.textContent==='Confirm booking')");
   check(await ev(`document.querySelector('[aria-label="Appointment confirmation"]').textContent.includes(${JSON.stringify(copy.trial.eventTitle)})&&document.querySelector('[aria-label="Appointment confirmation"]').textContent.includes('30 minutes')`),'Explicit confirmation identifies trial purpose and 30-minute duration '+width);
+  check(await ev("document.querySelector('[aria-label=\"Appointment confirmation\"]').textContent.includes('visitor@example.invalid')&&!document.querySelector('[aria-label=\"Appointment confirmation\"]').textContent.includes('visitor @ example . invalid')"),'Normalized email displayed for visitor approval '+width);
+  check(messages.some(m=>m.role==='user'&&m.content===details),'Original spaced dictated email preserved in history '+width);
   check(!messages.some(m=>m.content.includes("You're booked!"))&&approvals===0,'No preparation message before confirmation '+width);
   if([1440,390].includes(width)){await until("document.querySelector('#scout-panel').getAnimations().every(a=>a.playState==='finished')");await shot('trial-confirmation-'+width);}
   await ev("[...document.querySelectorAll('#scout-panel button')].find(b=>b.textContent==='Confirm booking').click()");await until(`document.querySelector('#scout-panel').textContent.includes(${JSON.stringify("You're booked!")})&&!document.querySelector('#scout-draft').disabled`);

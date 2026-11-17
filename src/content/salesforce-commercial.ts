@@ -25,7 +25,7 @@ export const salesforceCommercial = {
     request: "I'd like to book a free 30-minute Salesforce sandbox trial setup consultation for a personally guided 30-day evaluation.",
     eventTitle: 'Salesforce Sandbox Trial Setup — The Augmented Architect',
     eventDetails: '30-minute setup consultation for a personally guided 30-day Salesforce sandbox evaluation. Eligibility, installation, and trial arrangements are handled personally during the appointment. This booking does not automatically install, activate, or expire software.',
-    preparation: "You're booked! For your trial setup, please have a Salesforce sandbox or Developer Edition org ready, along with a user who has the necessary permissions to install and configure the package.\n\nYou don't need production data for the initial metadata-based demonstration. We'll confirm eligibility and personally arrange installation and the guided evaluation together.",
+    preparation: "You're booked! For your Salesforce trial setup, just have a Developer Sandbox ready. We'll walk you through everything during our appointment.",
   },
 } as const;
 export type BookingIntent = 'consultation' | 'salesforce-trial';
