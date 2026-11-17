@@ -10,7 +10,7 @@ export type AiConcept = {
 type Capability = { title: string; description: string; icon: IconName };
 type AiSolutionsContent = {
   seo: { title: string; description: string };
-  hero: { eyebrow: string; title: string; description: string; capabilitiesLabel: string; topics: readonly string[] };
+  hero: { eyebrow: string; title: string; description: string; capabilitiesLabel: string; topics: readonly string[]; image: AiConcept['image'] };
   problems: { eyebrow: string; title: string; items: readonly { title: string; description: string }[] };
   capabilities: { eyebrow: string; title: string; description: string; items: readonly Capability[] };
   technology: typeof aiTechnologies;
@@ -24,7 +24,8 @@ type AiSolutionsContent = {
 export const aiSolutions: AiSolutionsContent = {
   seo: { title: 'AI Architecture & Connected Business Systems', description: 'Technology-independent AI consulting, agent architecture, secure integrations, and custom software. Explore the developing Augmented Enterprises platform.' },
   hero: {
-    eyebrow: 'AI SOLUTIONS & CONNECTED SYSTEMS', title: 'Intelligence works better with architecture.',
+    eyebrow: 'AI SOLUTIONS & CONNECTED SYSTEMS', title: 'Intelligence works better with thoughtful architecture.',
+    image: { src: '/images/ai-solutions/AI Architecture_ Business Context Hub.png', alt: 'Conceptual AI architecture with business context connecting business systems, knowledge and data, human oversight, agent runtimes, workflows, and system actions.', width: 1448, height: 1086 },
     description: 'AI is changing faster than any single platform can keep up with. We help businesses design the connected, modular foundations needed to integrate intelligent agents, automate real processes, and evolve as technology changes.',
     capabilitiesLabel: 'Explore Our Capabilities', topics: ['AI architecture', 'Connected business systems', 'Governed agent execution'],
   },

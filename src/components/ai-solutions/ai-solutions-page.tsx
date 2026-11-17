@@ -1,7 +1,7 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { aiSolutions as content } from '@/content/ai-solutions';
 import { site } from '@/content/site';
-import { ArchitectureDiagram } from '@/components/architecture-diagram';
 import { Icon, Arrow } from '@/components/icon';
 import { ConceptViewer } from './concept-viewer';
 import { TechnologyComparison } from './technology-comparison';
@@ -10,7 +10,7 @@ import styles from './ai-solutions.module.css';
 
 export function AiSolutionsPage() {
   return <main id="main" className={`service-page ${styles.page}`}>
-    <section className="service-hero"><div className="container service-hero-inner"><div><p className="eyebrow">{content.hero.eyebrow}</p><h1>{content.hero.title}</h1><p className="hero-description">{content.hero.description}</p><div className="hero-actions"><Link className="button" href={site.consultation.href}>{site.consultation.label}<Arrow /></Link><a className="text-link" href="#capabilities">{content.hero.capabilitiesLabel}<span aria-hidden="true">↓</span></a></div></div><div className="service-hero-visual"><ArchitectureDiagram variant="agents" /></div></div><ul className="container service-topics">{content.hero.topics.map(topic => <li key={topic}><span aria-hidden="true">✦</span>{topic}</li>)}</ul></section>
+    <section className="service-hero"><div className="container service-hero-inner"><div><p className="eyebrow">{content.hero.eyebrow}</p><h1>{content.hero.title}</h1><p className="hero-description">{content.hero.description}</p><div className="hero-actions"><Link className="button" href={site.consultation.href}>{site.consultation.label}<Arrow /></Link><a className="text-link" href="#capabilities">{content.hero.capabilitiesLabel}<span aria-hidden="true">↓</span></a></div></div><div className="service-hero-visual"><Image src={content.hero.image.src} alt={content.hero.image.alt} width={content.hero.image.width} height={content.hero.image.height} className={styles.enlargedImage} sizes="(max-width: 800px) 100vw, 50vw" preload /></div></div><ul className="container service-topics">{content.hero.topics.map(topic => <li key={topic}><span aria-hidden="true">✦</span>{topic}</li>)}</ul></section>
 
     <section className="section" aria-labelledby="ai-problems-heading"><div className="container"><div className={styles.problemHeading}><p className="eyebrow">{content.problems.eyebrow}</p><h2 id="ai-problems-heading">{content.problems.title}</h2></div><div className="problem-grid">{content.problems.items.map((item, index) => <article key={item.title}><span className="step-number">{String(index + 1).padStart(2, '0')}</span><h3>{item.title}</h3><p>{item.description}</p></article>)}</div></div></section>
 
