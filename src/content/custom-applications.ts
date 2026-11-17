@@ -94,10 +94,10 @@ export const customApplications = {
       {
         question: 'Can a small business really afford a full custom application?',
         paragraphs: [
-          'Yes. Modern development tools and AI-assisted engineering have made custom applications much more accessible than they once were.',
-          "Our preferred modern application stack is Next.js App Router with React and TypeScript, Supabase for PostgreSQL, authentication, and backend services, and Vercel for hosting and deployment. Your business requirements determine the architecture and final technology choices; this stack is a preference, not a restriction or a guarantee of fit or outcomes.",
-          'Our starting $10,000 engagement delivers a defined business-application foundation: a modern website, secure customer portal, private team/admin workspace, structured data and permissions, integration management for up to four agreed supported connections, supported agent connection management, one customer-facing AI assistant with scheduling, and deployment, documentation, and basic handoff.',
-          'Additional capabilities can be introduced as the business grows.',
+          'Yes. Modern development tools and AI-assisted engineering have made custom software much more accessible.',
+          'We typically build with Next.js, TypeScript, Supabase, and Vercel, creating modern applications that are easier to extend and adapt as your business grows. We choose the technology based on your needs, not a fixed platform.',
+          'Our custom business applications start at $10,000 for a clearly defined implementation that connects your website, customers, employees, and business systems.',
+          "Rather than paying for disconnected tools indefinitely, you're investing in a foundation designed around how your business actually operates.",
         ],
       },
       {
@@ -154,10 +154,18 @@ export const customApplications = {
       {
         question: 'What exactly does the $10,000 starting price include?',
         paragraphs: [
-          'It includes a modern public website, a defined secure customer portal, a private team/admin workspace, structured business data, identity and permissions, our integration driver and management interface, up to four agreed supported integrations, supported agent connection management, and one customer-facing AI sales assistant with real appointment scheduling. Deployment, documentation, and basic administrator handoff complete the agreed launch scope.',
-          'We define the exact scope during discovery so there are clear expectations about what will be delivered.',
-          'The included agent interface covers supported connection inventory and capability views. Broad activity dashboards and unified provider usage/cost reporting are not yet verified as completed functionality; the launch agreement identifies any reporting that is actually implemented and supported.',
-          'The scheduling/calendar connection counts toward the up-to-four integration allowance where applicable. New driver development, substantial custom integration work, additional agents, complex workflows, extensive migration, and ongoing services are separately scoped. Activity, usage, and cost views depend on verified implementation and provider support; comprehensive cross-provider monitoring is not promised as delivered.',
+          'Our starting implementation includes:',
+          '• A modern, custom-built public website.',
+          '• A secure customer portal.',
+          '• A private workspace for your team and administrators.',
+          '• Structured business data, user identities, and permissions.',
+          '• Up to four agreed supported integrations, including scheduling/calendar where applicable.',
+          '• One AI website assistant, similar to Scout, that can answer customer questions and schedule appointments.',
+          '• Supported agent connection management.',
+          '• Deployment, documentation, and basic administrator handoff.',
+          'Behind the scenes, we build the application around a modular architecture designed to support future integrations, automations, and intelligent agents.',
+          "We define the exact deliverables during discovery, so you know what's included before development begins.",
+          'Additional agents, advanced workflows, extensive migrations, custom integration development, and ongoing services are quoted separately. Comprehensive cross-provider agent activity and cost monitoring are not included as completed capabilities in the starting package.',
         ],
       },
     ],
