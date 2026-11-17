@@ -9,7 +9,7 @@ type Owner = Awaited<ReturnType<typeof requireOwner>>;
 async function sourceReport(owner: Owner, source: 'ga4'|'search_console', range: DateRange): Promise<SourceResult> {
   const property = source === 'ga4' ? process.env.GA4_PROPERTY_ID : searchProperty;
   const missing = !googleReportingConfigured() || !property || (source === 'ga4' && !/^\d+$/.test(property));
-  if (missing) return { status: 'not_configured', message: source === 'ga4' ? 'Configure the numeric GA4 Property ID and dedicated read-only Google credentials.' : 'Configure dedicated Google credentials with access to sc-domain:theaugmentedarchitect.com.', updatedAt: null, cached: false, persisted: false, data: null };
+  if (missing) return { status: 'not_configured', message: source === 'ga4' ? 'Configure the numeric GA4 Property ID and dedicated keyless Google reporting connection.' : 'Configure keyless Google reporting with access to sc-domain:theaugmentedarchitect.com.', updatedAt: null, cached: false, persisted: false, data: null };
   try {
     const cached = await owner.db.from('marketing_reports').select('payload,extracted_at').eq('tenant_id',owner.tenantId).eq('source',source).eq('property_id',property)
       .eq('start_date',range.start).eq('end_date',range.end).gte('extracted_at',new Date(Date.now()-300000).toISOString()).order('extracted_at',{ascending:false}).limit(1).maybeSingle();

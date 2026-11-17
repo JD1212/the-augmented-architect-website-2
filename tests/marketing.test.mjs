@@ -80,11 +80,29 @@ test('providers preserve genuine empty results, with no invented zero-filled dai
 });
 test('reporting credentials are isolated read-only scopes; provider errors never disclose response secrets',async()=>{
   let authOptions;
-  class FakeAuth{constructor(options){authOptions=options;}async getClient(){return {request:async()=>{throw {response:{status:403,data:{secret:'private-key'}}};}};}}
-  const {reportingRequest}=load('src/lib/marketing/google.ts',{'google-auth-library':{GoogleAuth:FakeAuth}});
-  const previous=process.env.GOOGLE_MARKETING_SERVICE_ACCOUNT_JSON;process.env.GOOGLE_MARKETING_SERVICE_ACCOUNT_JSON=JSON.stringify({type:'service_account',client_email:'test@project.iam.gserviceaccount.com',private_key:'fixture'});
-  try{await assert.rejects(reportingRequest('https://analyticsdata.googleapis.com/v1beta/properties/1:runReport',{}),e=>e.status===503&&!e.message.includes('private-key'));assert.deepEqual(authOptions.scopes,['https://www.googleapis.com/auth/analytics.readonly','https://www.googleapis.com/auth/webmasters.readonly']);await assert.rejects(reportingRequest('https://evil.invalid/',{}));}
-  finally{if(previous===undefined)delete process.env.GOOGLE_MARKETING_SERVICE_ACCOUNT_JSON;else process.env.GOOGLE_MARKETING_SERVICE_ACCOUNT_JSON=previous;}
+  let token='short-lived-fixture-a';
+  const fake={fromJSON:options=>{authOptions=options;return {request:async()=>{throw {response:{status:403,data:{secret:'private-key'}}};}};}};
+  const {reportingRequest}=load('src/lib/marketing/google.ts',{'google-auth-library':{ExternalAccountClient:fake},'@vercel/oidc':{getVercelOidcToken:async()=>token}});
+  const values={GOOGLE_MARKETING_PROJECT_NUMBER:'123456789012',GOOGLE_MARKETING_POOL_ID:'augarch-marketing',GOOGLE_MARKETING_PROVIDER_ID:'vercel',GOOGLE_MARKETING_SERVICE_ACCOUNT_EMAIL:'marketing-intelligence-reader@the-augmented-architect-web.iam.gserviceaccount.com'};
+  const previous=Object.fromEntries(Object.keys(values).map(k=>[k,process.env[k]]));Object.assign(process.env,values);
+  try{
+    await assert.rejects(reportingRequest('https://analyticsdata.googleapis.com/v1beta/properties/1:runReport',{}),e=>e.status===503&&!e.message.includes('private-key'));
+    assert.deepEqual(authOptions.scopes,['https://www.googleapis.com/auth/analytics.readonly','https://www.googleapis.com/auth/webmasters.readonly']);
+    assert.equal(authOptions.type,'external_account');assert.equal(authOptions.service_account_impersonation.token_lifetime_seconds,900);
+    assert(!authOptions.credentials&&!authOptions.private_key&&!authOptions.credential_source);
+    assert.match(authOptions.audience,/\/projects\/123456789012\/locations\/global\/workloadIdentityPools\/augarch-marketing\/providers\/vercel$/);
+    assert.match(authOptions.service_account_impersonation_url,/marketing-intelligence-reader@the-augmented-architect-web\.iam\.gserviceaccount\.com:generateAccessToken$/);
+    assert.equal(await authOptions.subject_token_supplier.getSubjectToken(),'short-lived-fixture-a');token='short-lived-fixture-b';assert.equal(await authOptions.subject_token_supplier.getSubjectToken(),'short-lived-fixture-b');
+    await assert.rejects(reportingRequest('https://evil.invalid/',{}));
+  }finally{for(const [key,value] of Object.entries(previous)){if(value===undefined)delete process.env[key];else process.env[key]=value;}}
+});
+test('keyless configuration rejects missing identifiers, unsafe URLs and a different service account',()=>{
+  const {federationConfig}=load('src/lib/marketing/federation.ts');
+  const values={GOOGLE_MARKETING_PROJECT_NUMBER:'123456789012',GOOGLE_MARKETING_POOL_ID:'augarch-marketing',GOOGLE_MARKETING_PROVIDER_ID:'vercel',GOOGLE_MARKETING_SERVICE_ACCOUNT_EMAIL:'marketing-intelligence-reader@the-augmented-architect-web.iam.gserviceaccount.com'};
+  assert.throws(()=>federationConfig({GOOGLE_MARKETING_SERVICE_ACCOUNT_JSON:'ignored'}));
+  assert.throws(()=>federationConfig({...values,GOOGLE_MARKETING_POOL_ID:'../evil'}));
+  assert.throws(()=>federationConfig({...values,GOOGLE_MARKETING_SERVICE_ACCOUNT_EMAIL:'other@example.invalid'}));
+  assert.match(federationConfig(values).impersonationUrl,/^https:\/\/iamcredentials.googleapis.com\//);
 });
 test('MFA enrollment verification accepts only a factor owned by the validated user, including unverified enrollment',async()=>{
   const factorId='f7777777-7777-4777-8777-777777777777';let verified=0;

@@ -54,7 +54,10 @@ cannot be recalled. Never reuse the service-role key in a browser client.
    SUPABASE_PUBLISHABLE_KEY=<this project's active publishable key>
    MARKETING_OWNER_IDS=<the confirmed UUID, comma-separated if explicitly approved>
    GA4_PROPERTY_ID=564904776
-   GOOGLE_MARKETING_SERVICE_ACCOUNT_JSON=<dedicated service-account JSON>
+   GOOGLE_MARKETING_PROJECT_NUMBER=68454656491
+   GOOGLE_MARKETING_POOL_ID=augarch-marketing
+   GOOGLE_MARKETING_PROVIDER_ID=vercel
+   GOOGLE_MARKETING_SERVICE_ACCOUNT_EMAIL=marketing-intelligence-reader@the-augmented-architect-web.iam.gserviceaccount.com
    ```
 
    Existing `SUPABASE_SECRET_KEY`, Calendar/Gmail and Scout settings remain unchanged.
@@ -65,30 +68,121 @@ cannot be recalled. Never reuse the service-role key in a browser client.
    recovery plan with the verified project administrator; this release adds no
    unauthenticated reset mechanism.
 
-## Dedicated Google reporting identity
+## Keyless Google reporting identity
 
-Use a new Google service account, separate from the working scheduling OAuth
-identity. Enable **Google Analytics Data API** and **Google Search Console API** in
-its Cloud project. No project-wide editor/owner role, Calendar/Gmail scope or
-domain-wide delegation is required.
+Organization policy `iam.managed.disableServiceAccountKeyCreation` remains enforced.
+No service-account private key, JSON credential, ADC user credential or permanent
+Google refresh token is used by reporting. Calendar/Gmail authorization is unchanged.
 
-- In GA4 property **564904776**, add the service-account email as **Viewer**.
-- In Search Console Domain property **sc-domain:theaugmentedarchitect.com**, add
-  that email as a **Restricted user** with performance-data access.
-- Save the service-account JSON in `GOOGLE_MARKETING_SERVICE_ACCOUNT_JSON` only
-  in ignored local/Vercel server configuration. Do not paste it into chat, commits,
-  build artifacts or client variables. Rotate/remove the key through Google Cloud
-  if compromised. A future keyless federation adapter can replace this credential
-  provider without changing reports or the dashboard.
-- Code requests only `analytics.readonly` and `webmasters.readonly`; the existing
-  scheduling authorization is neither read nor expanded.
-- `G-STBZV24WWN` remains the collection Measurement ID; it is not a reporting
-  Property ID. Search Console uses the Domain property, not an HTTPS URL prefix.
+Existing account:
+`marketing-intelligence-reader@the-augmented-architect-web.iam.gserviceaccount.com`.
+Cloud project: `the-augmented-architect-web`; project number: `68454656491`.
+The owner confirmed Analytics Data API/Search Console API enablement, GA4 Viewer
+access to property **564904776**, and Restricted access to
+**sc-domain:theaugmentedarchitect.com**. The remaining trust is Workload Identity
+Federation plus service-account impersonation.
 
-The server calls official `properties.runReport` and `searchAnalytics.query`
-endpoints through Google's supported authentication library. Missing configuration,
-denied permissions, API failures, quota limits and empty data have distinct safe UI
-states. Raw provider errors, credentials and visitor details are never exposed.
+### Exact Google Cloud setup
+
+Review and run [setup-marketing-federation.sh](../scripts/setup-marketing-federation.sh)
+in Google Cloud Shell. It pins the existing project/account, enables IAM Credentials
+and STS APIs, creates only pool `augarch-marketing` and provider `vercel`, and binds
+`roles/iam.workloadIdentityUser` on the existing service account. It never changes
+an organization policy, creates a private key, grants project-wide roles or enables
+domain-wide delegation. If the pool already exists, it stops for inspection.
+The operator needs pool-management and service-account IAM-binding permissions;
+do not broaden the application's role to perform setup.
+
+Equivalent console settings (IAM & Admin → Workload Identity Federation):
+
+| Field | Exact value |
+| --- | --- |
+| Pool ID | `augarch-marketing` |
+| Provider ID / type | `vercel` / OpenID Connect |
+| Issuer | `https://oidc.vercel.com/jd-burkholders-projects` |
+| Allowed audience | `https://vercel.com/jd-burkholders-projects` |
+| Subject mapping | `google.subject=assertion.sub` |
+| Additional mappings | `attribute.owner_id=assertion.owner_id`, `attribute.project_id=assertion.project_id`, `attribute.environment=assertion.environment` |
+
+Provider attribute condition:
+
+```text
+assertion.owner_id == 'team_gIBiazQzKNJ8DmNLOuAfpecs' &&
+assertion.project_id == 'prj_mSGGBQyKYm20H8Rl57tjm72qCQHq' &&
+assertion.environment in ['production','preview','development']
+```
+
+Add **Workload Identity User** on this service account only for these exact members:
+
+```text
+principal://iam.googleapis.com/projects/68454656491/locations/global/workloadIdentityPools/augarch-marketing/subject/owner:jd-burkholders-projects:project:the-augmented-architect-website-2:environment:production
+principal://iam.googleapis.com/projects/68454656491/locations/global/workloadIdentityPools/augarch-marketing/subject/owner:jd-burkholders-projects:project:the-augmented-architect-website-2:environment:preview
+principal://iam.googleapis.com/projects/68454656491/locations/global/workloadIdentityPools/augarch-marketing/subject/owner:jd-burkholders-projects:project:the-augmented-architect-website-2:environment:development
+```
+
+Do not trust the whole pool/team or wildcard project names. The provider condition
+pins immutable project/team IDs; exact subject bindings additionally pin the project
+name and approved environments. Only reviewed code should execute with this project's
+Preview identity. Vercel deployment protection protects browser access, not malicious
+code running inside an approved deployment. No project issuer setting needs changing:
+the existing local token was inspected and already uses the required team issuer.
+
+### Runtime and local development
+
+The official `@vercel/oidc` helper supplies the current Vercel identity. Google's
+`ExternalAccountClient` exchanges it at STS, then impersonates the existing reader
+for a **15-minute** Google token with only `analytics.readonly` and
+`webmasters.readonly`. The Google client refreshes expiring access tokens; subject
+tokens are read on demand, never copied into application state or logged. Google
+validates signatures, issuer, audience and provider conditions. Local decoding in
+the refresh helper is only a configuration sanity check, not authorization.
+
+In Vercel Preview/Production, the helper uses the platform request context. Do not
+manually set `VERCEL_OIDC_TOKEN` or a token-file path there. Configure only the four
+non-secret Google metadata variables above, plus the existing owner Auth variables.
+
+Locally, run:
+
+```sh
+node scripts/refresh-marketing-oidc.mjs
+```
+
+This uses the existing Vercel CLI login and verified website project link to obtain
+a short-lived **development** identity. It extracts just the token into ignored
+`.vercel/marketing-oidc-token` with mode 0600, deletes its temporary environment
+snapshot, and does not overwrite `.env.local` or print token values. Local-only
+`.env.local` should contain `VERCEL_OIDC_TOKEN_FILE` set to the absolute path of
+that file. SDK 4 rereads the file for each subject-token refresh, so rotation does
+not require restarting the server. If it expires, rerun the helper. No `gcloud`
+installation, long-lived Google key or user ADC file is needed locally.
+
+Read-only readiness check after Google trust is configured:
+
+```sh
+MARKETING_REPORTING_LIVE=1 node --env-file=.env.local tests/marketing-reporting.live.mjs
+```
+
+It queries both actual providers and reports connection/row counts without dumping
+queries, credentials or private error bodies. Verify both connections before Preview
+and Production release. Missing configuration, denied access, quotas and genuine
+empty reports remain explicit states. `G-STBZV24WWN` is the collection Measurement
+ID, not the numeric reporting Property ID. No fallback to private-key JSON exists.
+
+## Verified setup
+
+On November 17, 2026, the owner completed the scoped Cloud Shell federation setup.
+The local short-lived Vercel identity successfully queried both real reporting
+APIs through the shared server adapters. The owner also completed actual TOTP
+enrollment and opened the local dashboard; two genuine provider snapshots were
+persisted through the owner-authorized database client. The completed-day window
+2026-10-20 through 2026-11-16 returned no rows from either source. This is a valid
+empty report, not a fallback or evidence that today's Realtime events were lost.
+
+The existing Vercel project has the owner UUID, publishable Auth key, numeric GA4
+property and four non-secret federation settings prepared for Preview/Production.
+No permanent Google credential or manual OIDC token is stored in Vercel. Runtime
+Preview and Production verification must use those environments' own identities;
+successful local development exchange alone is not proof of deployed access.
 
 ## Reporting semantics
 
@@ -177,4 +271,5 @@ its current approved commit and report the blocker rather than adding a bypass.
 References: [Supabase SSR](https://supabase.com/docs/guides/auth/server-side/creating-a-client),
 [TOTP MFA](https://supabase.com/docs/guides/auth/auth-mfa/totp),
 [GA4 Data API](https://developers.google.com/analytics/devguides/reporting/data/v1/rest/v1beta/properties/runReport),
+[Vercel GCP federation](https://vercel.com/docs/oidc/gcp),
 [Search Analytics](https://developers.google.com/webmaster-tools/v1/searchanalytics/query).

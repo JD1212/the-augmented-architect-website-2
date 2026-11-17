@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import {loadScoutModule} from './helpers/scout-loader.mjs';
 assert.equal(process.env.MARKETING_REPORTING_LIVE,'1','Explicit reporting check opt-in is required');
 assert.equal(process.env.GA4_PROPERTY_ID,'564904776','Use the approved numeric property');
-assert(process.env.GOOGLE_MARKETING_SERVICE_ACCOUNT_JSON,'Dedicated reporting credentials are required');
+assert(process.env.GOOGLE_MARKETING_PROJECT_NUMBER,'Dedicated Workload Identity Federation configuration is required');
 const {ga4Report,searchConsoleReport}=loadScoutModule('src/lib/marketing/providers.ts');
 const {reportingRange}=loadScoutModule('src/lib/marketing/ranges.ts');
 const range=reportingRange('28');

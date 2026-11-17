@@ -37,7 +37,7 @@ try{
  const enrolled=await auth.auth.mfa.enroll({factorType:'totp',friendlyName:'Temporary QA authenticator'});assert(!enrolled.error,'Real TOTP enrollment failed');
  const secret=enrolled.data.totp.secret;assert(secret);const initial=await auth.auth.mfa.challengeAndVerify({factorId:enrolled.data.id,code:totp(secret)});assert(!initial.error,'Initial real TOTP confirmation failed');
  const after=await auth.rpc('marketing_authorized',{p_tenant:tenant});check(!after.error&&after.data===true,'Real AAL2 owner and live session pass database authorization');
- server=spawn(process.execPath,['node_modules/next/dist/bin/next','start','--port',String(port)],{env:{...process.env,MARKETING_OWNER_IDS:userId,GOOGLE_MARKETING_SERVICE_ACCOUNT_JSON:''},stdio:'ignore'});
+ server=spawn(process.execPath,['node_modules/next/dist/bin/next','start','--port',String(port)],{env:{...process.env,MARKETING_OWNER_IDS:userId,GOOGLE_MARKETING_PROJECT_NUMBER:''},stdio:'ignore'});
  let ready=false;for(let i=0;i<150;i++){try{if((await fetch(origin+'/admin/login')).ok){ready=true;break;}}catch{}await sleep(200);}assert(ready,'Temporary production server did not start');
  const denied=await fetch(origin+'/api/admin/marketing');check(denied.status===401,'Anonymous marketing API returns 401');check(/no-store/.test(denied.headers.get('cache-control'))&&/noindex/.test(denied.headers.get('x-robots-tag')),'Private API sends no-store and noindex headers');
  const cross=await fetch(origin+'/api/admin/auth',{method:'POST',headers:{origin:'https://evil.invalid','content-type':'application/json'},body:'{}'});check(cross.status===403,'Cross-origin Auth mutation rejected');
