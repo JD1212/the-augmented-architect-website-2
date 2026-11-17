@@ -6,7 +6,10 @@ const nextConfig: NextConfig = {
     return [{ source: '/insights/:path*', destination: '/our-approach/:path*', permanent: true }];
   },
   cacheComponents: true,
-  outputFileTracingIncludes: { "/api/scout": ["./src/lib/scout/skills/consultation-scheduling/SKILL.md"] },
+  outputFileTracingIncludes: {
+    "/api/scout": ["./src/lib/scout/skills/consultation-scheduling/SKILL.md"],
+    "/opengraph-image": ["./public/brand/aa-monogram.svg"],
+  },
   partialPrefetching: true,
   turbopack: {
     rules: {
