@@ -28,7 +28,7 @@ export const salesforceCommercial = {
   },
   trial: {
     label: 'Start Free 30-Day Trial',
-    supporting: 'Try our Salesforce architecture tools in your own Developer Sandbox. Free personal walkthrough included.',
+    supporting: 'Try our Salesforce architecture tools in your own Developer Sandbox. Free guided setup and personalized administrator or developer training included.',
     arrangement: 'A free 30-minute appointment to arrange your guided evaluation together.',
     request: "I'd like to book a free 30-minute Salesforce sandbox trial setup consultation for a personally guided 30-day evaluation.",
     eventTitle: 'Salesforce Sandbox Trial Setup — The Augmented Architect',
