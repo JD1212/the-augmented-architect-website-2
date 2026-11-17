@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { customApplications as copy } from '@/content/custom-applications';
+import type { ApplicationFeature } from '@/content/custom-applications';
 import { site } from '@/content/site';
 import { Arrow } from '@/components/icon';
 import { BusinessFoundationDiagram } from './business-foundation-diagram';
@@ -7,6 +8,14 @@ import styles from './custom-applications.module.css';
 
 function ConsultationLink() {
   return <Link className="button" href={site.consultation.href}>{copy.hero.cta}<Arrow /></Link>;
+}
+
+function ApplicationFeatureCard({ feature, index }: { feature: ApplicationFeature; index: number }) {
+  return <article className={`${styles.featureCard} ${index === 0 ? styles.featureLead : ''}`}>
+    <span className={styles.featureNumber} aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
+    <h3>{feature.href ? <Link href={feature.href}>{feature.title}<Arrow /></Link> : feature.title}</h3>
+    <p>{feature.description}</p>
+  </article>;
 }
 
 export function CustomApplicationsPage() {
@@ -18,6 +27,11 @@ export function CustomApplicationsPage() {
         <p className={styles.tagline}>{copy.hero.tagline}</p>
       </div>
     </section>
+    <section id="whats-included" className={`section ${styles.features}`} aria-labelledby="custom-features"><div className="container">
+      <div className={styles.heading}><p className="eyebrow">{copy.package.featureEyebrow}</p><h2 id="custom-features">{copy.package.featureTitle}</h2></div>
+      <div className={styles.featureGrid}>{copy.package.features.map((feature, index) => <ApplicationFeatureCard key={feature.id} feature={feature} index={index} />)}</div>
+      <p className={styles.scopeNote}>{copy.package.note}</p>
+    </div></section>
     <section className="section" aria-labelledby="custom-problem"><div className={`container ${styles.split}`}>
       <div><p className="eyebrow">{copy.problem.eyebrow}</p><h2 id="custom-problem">{copy.problem.title}</h2><p className={styles.description}>{copy.problem.description}</p></div>
       <ul className={styles.problemList}>{copy.problem.points.map(point => <li key={point}>{point}</li>)}</ul>
@@ -26,10 +40,9 @@ export function CustomApplicationsPage() {
       <div className={styles.heading}><p className="eyebrow">{copy.solution.eyebrow}</p><h2 id="custom-solution">{copy.solution.title}</h2><p>{copy.solution.description}</p></div>
       <div className={styles.solutionGrid}><ol className={styles.experienceLayers}>{copy.solution.layers.map(([title, description], index) => <li key={title}><span className={styles.stepNumber} aria-hidden="true">0{index + 1}</span><div><h3>{title}</h3><p>{description}</p></div></li>)}</ol><BusinessFoundationDiagram /></div>
     </div></section>
-    <section id="whats-included" className="section" aria-labelledby="custom-package"><div className="container">
+    <section id="implementation-scope" className="section" aria-labelledby="custom-package"><div className="container">
       <div className={styles.packageHeading}><div className={styles.heading}><p className="eyebrow">{copy.package.eyebrow}</p><h2 id="custom-package">{copy.package.title}</h2><p>{copy.package.description}</p></div><Link className="text-link" href={site.consultation.href}>{copy.hero.cta}<Arrow /></Link></div>
       <dl className={styles.capabilities}>{copy.package.capabilities.map(([title, description], index) => <div key={title}><dt><span aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>{title}</dt><dd>{description}</dd></div>)}</dl>
-      <p className={styles.scopeNote}>{copy.package.note}</p>
       <div className={styles.examples}><h3>{copy.package.examplesTitle}</h3><div className={styles.exampleGrid}>{copy.package.examples.map(example => <article key={example.title}><h4>{example.title}</h4><ol>{example.steps.map((step, index) => <li key={step}>{index > 0 && <span aria-hidden="true">→</span>}{step}</li>)}</ol></article>)}</div><p className={styles.small}>{copy.package.examplesNote}</p></div>
     </div></section>
     <section id="included-assistant" className="section" aria-labelledby="custom-assistant"><div className="container">

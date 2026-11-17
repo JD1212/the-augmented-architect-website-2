@@ -5,13 +5,16 @@ const cache=new Map();
 const {customApplications:copy}=loadScoutModule('src/content/custom-applications.ts',{},cache);
 const {scoutKnowledge,scoutInstructions}=loadScoutModule('src/lib/scout/knowledge.ts',{},cache);
 test('starting offer leads with the application foundation, supported management and one included assistant',()=>{
- assert.equal(copy.hero.title,'Your website is just the beginning.');assert.equal(copy.hero.price,'Implementation starting at $10,000');assert.equal(copy.package.capabilities.length,9);
- for(const title of ['Modern business website','Defined secure customer portal','Private team/admin workspace','Structured data, identity & permissions','Integration driver & management interface','Supported agent connection management','AI sales assistant & real scheduling','Architecture for business growth','Deployment, documentation & handoff'])assert(copy.package.capabilities.some(([t])=>t===title));
- assert.match(copy.hero.foundation.join(' '),/up to four/);
+ assert.equal(copy.hero.title,'Your website is just the beginning.');assert.equal(copy.hero.price,'Implementation starting at $10,000');assert.equal(copy.package.capabilities.length,3);
+ assert.deepEqual(copy.package.features.map(feature=>feature.title),['AI Agent + Dashboard','Modern Website + Database','Employee Portal','Customer Portal','Integration Drivers','SEO + Analytics']);
+ assert.equal(new Set(copy.package.features.map(feature=>feature.id)).size,6);
+ assert(copy.package.features.every(feature=>!feature.href),'No placeholder detail links');
+ assert.match(copy.hero.clarification,/up to four/);
 });
 test('four-connection allowance includes the calendar and unverified monitoring is not sold as complete',()=>{
  assert.match(copy.package.note,/up to four agreed, supported integrations in total/);assert.match(copy.package.note,/scheduling\/calendar connection counts toward/);
- assert.match(copy.future.boundaries,/not verified launch features/);assert.match(copy.package.capabilities[5][1],/not a completed launch capability/);
+ assert.match(copy.future.boundaries,/not verified launch features/);assert.match(copy.package.capabilities[0][1],/not a completed launch capability/);
+ assert.match(copy.package.note,/one agreed AI-agent use case/);assert.match(copy.package.note,/custom portal workflows/);assert.match(copy.package.note,/ongoing SEO services, hosting/);
  assert(!JSON.stringify(copy).includes('separate from the one included external business-system integration'));
 });
 test('Scout uses the existing registry and the revised sales/scheduling role without overpromising',()=>{

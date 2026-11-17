@@ -1,13 +1,14 @@
 import type { ServiceFaqCopy } from './faq-types';
 type TextPair = readonly [title: string, description: string];
 type SectionCopy = { eyebrow: string; title: string; description: string };
+export type ApplicationFeature = { id: string; title: string; description: string; href?: `/${string}` };
 type CustomApplicationsContent = {
   href: '/custom-applications'; navigationLabel: string; name: string;
   seo: { title: string; description: string };
   hero: SectionCopy & { subtitle: string; tagline: string; cta: string; secondary: string; price: string; clarification: string; packageLabel: string; foundation: readonly string[] };
   problem: SectionCopy & { points: readonly string[] };
   solution: SectionCopy & { layers: readonly TextPair[]; diagram: { label: string; steps: readonly string[]; existing: string; caption: string } };
-  package: SectionCopy & { capabilities: readonly TextPair[]; note: string; examplesTitle: string; examplesNote: string; examples: readonly { title: string; steps: readonly string[] }[] };
+  package: SectionCopy & { featureEyebrow: string; featureTitle: string; features: readonly ApplicationFeature[]; capabilities: readonly TextPair[]; note: string; examplesTitle: string; examplesNote: string; examples: readonly { title: string; steps: readonly string[] }[] };
   assistant: SectionCopy & { capabilities: readonly TextPair[]; boundaries: string };
   faq: ServiceFaqCopy;
   future: SectionCopy & { capabilities: readonly string[]; protocols: string; boundaries: string; platform: string; linkLabel: string; linkHref: string };
@@ -28,9 +29,9 @@ export const customApplications = {
     tagline: "Your business. Connected. Ready for what's next.",
     cta: 'Book a Free Consultation', secondary: "See What's Included",
     price: 'Implementation starting at $10,000',
-    clarification: 'Defined starting scope with up to four agreed, supported integrations, including scheduling where applicable. Includes one customer-facing AI assistant; advanced capabilities and ongoing services are separately scoped.',
+    clarification: 'A defined starting implementation: one agreed AI-agent use case and up to four agreed, supported API connections, including scheduling where applicable.',
     packageLabel: 'A FOCUSED IMPLEMENTATION',
-    foundation: ['Website, customer portal & private workspace', 'Structured data, identity & permissions', 'Proprietary driver management · up to four integrations', 'One AI website assistant & agent connection management'],
+    foundation: ['One AI agent & management dashboard', 'Modern website, connected data & basic customer/team portals', 'Extensible integrations & foundational SEO'],
   },
   problem: {
     eyebrow: 'WHEN YOUR TOOLS WORK APART', title: "Your website shouldn't be disconnected from your business.",
@@ -54,19 +55,23 @@ export const customApplications = {
   },
   package: {
     eyebrow: 'THE STARTING IMPLEMENTATION', title: 'A connected business foundation. Starting at $10,000.',
-    description: 'An extensible, AI-ready business application that connects your public presence, customer relationships, and everyday operations. The starting scope combines a website, portal, team workspace, structured data, our integration driver and management interface, and one customer-facing AI sales assistant.',
+    description: 'We define the launch deliverables, supported operations, and acceptance criteria together before development begins. Your starting implementation includes deployment, documentation, and a practical administrator handoff.',
+    featureEyebrow: 'INCLUDED IN YOUR STARTING PLATFORM',
+    featureTitle: 'AI at the center. Your business connected.',
+    features: [
+      { id: 'ai-agent', title: 'AI Agent + Dashboard', description: 'One configured AI agent with a central dashboard for management and activity within the agreed use case.' },
+      { id: 'website-database', title: 'Modern Website + Database', description: 'A responsive website, modern application stack, structured business data, and authentication.' },
+      { id: 'employee-portal', title: 'Employee Portal', description: 'A private workspace with basic team access, roles, and permissions.' },
+      { id: 'customer-portal', title: 'Customer Portal', description: 'Secure customer sign-in with basic account and information access.' },
+      { id: 'integration-drivers', title: 'Integration Drivers', description: 'Up to four agreed, supported API connections on an extensible integration-driver architecture, ready for additional integrations later.' },
+      { id: 'seo-analytics', title: 'SEO + Analytics', description: 'Technical SEO, search indexing setup, analytics, and basic conversion tracking.' },
+    ],
     capabilities: [
-      ['Modern business website', 'A responsive, search-friendly public website that presents your business and helps customers take the next step, within an agreed page and design scope.'],
-      ['Defined secure customer portal', 'Secure customer access to the agreed information and interactions, creating a consistent experience from first inquiry through ongoing service.'],
-      ['Private team/admin workspace', 'A focused workspace for authorized employees to manage customer relationships, business records, and the operations defined for launch.'],
-      ['Structured data, identity & permissions', 'Shared customer and operational information, clear business identities, and role-based permissions provide a reliable foundation across the application.'],
-      ['Integration driver & management interface', 'Our proprietary driver framework and management interface organize reviewed connections, authentication, verification, and supported operations. Up to four agreed supported integrations are included in the starting scope, counting scheduling/calendar where applicable.'],
-      ['Supported agent connection management', 'Organize supported agent connections and inspect available capabilities through a management interface. Activity, usage, and cost views are included only where their implementation and provider data are verified; comprehensive cross-provider monitoring is not a completed launch capability.'],
-      ['AI sales assistant & real scheduling', 'One customer-facing AI sales/website assistant, similar to Scout, explains approved business information, guides visitors to relevant services, and books appointments through authorized scheduling tools with explicit confirmation.'],
+      ['Defined operations & dashboard visibility', 'Agree the agent use case, portal access, supported API operations, and dashboard activity views during discovery. Management uses supported connection and capability views; activity reporting depends on implemented provider data. Comprehensive cross-provider activity, usage, and cost monitoring is not a completed launch capability.'],
       ['Architecture for business growth', 'Defined data relationships, tool permissions, integration boundaries, and documentation make room for additional workflows, agents, and business capabilities as priorities evolve.'],
       ['Deployment, documentation & handoff', 'Initial deployment, implementation documentation, and basic administrator handoff support a practical launch and a clear path for future changes.'],
     ],
-    note: 'The starting scope includes up to four agreed, supported integrations in total; the scheduling/calendar connection counts toward that allowance where applicable. We confirm provider access, supported operations, workflow boundaries, and acceptance criteria during discovery. New driver development, substantial custom integration work, advanced capabilities, and ongoing hosting, provider usage, or support are separately scoped.',
+    note: 'The $10,000 starting implementation covers one agreed AI-agent use case and up to four agreed, supported integrations in total; the scheduling/calendar connection counts toward that allowance where applicable. Additional agent capabilities, custom portal workflows, advanced integrations or new driver development, ongoing SEO services, hosting, provider usage, and other ongoing costs are separately scoped as applicable.',
     examplesTitle: 'A practical starting point for your business.',
     examplesNote: 'Illustrative workflows. These are possible applications, not claims of completed client projects or features included in every implementation.',
     examples: [

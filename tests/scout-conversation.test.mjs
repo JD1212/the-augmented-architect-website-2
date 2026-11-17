@@ -126,7 +126,7 @@ test('approved knowledge covers all three offerings, limitations, shared context
   assert.match(scoutInstructions,/\$10,000/);assert.match(scoutInstructions,/separately scoped/);assert.match(scoutInstructions,/Politely redirect unrelated/);
   assert.match(scoutInstructions,/cannot check calendars, book appointments, save leads, submit requests/);
   assert.match(JSON.stringify(scoutKnowledge),/Architecture Command Center/);assert.match(JSON.stringify(scoutKnowledge),/shared|memory/i);
-  assert.equal(scoutKnowledge.applications.package.capabilities.length,9);assert.equal(scoutKnowledge.applications.faqs.items.length,8);
+  assert.equal(scoutKnowledge.applications.package.capabilities.length,3);assert.equal(scoutKnowledge.applications.faqs.items.length,8);
 });
 test('mocked on-topic and off-topic replies flow through the same conversational path', async () => {
   for(const [question,answer] of [
