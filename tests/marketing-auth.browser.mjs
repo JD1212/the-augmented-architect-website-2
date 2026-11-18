@@ -33,7 +33,7 @@ try{
  const created=await db.auth.admin.createUser({email,password,email_confirm:true});assert(!created.error,'Temporary Auth user creation failed');userId=created.data.user.id;
  const member=await db.from('marketing_memberships').insert({tenant_id:tenant,user_id:userId});assert(!member.error,'Temporary owner membership creation failed');
  const signed=await auth.auth.signInWithPassword({email,password});assert(!signed.error,'Temporary password sign-in failed');
- const before=await auth.rpc('marketing_authorized',{p_tenant:tenant});check(!before.error&&before.data===false,'Real AAL1 owner cannot retrieve marketing data');
+ const before=await auth.rpc('marketing_authorized',{p_tenant:tenant});check(!before.error&&before.data===true,'Real password-only owner passes scoped database authorization');
  const enrolled=await auth.auth.mfa.enroll({factorType:'totp',friendlyName:'Temporary QA authenticator'});assert(!enrolled.error,'Real TOTP enrollment failed');
  const secret=enrolled.data.totp.secret;assert(secret);const initial=await auth.auth.mfa.challengeAndVerify({factorId:enrolled.data.id,code:totp(secret)});assert(!initial.error,'Initial real TOTP confirmation failed');
  const after=await auth.rpc('marketing_authorized',{p_tenant:tenant});check(!after.error&&after.data===true,'Real AAL2 owner and live session pass database authorization');
@@ -64,12 +64,16 @@ try{
  await send('Page.addScriptToEvaluateOnNewDocument',{source:"localStorage.setItem('aa.analytics.consent.v1',JSON.stringify({version:1,choice:'denied',expires:Date.now()+86400000}));"});
  await send('Page.navigate',{url:origin+'/admin/login'});await until("!!document.querySelector('#owner-email')");
  check(await ev("document.querySelector('meta[name=robots]').content.includes('noindex')"),'Owner login is noindex');
- await fill('#owner-email',email);await fill('#owner-password',password);await button('Sign in securely');await until("!!document.querySelector('#owner-code')");
- check(await ev("(async()=>{const r=await fetch('/api/admin/marketing');return r.status})()")===403,'Password-only browser session cannot read reports');
+ await fill('#owner-email',email);await fill('#owner-password',password);await button('Sign in securely');await until("location.pathname==='/admin/marketing'&&document.body.textContent.includes('Configure the numeric GA4')");
+ check(!await ev("!!document.querySelector('#owner-code')"),'Existing verified factor does not force MFA when the owner has not opted in');
  const cookies=await send('Network.getCookies',{urls:[origin]});const authCookies=cookies.cookies.filter(c=>c.name.startsWith('aa-owner-auth'));check(authCookies.length>0&&authCookies.every(c=>c.httpOnly&&c.secure&&c.sameSite==='Lax'),'Auth cookies are HttpOnly, Secure and SameSite=Lax');
- // Wait for a fresh code, so the browser challenge cannot depend on code replay.
- await sleep(30500-(Date.now()%30000));await fill('#owner-code',totp(secret));await button('Verify and open dashboard');await until("location.pathname==='/admin/marketing'&&document.body.textContent.includes('Configure the numeric GA4')");
- check(await ev("(async()=>{const r=await fetch('/api/admin/marketing');const j=await r.json();return r.ok&&j.ga4.status==='not_configured'&&j.search.status==='not_configured'})()"),'Real browser MFA unlocks reports; missing Google credentials produce honest setup states');
+ check(await ev("(async()=>{const r=await fetch('/api/admin/marketing');const j=await r.json();return r.ok&&j.ga4.status==='not_configured'&&j.search.status==='not_configured'})()"),'Password login opens the private dashboard directly with honest setup states');
+ for(const width of [1440,1280,1191,1100,1051,390]){
+   await send('Emulation.setDeviceMetricsOverride',{width,height:1000,deviceScaleFactor:1,mobile:width===390});
+   const menu=await ev("document.querySelector('.menu-toggle').checkVisibility()");if(menu)await ev("document.querySelector('.menu-toggle').click()");
+   check(await ev("(()=>{const a=document.querySelector('.header-signin'),r=a.getBoundingClientRect();return a.getAttribute('href')==='/admin/login'&&a.checkVisibility()&&r.height>=44&&r.left>=0&&r.right<=innerWidth&&document.documentElement.scrollWidth===innerWidth})()"),'Discreet Sign in link fits and remains accessible '+width);
+   if(menu)await ev("document.querySelector('.menu-toggle').click()");
+ }
  fixture=true;
  for(const width of [1440,390]){
    await send('Emulation.setDeviceMetricsOverride',{width,height:width===390?844:1000,deviceScaleFactor:1,mobile:width===390});
@@ -84,6 +88,15 @@ try{
  fixture=false;await button('Sign out');await until("location.pathname==='/admin/login'&&!!document.querySelector('#owner-email')");
  check(await ev("(async()=>{const r=await fetch('/api/admin/marketing');return r.status===401})()"),'Sign out removes browser access to private API');
  check(!await ev("document.body.textContent.includes('salesforce modernization')"),'Private report contents absent after sign out');
+ // Optional MFA remains enforceable through an explicit administrator-set policy.
+ const optedIn=await db.from('marketing_memberships').update({require_mfa:true}).eq('tenant_id',tenant).eq('user_id',userId);assert(!optedIn.error);
+ await fill('#owner-email',email);await fill('#owner-password',password);await button('Sign in securely');await until("!!document.querySelector('#owner-code')");
+ check(await ev("document.body.textContent.includes('Temporary QA authenticator')&&!document.querySelector('img[alt*=enrollment]')"),'Opted-in account identifies its existing factor without issuing a replacement QR');
+ check(await ev("(async()=>{const r=await fetch('/api/admin/marketing');return r.status===403})()"),'Opted-in MFA policy blocks password-only report access');
+ await button('I can’t access my authenticator');check(await ev("document.querySelector('#owner-mfa-recovery').textContent.includes('verified Supabase project administrator')"),'Recovery help requires administrator verification and provides no bypass');
+ await sleep(30500-(Date.now()%30000));await fill('#owner-code',totp(secret));await button('Verify and open dashboard');await until("location.pathname==='/admin/marketing'&&document.body.textContent.includes('Configure the numeric GA4')");
+ check(await ev("(async()=>{const r=await fetch('/api/admin/marketing');return r.ok})()"),'Optional MFA verification still unlocks the same securely scoped dashboard');
+ await button('Sign out');await until("location.pathname==='/admin/login'&&!!document.querySelector('#owner-email')");
  check(errors.length===0,'No browser runtime errors');
  await writeFile(out+'/results.json',JSON.stringify({checks,fixtureScreenshots:true,realEmails:0,realAppointments:0},null,2));console.log(JSON.stringify({checks:checks.length,out,realEmails:0,realAppointments:0}));
 }finally{

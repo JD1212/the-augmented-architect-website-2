@@ -82,7 +82,11 @@ a:hover > .arrow { transform: translateX(3px); }
 .navigation > a:not(.button) { padding-block: 13px; }
 .navigation > a:not(.button):hover, .navigation > a[aria-current]:not(.button) { color: #42678b; }
 .navigation .header-cta { margin-left: 10px; font-size: 12px; min-height: 42px; padding: 10px 17px; gap: 14px; }
+.header-account-actions { display:flex; align-items:center; gap:16px; }
+.navigation .header-signin { font-size:11px; font-weight:500; color:var(--charcoal); min-height:44px; display:inline-flex; align-items:center; white-space:nowrap; }
+.navigation .header-account-actions .header-cta { margin:0; }
 .menu-toggle { display: none; }
+@media (min-width:1051px) and (max-width:1090px) { .site-header .navigation { gap:12px; }.header-account-actions { gap:12px; } }
 .hero-description { color: var(--charcoal); font-size: 17px; line-height: 1.75; max-width: 590px; }
 .hero-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 25px; margin-top: 29px; }
 .architecture-diagram { position: relative; width: 100%; color: #e5e9ed; background: linear-gradient(140deg,#2a3742,#1c252d 65%); border: 1px solid #7195b363; border-radius: 15px; padding: 21px; overflow: hidden; }

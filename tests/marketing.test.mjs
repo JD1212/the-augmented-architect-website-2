@@ -26,22 +26,43 @@ test('all private JSON responses are no-store/noindex; writes reject cross-origi
   for(const text of ['null','[]','"test"','{'])await assert.rejects(privateBody(req(text)),e=>e.status===400);
   await assert.rejects(privateBody(req(JSON.stringify({x:'a'.repeat(5000)}))),e=>e.status===413);
 });
-function authFixture({user={id:ownerId,email_confirmed_at:'2026-11-17',is_anonymous:false},claims={sub:ownerId,aal:'aal2'},access=true,rpcError=null}={}){
+function authFixture({user={id:ownerId,email_confirmed_at:'2026-11-17',is_anonymous:false},claims={sub:ownerId,aal:'aal2'},access='allowed',rpcError=null}={}){
   return {auth:{getUser:async()=>({data:{user},error:null}),getClaims:async()=>({data:{claims},error:null})},rpc:async()=>({data:access,error:rpcError})};
 }
-test('owner authorization rejects missing identity, editable metadata, anonymous users, AAL1, wrong subject and revoked membership',async()=>{
+test('owner authorization permits password-only owners and rejects missing identity, editable metadata, wrong roles, opted-in MFA gaps and revoked membership',async()=>{
   const auth=load('src/lib/marketing/auth.ts');const previous=process.env.MARKETING_OWNER_IDS;process.env.MARKETING_OWNER_IDS=ownerId;
   try{
     await assert.rejects(auth.requireOwner(authFixture({user:null})),e=>e.status===401);
     await assert.rejects(auth.requireOwner(authFixture({user:{id:'b7777777-7777-4777-8777-777777777777',email_confirmed_at:'yes',user_metadata:{role:'owner'}}})),e=>e.status===403);
     await assert.rejects(auth.requireOwner(authFixture({user:{id:ownerId,is_anonymous:true,email_confirmed_at:'yes'}})),e=>e.status===403);
     await assert.rejects(auth.requireOwner(authFixture({user:{id:ownerId}})),e=>e.status===403);
-    await assert.rejects(auth.requireOwner(authFixture({claims:{sub:ownerId,aal:'aal1'}})),e=>e.status===403);
+    await assert.doesNotReject(auth.requireOwner(authFixture({claims:{sub:ownerId,aal:'aal1'}})));
+    await assert.rejects(auth.requireOwner(authFixture({claims:{sub:ownerId,aal:'aal1'},access:'mfa_required'})),e=>e.status===403);
+    await assert.rejects(auth.requireOwner(authFixture({claims:{sub:ownerId,aal:'unknown'}})),e=>e.status===403);
     await assert.rejects(auth.requireOwner(authFixture({claims:{sub:'other',aal:'aal2'}})),e=>e.status===403);
     await assert.rejects(auth.requireOwner(authFixture({access:false})),e=>e.status===403);
     await assert.rejects(auth.requireOwner(authFixture({rpcError:{message:'db secret withheld'}})),e=>e.status===503&&!e.message.includes('secret'));
     assert.equal((await auth.requireOwner(authFixture())).tenantId,config.marketingTenant);
   }finally{if(previous===undefined)delete process.env.MARKETING_OWNER_IDS;else process.env.MARKETING_OWNER_IDS=previous;}
+});
+test('owner login goes directly to dashboard when optional MFA is off, including accounts with an existing factor',async()=>{
+  let factorReads=0;
+  const db={auth:{signInWithPassword:async()=>({error:null}),mfa:{listFactors:async()=>{factorReads++;return {};}}}};
+  const route=load('src/app/api/admin/auth/route.ts',{'./config':config,'@/lib/marketing/auth':{ownerAuth:async()=>db,ownerAccess:async()=>({state:'allowed'})},'@/lib/marketing/config':{...config,ownerIds:()=>new Set([ownerId])}});
+  const response=await route.POST(new Request('https://site.invalid/api/admin/auth',{method:'POST',headers:{origin:'https://site.invalid','content-type':'application/json'},body:JSON.stringify({action:'login',email:'owner@example.invalid',password:'fixture-password'})}));
+  assert.equal(response.status,200);assert.deepEqual(await response.json(),{stage:'ready'});assert.equal(factorReads,0);
+  assert.deepEqual(await(await route.GET(new Request('https://site.invalid/api/admin/auth'))).json(),{stage:'ready'});
+});
+test('explicit MFA opt-in supports first-time QR enrollment and existing-factor verification without reset',async()=>{
+  let verified=false,enrolled=0;
+  const db={auth:{mfa:{listFactors:async()=>({data:{totp:verified?[{id:ownerId,status:'verified',friendly_name:'Marketing owner'}]:[],all:[]},error:null}),enroll:async()=>{enrolled++;return {data:{id:ownerId,totp:{qr_code:'data:image/svg+xml;utf8,fixture-qr',secret:'must-not-return'}},error:null};}}}};
+  const route=load('src/app/api/admin/auth/route.ts',{'./config':config,'@/lib/marketing/auth':{ownerAuth:async()=>db,ownerIdentity:async()=>({id:ownerId}),ownerAccess:async()=>({state:'mfa_required'})},'@/lib/marketing/config':{...config,ownerIds:()=>new Set([ownerId])}});
+  const get=()=>route.GET(new Request('https://site.invalid/api/admin/auth'));
+  assert.deepEqual(await(await get()).json(),{stage:'enroll'});
+  const request=()=>new Request('https://site.invalid/api/admin/auth',{method:'POST',headers:{origin:'https://site.invalid','content-type':'application/json'},body:JSON.stringify({action:'enroll'})});
+  const response=await route.POST(request()),body=await response.json();assert.equal(body.stage,'challenge');assert(body.qr);assert(!JSON.stringify(body).includes('must-not-return'));
+  verified=true;const existing=await(await get()).json();assert.equal(existing.stage,'challenge');assert.equal(existing.factorName,'Marketing owner');assert(!existing.qr);
+  assert.equal((await route.POST(request())).status,409);assert.equal(enrolled,1);
 });
 test('private report API checks owner before calling any reporting provider',async()=>{
   let called=0;

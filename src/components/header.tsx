@@ -15,7 +15,11 @@ export function Header() {
     <button ref={toggle} className="menu-toggle" aria-expanded={open} aria-controls="main-navigation" onClick={() => setOpen(value => !value)}>{site.accessibility.menu}<span aria-hidden="true">{open ? '−' : '+'}</span></button>
     <nav id="main-navigation" aria-label={site.accessibility.navigation} className={open ? 'navigation is-open' : 'navigation'}>
       {site.navigation.map(link => <Link key={link.href} href={link.href} aria-current={pathname === link.href ? 'page' : link.href === '/our-approach' && pathname.startsWith('/our-approach/') ? 'location' : undefined} onClick={() => setOpen(false)}>{link.label}</Link>)}
-      <Link className="button header-cta" href={site.consultation.href} onClick={() => setOpen(false)}>{site.consultation.label}<Arrow /></Link>
+      <span className="header-account-actions">
+        {/* A fresh document keeps public analytics and page state outside the private sign-in boundary. */}
+        <a className="header-signin" href={site.signIn.href} aria-current={pathname === site.signIn.href ? 'page' : undefined} onClick={() => setOpen(false)}>{site.signIn.label}</a>
+        <Link className="button header-cta" href={site.consultation.href} onClick={() => setOpen(false)}>{site.consultation.label}<Arrow /></Link>
+      </span>
     </nav>
   </div></header>;
 }

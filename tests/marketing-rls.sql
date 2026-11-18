@@ -21,7 +21,18 @@ do $$ begin if exists(select 1 from public.marketing_reports) then raise excepti
 reset role;
 select set_config('request.jwt.claims','{"sub":"a7777777-7777-4777-8777-777777777777","aal":"aal1","session_id":"f7777777-7777-4777-8777-777777777777","role":"authenticated"}',true);
 set local role authenticated;
-do $$ begin if exists(select 1 from public.marketing_reports) then raise exception 'FAIL: AAL1 read'; end if; end $$;
+do $$ begin
+  if (select count(*) from public.marketing_reports where property_id='rls-fixture')<>1 then raise exception 'FAIL: password owner access'; end if;
+  if public.marketing_owner_status('b329164a-f981-4acc-befc-2f0c70f8af10')<>'allowed' then raise exception 'FAIL: password owner status'; end if;
+end $$;
+reset role;
+update public.marketing_memberships set require_mfa=true where user_id='a7777777-7777-4777-8777-777777777777';
+set local role authenticated;
+do $$ begin
+  if exists(select 1 from public.marketing_reports) then raise exception 'FAIL: opted-in MFA not enforced'; end if;
+  if public.marketing_owner_status('b329164a-f981-4acc-befc-2f0c70f8af10')<>'mfa_required' then raise exception 'FAIL: opt-in status'; end if;
+  begin update public.marketing_memberships set require_mfa=false; raise exception 'FAIL: self-downgrade MFA policy'; exception when insufficient_privilege then null; end;
+end $$;
 reset role;
 select set_config('request.jwt.claims','{"sub":"a7777777-7777-4777-8777-777777777777","aal":"aal2","session_id":"f7777777-7777-4777-8777-777777777777","role":"authenticated"}',true);
 set local role authenticated;
@@ -55,4 +66,4 @@ set local role authenticated;
 do $$ begin if exists(select 1 from public.marketing_reports) then raise exception 'FAIL: revoked session'; end if; end $$;
 reset role;
 rollback;
-select 'PASS: anonymous access, non-owner AAL2, owner AAL1, tenant isolation, owner+MFA access, self-authorization, cross-tenant insertion, snapshot mutation, agent writes, inactive membership, revoked session. All fixtures rolled back.' as verification;
+select 'PASS: anonymous denial, non-owner denial, password owner access, optional MFA enforcement, blocked MFA self-downgrade, tenant isolation, owner+MFA access, self-authorization, cross-tenant insertion, snapshot mutation, agent writes, inactive membership, revoked session. All fixtures rolled back.' as verification;

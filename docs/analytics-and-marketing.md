@@ -87,7 +87,7 @@ Event functions accept no free-form visitor data. No sensitive data is placed in
 
 ## Owner intelligence roadmap
 
-The private owner dashboard, MFA/authorization boundary, read-only provider adapters
+The private owner dashboard, owner authorization boundary with optional MFA, read-only provider adapters
 and durable evidence schema are now implemented. Owner provisioning and dedicated
 Google reporting permissions must be configured and verified before release. See
 [Owner marketing dashboard](owner-marketing-dashboard.md) for exact setup, security

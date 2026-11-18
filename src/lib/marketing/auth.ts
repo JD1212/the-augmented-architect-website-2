@@ -14,19 +14,31 @@ export async function ownerAuth() {
     },
   });
 }
-export async function ownerIdentity(db: Awaited<ReturnType<typeof ownerAuth>>) {
+// Reusable verified identity for future role-specific portals. It grants no role.
+export async function verifiedIdentity(db: Awaited<ReturnType<typeof ownerAuth>>) {
   const { data, error } = await db.auth.getUser();
   if (error || !data.user) throw new MarketingError(401, 'Please sign in.');
-  if (!data.user.email_confirmed_at || data.user.is_anonymous || !ownerIds().has(data.user.id)) throw new MarketingError(403, 'This account does not have owner access.');
+  if (!data.user.email_confirmed_at || data.user.is_anonymous) throw new MarketingError(403, 'A verified account is required.');
   return data.user;
 }
-export async function requireOwner(db: Awaited<ReturnType<typeof ownerAuth>>) {
+export async function ownerIdentity(db: Awaited<ReturnType<typeof ownerAuth>>) {
+  const user=await verifiedIdentity(db);
+  if(!ownerIds().has(user.id))throw new MarketingError(403, 'This account does not have owner access.');
+  return user;
+}
+export async function ownerAccess(db: Awaited<ReturnType<typeof ownerAuth>>) {
   const user = await ownerIdentity(db);
   const { data, error } = await db.auth.getClaims();
-  if (error || data?.claims.sub !== user.id || data.claims.aal !== 'aal2') throw new MarketingError(403, 'Authenticator verification is required.');
-  // Database authorization also checks the live Auth session, active membership and AAL2.
-  const access = await db.rpc('marketing_authorized', { p_tenant: marketingTenant });
+  if (error || data?.claims.sub !== user.id || !['aal1','aal2'].includes(String(data.claims.aal))) throw new MarketingError(403, 'A verified owner session is required.');
+  // Role, live-session ownership and the optional MFA policy are enforced in SQL
+  // as well as at every page/API boundary. Password login grants no broader role.
+  const access = await db.rpc('marketing_owner_status', { p_tenant: marketingTenant });
   if (access.error) throw new MarketingError(503, 'Owner database access is not configured or temporarily unavailable.');
-  if (access.data !== true) throw new MarketingError(403, 'Owner membership or session is no longer active.');
-  return { db, user, tenantId: marketingTenant };
+  if (!['allowed','mfa_required'].includes(access.data)) throw new MarketingError(403, 'Owner membership or session is no longer active.');
+  return { db, user, tenantId: marketingTenant, state: access.data as 'allowed'|'mfa_required' };
+}
+export async function requireOwner(db: Awaited<ReturnType<typeof ownerAuth>>) {
+  const access=await ownerAccess(db);
+  if(access.state!=='allowed')throw new MarketingError(403, 'Authenticator verification is required by this account’s opted-in policy.');
+  return access;
 }

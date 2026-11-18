@@ -68,10 +68,10 @@ second Google tag or enable automatic history/form/search measurement alongside 
 ## Owner-only marketing portal
 
 The Phase 2 implementation adds `/admin/login` and `/admin/marketing` with
-request-scoped Supabase SSR Auth, exact owner UUID authorization, mandatory TOTP
-MFA/AAL2, tenant membership and live-session validation. Private page and API
-boundaries enforce access independently of the cookie-refresh proxy. No admin link
-is added to public navigation, and no private page is added to the sitemap.
+request-scoped Supabase SSR Auth, exact owner UUID authorization, administrator-controlled optional TOTP
+MFA, tenant membership and live-session validation. Private page and API
+boundaries enforce access independently of the cookie-refresh proxy. A discreet Sign in link
+is present beside the consultation CTA; private pages remain out of the sitemap.
 
 The scoped marketing migration adds separate owner/reporting/evidence records with
 RLS; existing Scout tables and the pending customer-identity proposal are unchanged.
@@ -80,7 +80,7 @@ reporting credentials are separate from Calendar/Gmail authorization.
 
 See [owner marketing dashboard](owner-marketing-dashboard.md) for provisioning,
 configuration, privacy/security boundaries, tests, current reporting semantics and
-the next SEO Analyst design. Owner setup, MFA verification and real provider access
+the next SEO Analyst design. Owner setup, password-session verification and real provider access
 are release gates; missing credentials must not be replaced with fabricated data or
 an authentication bypass. No agent, scheduler or publishing workflow is enabled.
 

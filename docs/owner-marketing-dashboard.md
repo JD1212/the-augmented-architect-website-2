@@ -2,8 +2,9 @@
 
 ## Scope and security
 
-The private entry is `/admin/login`; reports are at `/admin/marketing`. Neither is
-linked in public navigation or the sitemap. Admin metadata and responses are
+The private entry is `/admin/login`; reports are at `/admin/marketing`. A discreet header Sign in link opens the login page; no direct dashboard link or
+private page is added to the sitemap. Sign in uses a fresh document navigation,
+keeping public analytics and page state outside the private entry boundary. Admin metadata and responses are
 noindex; authenticated responses are private/no-store. Search exclusion is not an
 access-control mechanism.
 
@@ -22,13 +23,13 @@ Every reporting request requires all of:
 
 1. A verified, non-anonymous `auth.getUser()` identity with confirmed email.
 2. Its exact UUID in server-only `MARKETING_OWNER_IDS`.
-3. A validated AAL2 access token after authenticator-app MFA.
+3. A validated password session (AAL1 or AAL2); MFA/AAL2 only when the owner explicitly opts in through administrator-controlled policy.
 4. Active owner membership in the website's marketing tenant.
 5. A live, unexpired Auth session, checked in the database against `session_id`.
 
 RLS applies to all seven marketing tables. Tenant membership is provisioned by the
 project administrator, never from email matching, editable metadata or browser
-input. An AAL1 owner may enroll/challenge an authenticator but cannot read reports.
+input. Password-only owners can read reports when `require_mfa=false`. When explicitly enabled, the same RLS boundary requires AAL2 before report access. Ordinary authenticated users never receive owner access.
 Revoking the database membership immediately denies further report reads, including
 direct Data API access. For account removal, deactivate membership, remove the UUID
 from environment allowlists, and revoke the Auth sessions. Existing downloaded data
@@ -62,11 +63,13 @@ cannot be recalled. Never reuse the service-role key in a browser client.
 
    Existing `SUPABASE_SECRET_KEY`, Calendar/Gmail and Scout settings remain unchanged.
    No new variable has a `NEXT_PUBLIC_` prefix. The browser needs no Google key.
-4. Ensure Supabase TOTP enrollment and verification are enabled. Sign in at
-   `/admin/login`, scan the QR in an authenticator app, and enter its current
-   six-digit code. Each new password session must pass MFA. Keep your authenticator
-   recovery plan with the verified project administrator; this release adds no
-   unauthenticated reset mechanism.
+4. Sign in at `/admin/login` using the existing email and password. Authorized
+   owners go directly to `/admin/marketing`; existing TOTP factors do not force a
+   challenge while `require_mfa=false`. MFA remains available for a later explicit
+   opt-in: an administrator can set the membership policy to `require_mfa=true`,
+   after confirming the owner has a working authenticator or needs first-time QR
+   enrollment. No browser can alter this policy or reset a verified factor. Keep
+   recovery with the verified project administrator.
 
 ## Keyless Google reporting identity
 
@@ -242,7 +245,7 @@ scheduling tools. Its server-owned tenant scope must never come from model input
 4. Require structured output: observation vs hypothesis, source snapshot IDs,
    comparison windows, sample size, confidence/limitations, proposed change and
    expected measurement. Insufficient data must produce a clear abstention.
-5. Show the recommendation to the MFA-authenticated owner. Approval records must
+5. Show the recommendation to the server-authorized owner (and enforce any opted-in MFA policy). Approval records must
    be immutable, version-specific and created only after an explicit human action.
 6. Implement publication separately through the reviewed Git Preview/Production
    workflow. Record the approved version, release commit and effective date.
@@ -260,11 +263,11 @@ Run lint, TypeScript, unit tests, the production build, marketing browser tests 
 existing public-site/Scout/analytics regression suites. `tests/marketing-rls.sql`
 tests actual database permissions in a transaction and rolls back all Auth/report
 fixtures. Live Auth tests use temporary, confirmed `example.invalid` accounts with
-random passwords and TOTP, never owner credentials, email invitations or bookings.
+random passwords. They test direct password login and explicitly opted-in TOTP, never owner credentials, email invitations or bookings.
 
 Release remains feature branch → tests → authenticated Preview → verified main
 commit → automatic Vercel Production → live checks. Do not release a portal until
-the real owner is provisioned, MFA is tested, and Preview/Production credentials
+the real owner is provisioned, the password flow and optional MFA are tested, and Preview/Production credentials
 are configured. If credentials or account setup are pending, keep Production on
 its current approved commit and report the blocker rather than adding a bypass.
 
@@ -273,3 +276,31 @@ References: [Supabase SSR](https://supabase.com/docs/guides/auth/server-side/cre
 [GA4 Data API](https://developers.google.com/analytics/devguides/reporting/data/v1/rest/v1beta/properties/runReport),
 [Vercel GCP federation](https://vercel.com/docs/oidc/gcp),
 [Search Analytics](https://developers.google.com/webmaster-tools/v1/searchanalytics/query).
+
+## Password-first release policy
+
+The owner explicitly approved email/password access on November 17, 2026.
+`marketing_memberships.require_mfa` defaults to false; the existing verified TOTP
+factor is retained, not reset. Migration `20261117234544_marketing_optional_owner_mfa.sql`
+changes only the assurance requirement for active owners with live sessions. Table
+grants, tenant policies, owner UUID checks and browser credential restrictions remain
+in place. Optional MFA is still enforced by SQL, pages and APIs if explicitly enabled.
+
+Public registration has no application route or UI. The Supabase provider-level
+“Allow new users to sign up” switch must also be off, while email/password sign-in
+remains enabled. Verify the live `/auth/v1/settings` response before release.
+Administrator-created test/provisioned accounts do not require enabling public signup.
+
+For future staff/client portals, reuse the request-scoped session client, but give
+each portal its own server-side role/access guard and RLS scope. Membership roles are
+server-controlled; this release still accepts only role `owner` and UUIDs explicitly
+allowed by the website. Do not infer roles from email domains or editable metadata.
+Add future role-specific destinations after verified login; do not grant staff or
+clients the current owner reports by default. The central `site.signIn` destination
+can be changed when a general portal entry exists, without changing header components.
+
+Current Auth advisory: Supabase reports leaked-password protection disabled. This
+release leaves that independent setting unchanged; assess enabling it separately
+through [password security](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection).
+Owner UUID checks, live-session authorization, RLS and optional MFA enforcement are
+verified regardless of that advisory.
