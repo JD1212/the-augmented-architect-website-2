@@ -1,9 +1,12 @@
 import 'server-only';
 import { cookies } from 'next/headers';
+import { connection } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { authConfig, MarketingError, marketingTenant, ownerIds } from './config';
 
 export async function ownerAuth() {
+  // Auth SDK session expiry reads the clock. Never evaluate it during prerendering.
+  await connection();
   const jar = await cookies();
   const { url, key } = authConfig();
   return createServerClient(url, key, {

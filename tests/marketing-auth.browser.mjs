@@ -27,7 +27,7 @@ function totp(secret){
 }
 const port=await new Promise(resolve=>{const server=createServer();server.listen(0,'127.0.0.1',()=>{const port=server.address().port;server.close(()=>resolve(port));});});
 const origin='http://localhost:'+port,out=join(tmpdir(),'aa-marketing-review',String(Date.now()));await mkdir(out,{recursive:true});
-let userId,server,browser,ws;const checks=[];const check=(value,label)=>{assert(value,label);checks.push(label);console.log('PASS '+label);};
+let userId,server,browser,ws,prerenderError=false;const checks=[];const check=(value,label)=>{assert(value,label);checks.push(label);console.log('PASS '+label);};
 try{
  const email='marketing-qa-'+randomUUID()+'@example.invalid',password=randomBytes(32).toString('base64url')+'aA1!';
  const created=await db.auth.admin.createUser({email,password,email_confirm:true});assert(!created.error,'Temporary Auth user creation failed');userId=created.data.user.id;
@@ -37,7 +37,8 @@ try{
  const enrolled=await auth.auth.mfa.enroll({factorType:'totp',friendlyName:'Temporary QA authenticator'});assert(!enrolled.error,'Real TOTP enrollment failed');
  const secret=enrolled.data.totp.secret;assert(secret);const initial=await auth.auth.mfa.challengeAndVerify({factorId:enrolled.data.id,code:totp(secret)});assert(!initial.error,'Initial real TOTP confirmation failed');
  const after=await auth.rpc('marketing_authorized',{p_tenant:tenant});check(!after.error&&after.data===true,'Real AAL2 owner and live session pass database authorization');
- server=spawn(process.execPath,['node_modules/next/dist/bin/next','start','--port',String(port)],{env:{...process.env,MARKETING_OWNER_IDS:userId,GOOGLE_MARKETING_PROJECT_NUMBER:''},stdio:'ignore'});
+ server=spawn(process.execPath,['node_modules/next/dist/bin/next','start','--port',String(port)],{env:{...process.env,MARKETING_OWNER_IDS:userId,GOOGLE_MARKETING_PROJECT_NUMBER:''},stdio:['ignore','pipe','pipe']});
+ server.stdout.resume();server.stderr.on('data',chunk=>{if(/Next.js encountered|blocking-prerender-current-time/.test(chunk.toString()))prerenderError=true;});
  let ready=false;for(let i=0;i<150;i++){try{if((await fetch(origin+'/admin/login')).ok){ready=true;break;}}catch{}await sleep(200);}assert(ready,'Temporary production server did not start');
  const denied=await fetch(origin+'/api/admin/marketing');check(denied.status===401,'Anonymous marketing API returns 401');check(/no-store/.test(denied.headers.get('cache-control'))&&/noindex/.test(denied.headers.get('x-robots-tag')),'Private API sends no-store and noindex headers');
  const cross=await fetch(origin+'/api/admin/auth',{method:'POST',headers:{origin:'https://evil.invalid','content-type':'application/json'},body:'{}'});check(cross.status===403,'Cross-origin Auth mutation rejected');
@@ -98,6 +99,7 @@ try{
  check(await ev("(async()=>{const r=await fetch('/api/admin/marketing');return r.ok})()"),'Optional MFA verification still unlocks the same securely scoped dashboard');
  await button('Sign out');await until("location.pathname==='/admin/login'&&!!document.querySelector('#owner-email')");
  check(errors.length===0,'No browser runtime errors');
+ check(!prerenderError,'No Auth SDK clock/prerender errors in the production server');
  await writeFile(out+'/results.json',JSON.stringify({checks,fixtureScreenshots:true,realEmails:0,realAppointments:0},null,2));console.log(JSON.stringify({checks:checks.length,out,realEmails:0,realAppointments:0}));
 }finally{
  ws?.close();browser?.kill('SIGTERM');server?.kill('SIGTERM');await auth.auth.signOut().catch(()=>{});

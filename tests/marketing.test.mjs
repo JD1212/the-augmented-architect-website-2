@@ -11,6 +11,16 @@ test('marketing configuration pins the website and requires explicit valid owner
   assert.throws(()=>config.authConfig({SUPABASE_URL:'https://other.supabase.co',SUPABASE_PUBLISHABLE_KEY:'sb_publishable_fixture'}));
   assert.throws(()=>config.authConfig({SUPABASE_URL:'https://cjldcaiybqguklzqtdjj.supabase.co',SUPABASE_PUBLISHABLE_KEY:'sb_secret_never-auth'}));
 });
+test('Auth SDK expiry initialization cannot run before the request-time boundary',async()=>{
+  let connected=false,initialized=false;
+  const {ownerAuth}=load('src/lib/marketing/auth.ts',{
+    'next/server':{connection:async()=>{await Promise.resolve();connected=true;}},
+    'next/headers':{cookies:async()=>({getAll:()=>[],set:()=>{}})},
+    '@supabase/ssr':{createServerClient:()=>{assert(connected,'SDK clock access must occur after the request boundary');initialized=true;return {fixture:true};}},
+    './config':{...config,authConfig:()=>({url:'https://cjldcaiybqguklzqtdjj.supabase.co',key:'sb_publishable_fixture'})},
+  });
+  assert.deepEqual(await ownerAuth(),{fixture:true});assert(initialized);
+});
 test('date ranges are bounded, complete calendar dates; canonical paths retain no query, fragment or private URL',()=>{
   const {reportingRange,publicPath}=load('src/lib/marketing/ranges.ts');
   assert.deepEqual(reportingRange('7',new Date('2026-11-17T01:00Z')),range);
