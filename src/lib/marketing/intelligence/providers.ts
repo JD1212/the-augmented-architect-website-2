@@ -1,21 +1,23 @@
 import 'server-only';
 import {ExternalAccountClient} from 'google-auth-library';
 import {getVercelOidcToken} from '@vercel/oidc';
-import {marketEvidenceSchema,competitiveEvidenceSchema,safeSource,type KeywordResearchProvider,type CompetitiveResearchProvider,type ResearchQuery,type TargetMarket} from '@augmented-architect/seo-analyst';
+import {marketEvidenceSchema,type KeywordResearchProvider,type ResearchQuery} from '@augmented-architect/seo-analyst';
 import {federationConfig} from '../federation';
 import {MarketingError} from '../config';
 
 export const initialMarket={country:'US',language:'en'} as const;
 export const researchPolicy={minimumIntervalMs:60000,maximumDailyRequests:10,maxResults:50,serpDepth:10,maxSerpCostUsd:.002,apiVersion:'v26'} as const;
 const adsDoc='https://developers.google.com/google-ads/api/docs/keyword-planning/overview';
-const serpDoc='https://docs.dataforseo.com/v3/serp/google/organic/live/advanced/';
-export type ProviderConnection={id:'google_ads'|'dataforseo';state:'not_connected'|'awaiting_approval'|'ready_for_verification'|'connected';ready:boolean;message:string;lastRetrievedAt?:string|null};
+import {dataForSeoApproval,dataForSeoTarget} from './dataforseo';
+export type ProviderConnection={id:'google_ads'|'dataforseo'|'dataforseo_keywords';state:'not_connected'|'awaiting_approval'|'ready_for_verification'|'connected';ready:boolean;message:string;lastRetrievedAt?:string|null};
 export function researchConnections(env=process.env):ProviderConnection[]{
   let federation=false;try{federationConfig(env);federation=true;}catch{}
   const ads=federation&&/^\d{10}$/.test((env.GOOGLE_ADS_CUSTOMER_ID??'').replaceAll('-',''))&&['BASIC','STANDARD'].includes(env.GOOGLE_ADS_ACCESS_LEVEL??'');
-  const serp=Boolean(env.DATAFORSEO_LOGIN&&env.DATAFORSEO_PASSWORD);
+  let target=false;try{dataForSeoTarget(env);target=true;}catch{}
+  const serp=Boolean(env.DATAFORSEO_LOGIN&&env.DATAFORSEO_PASSWORD)&&target,approval=dataForSeoApproval(env),approved=env.DATAFORSEO_RESEARCH_ENABLED==='true'&&approval.configured;
   return [{id:'google_ads',state:!ads?'not_connected':env.GOOGLE_ADS_RESEARCH_ENABLED!=='true'?'awaiting_approval':'ready_for_verification',ready:ads&&env.GOOGLE_ADS_RESEARCH_ENABLED==='true',message:!ads?'Google Ads customer access and Basic/Standard API approval are not configured. Existing GA4/Search Console access does not authorize keyword planning.':env.GOOGLE_ADS_RESEARCH_ENABLED!=='true'?'Configured; a bounded first research request still requires explicit approval.':'Enabled for manually authorized research. A successful provider response is still required to verify the connection.'},
-  {id:'dataforseo',state:!serp?'not_connected':env.DATAFORSEO_RESEARCH_ENABLED!=='true'?'awaiting_approval':'ready_for_verification',ready:serp&&env.DATAFORSEO_RESEARCH_ENABLED==='true',message:!serp?'No approved SERP-provider credentials are configured. No competing rankings or difficulty metrics are inferred.':env.DATAFORSEO_RESEARCH_ENABLED!=='true'?'Credentials present; paid requests remain disabled pending approval.':'One desktop SERP, ten results per manual request. No scraping, automatic pagination or paid retries.'}];
+  {id:'dataforseo',state:!serp?'not_connected':!approved?'awaiting_approval':'ready_for_verification',ready:serp&&approved,message:!serp?'No approved SERP-provider credentials are configured. No competing rankings or difficulty metrics are inferred.':!approved?'Credentials present; paid requests remain disabled until an explicit approval ID, request and USD budget are configured.':'One desktop SERP, ten results per manual request. The explicit approval budget applies; no retries.'},
+  {id:'dataforseo_keywords',state:!serp?'not_connected':!approved?'awaiting_approval':'ready_for_verification',ready:serp&&approved,message:!serp?'DataForSEO API credentials are not configured. Keyword ideas and demand remain unknown.':!approved?'Credentials present; paid keyword requests remain disabled pending a bounded approval.':'One keyword task per manual request; at most five seeds and fifty retained ideas. No automatic expansion or retry.'}];
 }
 export type AdsTransport=(url:string,body:object,signal:AbortSignal)=>Promise<{data:unknown;requestId:string|null}>;
 let adsAuth:ReturnType<typeof ExternalAccountClient.fromJSON>;
@@ -50,16 +52,4 @@ export function googleAdsProvider({customerId,transport=keylessAdsRequest,curren
     });return {records,provenance};
   }};
 }
-export function dataForSeoProvider({login,password,fetcher=fetch,now=()=>new Date()}:{login:string;password:string;fetcher?:typeof fetch;now?:()=>Date}):CompetitiveResearchProvider {
-  return {id:'dataforseo',async research(term:string,target:TargetMarket,signal){
-    if(target.country!=='US'||target.language!=='en'||/(?:^|\s)(?:site|inurl|intitle|intext|filetype|link|define|id|info|inanchor|allinurl|allintitle|allintext|allinanchor):/i.test(term))throw new MarketingError(400,'Use plain terms and the approved US/English target. Search operators and cost multipliers are disabled.');
-    const response=await fetcher('https://api.dataforseo.com/v3/serp/google/organic/live/advanced',{method:'POST',redirect:'error',headers:{Authorization:'Basic '+Buffer.from(login+':'+password).toString('base64'),'Content-Type':'application/json'},body:JSON.stringify([{keyword:term,location_code:2840,language_code:'en',device:'desktop',depth:10,max_crawl_pages:1}]),signal:AbortSignal.any([signal,AbortSignal.timeout(20000)])});
-    if(!response.ok)throw new MarketingError(503,'SERP provider denied or could not complete the request. No retry was started.');
-    const body=record(await response.json()),tasks=body.tasks;if(body.status_code!==20000||!Array.isArray(tasks)||tasks.length!==1)throw new MarketingError(503,'SERP provider did not return one successful task.');
-    const task=record(tasks[0]);if(task.status_code!==20000)throw new MarketingError(503,'SERP research failed; no rankings were inferred.');
-    if(typeof task.cost!=='number'||task.cost>researchPolicy.maxSerpCostUsd||task.cost<0)throw new MarketingError(503,'Provider cost receipt did not match the approved single-SERP budget.');
-    const result=Array.isArray(task.result)?record(task.result[0]):{},items=result.items??[];if(!Array.isArray(items))throw new MarketingError(503,'SERP results were invalid.');
-    const results=items.map(record).filter(i=>i.type==='organic').slice(0,10).map(i=>{if(typeof i.url!=='string'||!safeSource(i.url))throw new MarketingError(503,'SERP provider returned an unsafe result reference.');return {url:i.url,domain:new URL(i.url).hostname,title:String(i.title??'').slice(0,300),snippet:String(i.description??'').slice(0,1000),observedOrganicPosition:integer(i.rank_group),contentType:null};});
-    const time=now(),observed=typeof result.datetime==='string'?Date.parse(result.datetime):NaN;return competitiveEvidenceSchema.parse({category:'competitive_intelligence',term,target,searchEngine:'google',device:'desktop',observedAt:Number.isFinite(observed)?new Date(observed).toISOString():null,results,findings:[],provenance:{provider:'dataforseo',apiVersion:'v3',collectedAt:time.toISOString(),expiresAt:new Date(time.getTime()+86400000).toISOString(),requestId:typeof task.id==='string'?task.id:null,reportedCostUsd:task.cost,sourceUrls:[serpDoc]}});
-  }};
-}
+export {dataForSeoProvider,dataForSeoKeywordProvider} from './dataforseo';

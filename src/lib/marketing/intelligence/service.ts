@@ -1,15 +1,16 @@
 import 'server-only';
 import {randomUUID} from 'node:crypto';
 import type {SupabaseClient} from '@supabase/supabase-js';
-import {intelligenceSchema,intelligenceContextSchema,safeSource,type Intelligence,type KeywordResearchProvider,type CompetitiveResearchProvider} from '@augmented-architect/seo-analyst';
+import {intelligenceSchema,intelligenceContextSchema,safeSource,type Intelligence,type KeywordResearchProvider,type CompetitiveResearchProvider,type Provenance} from '@augmented-architect/seo-analyst';
 import {marketingRows,loadBacklog} from '../opportunities/repository';
 import {stableId} from '../opportunities/identity';
 import {MarketingError,marketingTenant,uuidPattern} from '../config';
 import type {Artifact} from '../opportunities/contracts';
-import {researchConnections,researchPolicy,googleAdsProvider,dataForSeoProvider} from './providers';
+import {researchConnections,researchPolicy,googleAdsProvider,dataForSeoProvider,dataForSeoKeywordProvider} from './providers';
+import {dataForSeoApproval,dataForSeoTarget,dataForSeoPrices,DataForSeoError} from './dataforseo';
 import {approvedBusinessEvidence} from './context';
 
-export type ResearchCommand={requestId:string;mode:'ideas'|'historical'|'competition';service:'salesforce'|'ai-solutions'|'custom-applications';seeds:string[];target:{country:string;language:string}};
+export type ResearchCommand={requestId:string;provider?:'google_ads'|'dataforseo';locationCode?:number;mode:'ideas'|'historical'|'competition';service:'salesforce'|'ai-solutions'|'custom-applications';seeds:string[];target:{country:string;language:string}};
 export type SavedResearch={id:string;createdAt:string;query:ResearchCommand;bundle:Intelligence;cached:boolean;scope:string};
 const domain='opportunity-intelligence';
 export async function intelligenceRecords(db:SupabaseClient,tenant:string){return await marketingRows(db,'marketing_artifacts',tenant,domain) as Artifact[];}
@@ -17,40 +18,50 @@ export function savedResearch(rows:Artifact[]):SavedResearch[]{
   return rows.filter(r=>r.payload.workflow==='intelligence-research/v1'&&r.payload.state==='completed').map(r=>({id:r.id,createdAt:r.created_at,query:r.payload.query as ResearchCommand,bundle:intelligenceSchema.parse(r.payload.bundle),cached:Boolean(r.payload.cached),scope:String(r.payload.scope??'unknown')})).sort((a,b)=>b.createdAt.localeCompare(a.createdAt)||a.id.localeCompare(b.id));
 }
 export function parseResearchCommand(value:Record<string,unknown>):ResearchCommand {
-  const keys=['requestId','mode','service','seeds','target'],target=value.target as Record<string,unknown>;
-  if(Object.keys(value).some(k=>!keys.includes(k))||typeof value.requestId!=='string'||!uuidPattern.test(value.requestId)||!['ideas','historical','competition'].includes(String(value.mode))||!['salesforce','ai-solutions','custom-applications'].includes(String(value.service))||!Array.isArray(value.seeds)||!value.seeds.length||value.seeds.length>5||value.seeds.some(s=>typeof s!=='string'||!s.trim()||s.length>80||/[@\u0000-\u001f]|https?:|(?:^|\s)(?:site|inurl|intitle|intext|filetype|link|define|id|info|inanchor|allinurl|allintitle|allintext|allinanchor):/i.test(s))||!target||typeof target!=='object'||Array.isArray(target)||Object.keys(target).some(k=>!['country','language'].includes(k))||target.country!=='US'||target.language!=='en')throw new MarketingError(400,'Use an authorized service, up to five plain seed terms, and the US/English target. Private contact data and search operators are not accepted.');
+  const keys=['requestId','provider','mode','service','seeds','target'],target=value.target as Record<string,unknown>,configured=dataForSeoTarget();
+  if(Object.keys(value).some(k=>!keys.includes(k))||value.provider!==undefined&&value.provider!=='dataforseo'||typeof value.requestId!=='string'||!uuidPattern.test(value.requestId)||!['ideas','historical','competition'].includes(String(value.mode))||!['salesforce','ai-solutions','custom-applications'].includes(String(value.service))||!Array.isArray(value.seeds)||!value.seeds.length||value.seeds.length>5||value.seeds.some(s=>typeof s!=='string'||!s.trim()||s.length>80||s.trim().split(/\s+/).length>10||/[@\u0000-\u001f]|https?:|(?:^|\s)(?:site|inurl|intitle|intext|filetype|link|define|id|info|inanchor|allinurl|allintitle|allintext|allinanchor):/i.test(s))||!target||typeof target!=='object'||Array.isArray(target)||Object.keys(target).some(k=>!['country','language'].includes(k))||target.country!==configured.country||target.language!==configured.language)throw new MarketingError(400,'Use an authorized service, up to five plain seed terms, and the configured target. Private contact data and search operators are not accepted.');
   if(value.mode==='competition'&&value.seeds.length!==1)throw new MarketingError(400,'Competitive research accepts one term per bounded request.');
-  return {...value,seeds:value.seeds.map(s=>(s as string).trim())} as ResearchCommand;
+  return {...value,provider:'dataforseo',locationCode:configured.locationCode,seeds:value.seeds.map(s=>(s as string).trim())} as ResearchCommand;
 }
-const queryKey=(q:ResearchCommand)=>JSON.stringify({mode:q.mode,service:q.service,target:q.target,seeds:q.seeds.map(s=>s.toLocaleLowerCase('en')).sort(),api:q.mode==='competition'?'v3':'v26'});
-export const providerScope=(tenant:string,command:ResearchCommand)=>stableId(tenant+':research-scope-v1:'+command.mode+':'+(command.mode==='competition'?process.env.DATAFORSEO_LOGIN??'unconfigured':(process.env.GOOGLE_ADS_CUSTOMER_ID??'').replaceAll('-','')));
+const isDataForSeo=(q:ResearchCommand)=>q.mode==='competition'||q.provider==='dataforseo';
+const queryKey=(q:ResearchCommand)=>JSON.stringify({provider:isDataForSeo(q)?'dataforseo':'google_ads',location:isDataForSeo(q)?q.locationCode??2840:null,mode:q.mode,service:q.service,target:q.target,seeds:q.seeds.map(s=>s.toLocaleLowerCase('en')).sort(),api:isDataForSeo(q)?'v3':'v26'});
+export const providerScope=(tenant:string,command:ResearchCommand)=>stableId(tenant+':research-scope-v1:'+command.mode+':'+(isDataForSeo(command)?(process.env.DATAFORSEO_LOGIN??'unconfigured')+':'+JSON.stringify(dataForSeoTarget()):(process.env.GOOGLE_ADS_CUSTOMER_ID??'').replaceAll('-','')));
 const cacheFresh=(r:SavedResearch,now:Date)=>{
   const sources=[...r.bundle.collections,...r.bundle.market.map(m=>m.provenance),...r.bundle.competition.map(c=>c.provenance)];
   return sources.length>0&&sources.every(p=>Date.parse(p.expiresAt)>now.getTime())&&(r.query.mode==='competition'||r.createdAt.slice(0,7)===now.toISOString().slice(0,7));
 };
 export async function executeResearch({db,tenant,actor,command,authorize,keyword,competitive,now=new Date(),enabled}:{db:SupabaseClient;tenant:string;actor:string;command:ResearchCommand;authorize:()=>Promise<void>;keyword?:KeywordResearchProvider;competitive?:CompetitiveResearchProvider;now?:Date;enabled?:boolean}){
   if(tenant!==marketingTenant)throw new MarketingError(403,'Unauthorized research tenant.');await authorize();
+  if(isDataForSeo(command)&&command.locationCode!==undefined&&command.locationCode!==dataForSeoTarget().locationCode)throw new MarketingError(400,'Research location no longer matches the server configuration. Refresh before continuing.');
   const rows=await intelligenceRecords(db,tenant),existing=rows.find(r=>r.id===command.requestId),results=savedResearch(rows),scope=providerScope(tenant,command);
   if(existing){if(existing.payload.workflow!=='intelligence-request/v1'||existing.actor_id!==actor||existing.payload.scope!==scope||queryKey(existing.payload.query as ResearchCommand)!==queryKey(command))throw new MarketingError(409,'Request ID already belongs to another research command.');const result=results.find(r=>r.id===stableId(command.requestId+':result'));if(result)return {research:result,reused:true};throw new MarketingError(409,'This request was already claimed. Inspect its history; it will not be replayed automatically.');}
   const cached=results.find(r=>r.scope===scope&&queryKey(r.query)===queryKey(command)&&cacheFresh(r,now));if(cached)return {research:cached,reused:true};
-  const providerId=command.mode==='competition'?'dataforseo':'google_ads',connection=researchConnections().find(c=>c.id===providerId)!;
+  const providerId=command.mode==='competition'?'dataforseo':command.provider==='dataforseo'?'dataforseo_keywords':'google_ads',connection=researchConnections().find(c=>c.id===providerId)!;
   if(enabled!==true&&!connection.ready)throw new MarketingError(503,connection.message);
   const guards=rows.filter(r=>r.payload.workflow==='intelligence-budget/v1').sort((a,b)=>b.created_at.localeCompare(a.created_at));
   if(guards.some(r=>now.getTime()-Date.parse(r.created_at)<researchPolicy.minimumIntervalMs))throw new MarketingError(429,'Allow one minute between provider requests.');
   if(guards.filter(r=>Date.parse(r.created_at)>now.getTime()-86400000).length>=researchPolicy.maximumDailyRequests)throw new MarketingError(429,'The ten-request daily research budget has been reached.');
+  const paid=isDataForSeo(command),approval=dataForSeoApproval(),reservedMaximumUsd=paid?dataForSeoPrices[command.mode]:0;
+  if(paid&&enabled!==true){
+    const claims=rows.filter(r=>r.payload.workflow==='intelligence-request/v1'&&r.payload.approvalId===approval.id);
+    if(claims.some(c=>!results.some(r=>r.id===stableId(c.id+':result')))||rows.some(r=>r.payload.workflow==='intelligence-failure/v1'&&r.payload.approvalId===approval.id))throw new MarketingError(409,'This approval has a failed or uncertain request. Review its receipt before authorizing further spending.');
+    const reserved=claims.reduce((sum,r)=>sum+Number(r.payload.reservedMaximumUsd??1),0);
+    if(!approval.configured||claims.length>=approval.maximumRequests||reserved+reservedMaximumUsd>approval.maximumCostUsd+.000000001)throw new MarketingError(429,'The explicitly approved DataForSEO request or USD budget is exhausted.');
+  }
   const guardId=stableId(tenant+':intelligence-budget-v1:'+(guards[0]?.id??'initial'));
   const guard=await db.from('marketing_artifacts').insert({id:guardId,tenant_id:tenant,kind:'measurement',title:'Manual research budget reservation',actor_id:actor,payload:{domain,workflow:'intelligence-budget/v1',requestId:command.requestId,previousId:guards[0]?.id??null}});if(guard.error)throw new MarketingError(409,'Another research request claimed this workspace. No provider request was sent.');
-  const claim=await db.from('marketing_artifacts').insert({id:command.requestId,tenant_id:tenant,kind:'measurement',title:'Manual intelligence request',actor_id:actor,payload:{domain,workflow:'intelligence-request/v1',query:command,scope}});if(claim.error)throw new MarketingError(409,'Research request already claimed. No duplicate provider request was sent.');
+  const claim=await db.from('marketing_artifacts').insert({id:command.requestId,tenant_id:tenant,kind:'measurement',title:'Manual intelligence request',actor_id:actor,payload:{domain,workflow:'intelligence-request/v1',query:command,scope,...(paid?{approvalId:approval.id,reservedMaximumUsd}:{})}});if(claim.error)throw new MarketingError(409,'Research request already claimed. No duplicate provider request was sent.');
   const resultId=stableId(command.requestId+':result');
+  let availableReceipt:Provenance|null=null;
   try{
     await authorize();const signal=AbortSignal.timeout(30000);
-    const bundle:Intelligence={version:'opportunity-intelligence/v1',id:resultId,collections:[],market:[],competition:[],business:approvedBusinessEvidence(command.service,now),limitations:['Provider search volume is an estimate, not this business’s measured demand or conversions.','Advertising competition and bid metrics do not measure organic difficulty.','Only bounded provider results are collected; page content, traffic and backlinks are not inferred.']};
-    if(command.mode==='competition'){const provider=competitive??dataForSeoProvider({login:process.env.DATAFORSEO_LOGIN!,password:process.env.DATAFORSEO_PASSWORD!});const observation=await provider.research(command.seeds[0],command.target,signal);bundle.competition=[observation];bundle.collections=[observation.provenance];}
-    else{const provider=keyword??googleAdsProvider({customerId:(process.env.GOOGLE_ADS_CUSTOMER_ID??'').replaceAll('-',''),currency:process.env.GOOGLE_ADS_CURRENCY||null});const response=await provider.research({...command,mode:command.mode},signal);bundle.market=response.records;bundle.collections=[response.provenance];}
+    const bundle:Intelligence={version:'opportunity-intelligence/v1',id:resultId,collections:[],market:[],competition:[],business:approvedBusinessEvidence(command.service,now),limitations:['Provider search volume is an estimate, not this business’s measured demand or conversions.','Advertising competition and bid metrics do not measure organic difficulty.','Only bounded provider results are collected; page content, traffic and backlinks are not inferred.','Discovery retains the first fifty relevance-ordered ideas, not all provider results. Spelling-corrected metrics apply to the returned term, with the original term retained as a variant.']};
+    if(command.mode==='competition'){const provider=competitive??dataForSeoProvider({login:process.env.DATAFORSEO_LOGIN!,password:process.env.DATAFORSEO_PASSWORD!});const observation=await provider.research(command.seeds[0],command.target,signal);availableReceipt=observation.provenance;bundle.competition=[observation];bundle.collections=[observation.provenance];}
+    else{const provider=keyword??(command.provider==='dataforseo'?dataForSeoKeywordProvider({login:process.env.DATAFORSEO_LOGIN!,password:process.env.DATAFORSEO_PASSWORD!}):googleAdsProvider({customerId:(process.env.GOOGLE_ADS_CUSTOMER_ID??'').replaceAll('-',''),currency:process.env.GOOGLE_ADS_CURRENCY||null}));const response=await provider.research({...command,mode:command.mode},signal);availableReceipt=response.provenance;bundle.market=response.records;bundle.collections=[response.provenance];}
     intelligenceSchema.parse(bundle);if([...bundle.collections,...bundle.market.map(m=>m.provenance),...bundle.competition.map(c=>c.provenance)].some(p=>p.sourceUrls.some(u=>!safeSource(u)))||bundle.competition.some(c=>c.results.some(r=>!safeSource(r.url))))throw new MarketingError(503,'Research source provenance was unsafe.');await authorize();
     const saved=await db.from('marketing_artifacts').insert({id:resultId,tenant_id:tenant,kind:'measurement',title:command.seeds.join(', ').slice(0,200),parent_id:command.requestId,actor_id:actor,payload:{domain,workflow:'intelligence-research/v1',state:'completed',query:command,bundle,cached:false,scope}});if(saved.error)throw new MarketingError(503,'Provider research finished but could not be persisted. Inspect the request before any new action.');
     return {research:{id:resultId,createdAt:now.toISOString(),query:command,bundle,cached:false,scope},reused:false};
-  }catch(error){await db.from('marketing_artifacts').insert({id:stableId(command.requestId+':failure'),tenant_id:tenant,kind:'measurement',title:'Manual research failed',parent_id:command.requestId,actor_id:actor,payload:{domain,workflow:'intelligence-failure/v1',query:command,error:'Provider access, response validation or persistence failed. No automatic retry was started.'}});throw error;}
+  }catch(error){await db.from('marketing_artifacts').insert({id:stableId(command.requestId+':failure'),tenant_id:tenant,kind:'measurement',title:'Manual research failed',parent_id:command.requestId,actor_id:actor,payload:{domain,workflow:'intelligence-failure/v1',query:command,...(paid?{approvalId:approval.id,reservedMaximumUsd,receipt:error instanceof DataForSeoError?error.receipt:availableReceipt}:{}),error:'Provider access, response validation or persistence failed. No automatic retry was started.'}});throw error;}
 }
 export async function linkResearch(db:SupabaseClient,tenant:string,actor:string,researchId:string,opportunityId:string,term:string){
   const [rows,backlog]=await Promise.all([intelligenceRecords(db,tenant),loadBacklog(db,tenant)]),research=savedResearch(rows).find(r=>r.id===researchId),opportunity=backlog.opportunities.find(o=>o.id===opportunityId);
