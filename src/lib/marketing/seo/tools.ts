@@ -1,10 +1,11 @@
 import 'server-only';
 import OpenAI from 'openai';
-import {safeSource,limits,externalResearchInstructions,type Evidence,type SeoTools,type UsageReceipt} from '@augmented-architect/seo-analyst';
+import {limits,externalResearchInstructions,type Evidence,type SeoTools,type UsageReceipt} from '@augmented-architect/seo-analyst';
 import {ga4Report,searchConsoleReport} from '../providers';
 import type {DateRange,ReportingData,ReportTable} from '../types';
 import {approvedWebsiteEvidence} from './context';
 import {seoConfiguration} from './config';
+import {collectResearchSources,type ResearchCatalog} from './research-evidence';
 
 export type ReportSnapshot={source:'ga4'|'search_console';propertyId:string;range:DateRange;data:ReportingData;retrievedAt:string;evidenceId:string};
 export function completeAgentRange(days:7|28|90,now=new Date()):DateRange {
@@ -13,7 +14,7 @@ export function completeAgentRange(days:7|28|90,now=new Date()):DateRange {
   const end=new Date(earliest+'T00:00:00Z');end.setUTCDate(end.getUTCDate()-1);const start=new Date(end);start.setUTCDate(start.getUTCDate()-days+1);
   return {days,start:start.toISOString().slice(0,10),end:end.toISOString().slice(0,10)};
 }
-export function createSeoTools({tenantId,days,client,authorize,onResearchUsage,reporters={ga4Report,searchConsoleReport}}:{tenantId:string;days:7|28|90;client:OpenAI;authorize:()=>Promise<void>;onResearchUsage:(usage:UsageReceipt)=>Promise<void>;reporters?:{ga4Report:typeof ga4Report;searchConsoleReport:typeof searchConsoleReport}}):{ports:SeoTools;snapshots:ReportSnapshot[]} {
+export function createSeoTools({tenantId,days,client,authorize,onResearchUsage,onResearchMapping,reporters={ga4Report,searchConsoleReport}}:{tenantId:string;days:7|28|90;client:OpenAI;authorize:()=>Promise<void>;onResearchUsage:(usage:UsageReceipt)=>Promise<void>;onResearchMapping?:(mapping:ResearchCatalog['mapping'])=>void;reporters?:{ga4Report:typeof ga4Report;searchConsoleReport:typeof searchConsoleReport}}):{ports:SeoTools;snapshots:ReportSnapshot[]} {
   const config=seoConfiguration();if(tenantId!==config.tenantId)throw Error('Unauthorized reporting tenant');
   const range=completeAgentRange(days),snapshots:ReportSnapshot[]=[];
   const compact=(table:ReportTable|undefined)=>table?{...table,rows:table.rows.slice(0,15)}:undefined;
@@ -35,12 +36,8 @@ export function createSeoTools({tenantId,days,client,authorize,onResearchUsage,r
     const usage:UsageReceipt={purpose:'research',model:response.model,responseId:response.id,inputTokens:number(response.usage?.input_tokens),outputTokens:number(response.usage?.output_tokens),totalTokens:number(response.usage?.total_tokens),webSearchCalls:response.output.filter(i=>i.type==='web_search_call').length,measuredCost:null};
     await onResearchUsage(usage);
     if(response.status!=='completed')throw Error('External research did not complete within budget');
-    const sources=new Map<string,{url:string;title:string}>();let calls=0;
-    for(const item of response.output){
-      if(item.type==='web_search_call'){calls++;const action=item.action;if('sources' in action&&Array.isArray(action.sources))for(const source of action.sources){if('url' in source&&typeof source.url==='string'&&safeSource(source.url))sources.set(source.url,{url:source.url,title:'Web research source'});}}
-      if(item.type==='message')for(const content of item.content)if(content.type==='output_text')for(const a of content.annotations)if(a.type==='url_citation'&&safeSource(a.url))sources.set(a.url,{url:a.url,title:a.title||'Cited research source'});
-    }
-    if(calls<1||calls>1||!sources.size)throw Error('Research requires one traceable hosted search call');
-    return {evidence:{id:'external-research',kind:'external_research',title:'Public external research',retrievedAt:new Date().toISOString(),status:'connected',hasActualSearchData:false,content:response.output_text.slice(0,15000),sources:[...sources.values()].slice(0,15)},usage};
+    const catalog=collectResearchSources(response);
+    onResearchMapping?.(catalog.mapping);
+    return {evidence:{id:'external-research',kind:'external_research',title:'Public external research',retrievedAt:new Date().toISOString(),status:'connected',hasActualSearchData:false,content:response.output_text.slice(0,15000),sources:catalog.sources},usage};
   }}};
 }

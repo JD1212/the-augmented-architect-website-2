@@ -4,9 +4,9 @@
 
 - Source repository: https://github.com/JD1212/augarch-seo-analyst (private).
 - Local source: `/Users/jdburkholder/Documents/augarch-seo-analyst`, a separate sibling Git repository, not inside the website or Docker.
-- Package: `@augmented-architect/seo-analyst@0.1.4`, source commit `64159491fda593aeb6651355e027632decc8220d`, tag `v0.1.4`.
+- Package: `@augmented-architect/seo-analyst@0.1.5`, source commit `49694943e637df314a27309d972029ae4ca45de5`, tag `v0.1.5`.
 - Reusable modules: `src/contracts.ts` (configuration, ports, evidence, outputs, limits), `instructions.ts`, `validation.ts`, `run.ts` (OpenAI Agents SDK runner), `index.ts`. No Next.js, Supabase, Google credentials/properties, tenant IDs, or business identity in that project.
-- Integration artifact: `vendor/augmented-architect-seo-analyst-0.1.4.tgz`. Source revision and SHA-512 integrity are recorded in `vendor/seo-analyst.provenance.json` and package-lock. No private registry credentials are needed by Vercel.
+- Integration artifact: `vendor/augmented-architect-seo-analyst-0.1.5.tgz`. Source revision and SHA-512 integrity are recorded in `vendor/seo-analyst.provenance.json` and package-lock. No private registry credentials are needed by Vercel.
 
 ## Application adapters
 
@@ -51,3 +51,13 @@ A future adapter must preserve tenant/property boundaries, budgets, source prove
 The initial v0.1.3 request was rejected by OpenAI with HTTP 400 `invalid_json_schema`: the generated `sourceUrls` item schema contained unsupported `format: uri`. It produced no model output or hosted research, and its failed execution was retained with unknown usage. V0.1.4 sends a compatible string shape to the provider and still applies the original full URL/provenance validation before accepting results. Schema compatibility and invalid/unlisted/unsafe URL rejection are covered deterministically.
 
 Provider request failures are classified by status/code rather than searching message substrings. Safe diagnostics retain the phase, provider code and parameter without raw prompts or credentials. The client refreshes status after both success and failure without retrying POST. Registration upgrades preserve the stable agent ID, history, disabled state, lease and budget counters; older code cannot downgrade a newer registration. Existing failed records are not deleted.
+
+## Second failed execution: verified facts versus reconstructed defect
+
+Execution `095a4fe9-fbca-46c2-a163-70f339ff28a5` reached final validation under v0.1.4. It recorded three analysis responses and one hosted-search response: 22,506 input and 1,904 output tokens. Its exact validation rule and rejected references were not retained. Both response retrievals returned 404 with storage disabled. No precise historical rule or citation-mapping cause can be established from that telemetry alone, and no such cause is backfilled into the original record.
+
+Source inspection and a deterministic reconstructed fixture demonstrate a real adapter defect: discovered URLs were inserted first, citation annotations updated/appended later, and only the first 15 entries were returned. This could drop a real cited URL while retaining it in research prose. The corrected collector prioritizes provider-annotated citations, fills remaining capacity with discovered sources, and explicitly rejects more than 15 citations instead of silently dropping any. URLs are neither guessed nor normalized into unverified aliases. This proves the defect and fix, not that the unavailable historical response had this exact shape.
+
+V0.1.5 adds typed validation rule/path diagnostics and a bounded reference-only snapshot on rejected results. The host stores fingerprints and public path displays, never URL query values/fragments, raw prompts, full provider bodies or rejected recommendation prose. The actual redacted failure-envelope fixture preserves known counts and missing diagnostic fields. The source-catalog regression is explicitly reconstructed. A mocked host-to-store regression verifies persistence of the precise redacted rule/path/reference mapping and provider receipts, lease release, and duplicate-request suppression.
+
+The approved release target for this correction is the protected `feature/seo-analyst-v1` Preview only. Package artifact SHA-512 must match both provenance and package-lock. Verification must not trigger a paid analysis: the owner will initiate one controlled run after Preview is Ready. Production remains unchanged until a real execution succeeds and its findings, evidence, history and measured token usage are verified.

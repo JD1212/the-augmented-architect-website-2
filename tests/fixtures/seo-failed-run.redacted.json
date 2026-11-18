@@ -1,0 +1,16 @@
+{
+  "fixtureKind": "actual-failure-envelope-with-identifiers-redacted",
+  "packageVersion": "0.1.4",
+  "state": "failed",
+  "phase": "validating",
+  "validationRuleRecorded": null,
+  "rejectedFieldRecorded": null,
+  "providerBodiesRetained": false,
+  "providerRetrievalStatus": 404,
+  "analysisResponses": 3,
+  "hostedSearchCalls": 1,
+  "inputTokens": 22506,
+  "outputTokens": 1904,
+  "totalTokens": 24410,
+  "historicalCauseConfirmed": false
+}
