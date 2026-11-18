@@ -91,3 +91,58 @@ test('concurrent paid research uses one durable reservation and another tenant c
   const results=await Promise.allSettled([run(command()),run(command({seeds:['Other seed']}))]);assert.equal(results.filter(r=>r.status==='fulfilled').length,1);assert.equal(calls,1);assert.equal(db.rows.marketing_artifacts.filter(r=>r.payload.workflow==='intelligence-request/v1').length,1);
  });
 });
+
+// Failure diagnostics: numeric metadata only; every test fetcher is a fixture.
+const capture=async action=>{try{await action();assert.fail('Expected a fixture failure');}catch(e){assert(e instanceof data.DataForSeoError);return e;}};
+for(const [status,category] of [[401,'authentication'],[403,'permissions'],[402,'insufficient_balance'],[429,'rate_limit'],[500,'unexpected_response'],[503,'unexpected_response']])test(`HTTP ${status} persists safe ${category} diagnostics and never retries`,async()=>{
+ const db=memoryDatabase(),q=command();let calls=0;
+ const keyword=dataForSeoKeywordProvider(options(async()=>{calls++;return new Response('sensitive fixture-api-password response body',{status,headers:{Authorization:'fixture-api-password'}});}));
+ const error=await capture(()=>executeResearch({db,tenant,actor,command:q,authorize:async()=>{},keyword,enabled:true,now:time}));
+ const failure=db.rows.marketing_artifacts.find(r=>r.payload.workflow==='intelligence-failure/v1'),d=failure.payload.diagnostic;
+ assert.equal(calls,1);assert.equal(d.httpStatus,status);assert.equal(d.category,category);assert.equal(d.stage,'http_response');assert.equal(d.providerStatusCode,null);assert.equal(d.reportedCostUsd,null);assert.equal(d.providerRequestId,null);assert.equal(d.requestId,q.requestId);assert.equal(d.endpoint,'keywords_data/google_ads/keywords_for_keywords/live');assert.equal(failure.payload.receipt,null);assert(error.message.includes(String(status)));
+ assert(!JSON.stringify(failure).includes('fixture-api-password'));assert(!JSON.stringify(d).includes('Authorization'));assert(!JSON.stringify(d).includes('response body'));
+ await assert.rejects(executeResearch({db,tenant,actor,command:q,authorize:async()=>{},keyword,enabled:true,now:time}),e=>e.status===409);assert.equal(calls,1);
+});
+for(const [code,category] of [[40100,'authentication'],[40104,'permissions'],[40200,'insufficient_balance'],[40210,'insufficient_balance'],[40202,'rate_limit'],[40203,'rate_limit'],[40205,'rate_limit'],[40209,'rate_limit'],[40207,'permissions'],[40501,'unexpected_response']])test(`HTTP 200 provider error ${code} retains its real code and zero-cost receipt`,async()=>{
+ const db=memoryDatabase(),q=command();let calls=0;
+ const keyword=dataForSeoKeywordProvider(options(async()=>{calls++;return task(null,0,{status_code:code,status_message:'fixture-api-password private provider message',data:{Authorization:'secret header'}});}));
+ await capture(()=>executeResearch({db,tenant,actor,command:q,authorize:async()=>{},keyword,enabled:true,now:time}));const failure=db.rows.marketing_artifacts.find(r=>r.payload.workflow==='intelligence-failure/v1'),d=failure.payload.diagnostic;
+ assert.equal(calls,1);assert.equal(d.httpStatus,200);assert.equal(d.providerStatusCode,code);assert.equal(d.category,category);assert.equal(d.reportedCostUsd,0);assert.equal(d.providerRequestId,'fixture-task-id');assert.equal(failure.payload.receipt.reportedCostUsd,0);assert.equal(d.requestId,q.requestId);assert(!JSON.stringify(failure).includes('fixture-api-password'));assert(!JSON.stringify(failure).includes('private provider message'));assert.equal(db.rows.marketing_executions.length,0);
+});
+test('HTTP-level JSON failures retain code and actual reported cost; envelope errors work without task records',async()=>{
+ const e=await capture(()=>dataForSeoKeywordProvider(options(async()=>Response.json({status_code:40210,cost:0,status_message:'fixture-api-password',tasks:null},{status:402}))).research(command(),signal()));assert.equal(e.diagnostic.httpStatus,402);assert.equal(e.diagnostic.providerStatusCode,40210);assert.equal(e.diagnostic.reportedCostUsd,0);assert.equal(e.diagnostic.providerRequestId,null);assert.equal(e.diagnostic.category,'insufficient_balance');assert(!JSON.stringify(e.diagnostic).includes('fixture-api-password'));
+ const top=await capture(()=>dataForSeoKeywordProvider(options(async()=>Response.json({status_code:40207,cost:0,tasks:[]}))).research(command(),signal()));assert.equal(top.diagnostic.providerStatusCode,40207);assert.equal(top.diagnostic.category,'permissions');
+ const cost=await capture(()=>dataForSeoKeywordProvider(options(async()=>task(null,.025,{status_code:40501}))).research(command(),signal()));assert.equal(cost.diagnostic.reportedCostUsd,.025);assert.equal(cost.receipt.reportedCostUsd,.025);
+});
+for(const name of ['network','timeout'])test(`${name} failures have unknown HTTP/code/cost and no sensitive cause`,async()=>{
+ const db=memoryDatabase(),q=command();let calls=0;
+ const keyword=dataForSeoKeywordProvider(options(async()=>{calls++;throw name==='timeout'?new DOMException('fixture-api-password','AbortError'):Error('Authorization fixture-api-password request body');}));
+ const error=await capture(()=>executeResearch({db,tenant,actor,command:q,authorize:async()=>{},keyword,enabled:true,now:time})),d=db.rows.marketing_artifacts.find(r=>r.payload.workflow==='intelligence-failure/v1').payload.diagnostic;
+ assert.equal(calls,1);assert.equal(d.category,'transport');assert.equal(d.stage,'transport');assert.equal(d.httpStatus,null);assert.equal(d.providerStatusCode,null);assert.equal(d.reportedCostUsd,null);assert.equal(d.requestId,q.requestId);assert(!error.message.includes('fixture-api-password'));assert(!JSON.stringify(d).includes('fixture-api-password'));
+});
+test('malformed, oversized and evidence-invalid responses preserve HTTP metadata without storing bodies',async()=>{
+ for(const response of [()=>new Response('<html>fixture-api-password</html>'),()=>new Response('x'.repeat(65537),{status:401}),()=>task([row({cpc:-1})])]){
+  const e=await capture(()=>dataForSeoKeywordProvider(options(async()=>response())).research(command(),signal()));assert(e.diagnostic.httpStatus!==null);assert(!JSON.stringify(e.diagnostic).includes('fixture-api-password'));if(e.diagnostic.httpStatus===401)assert.equal(e.diagnostic.category,'authentication');else assert.equal(e.diagnostic.category,'unexpected_response');
+ }
+});
+test('echoed credentials cannot become provider correlation IDs; diagnostic projection drops arbitrary data',async()=>{
+ for(const id of ['fixture-api-password','fixture-api-login',Buffer.from('fixture-api-login:fixture-api-password').toString('base64')]){
+  const e=await capture(()=>dataForSeoKeywordProvider(options(async()=>task(null,0,{id,status_code:40100}))).research(command(),signal()));assert.equal(e.diagnostic.providerRequestId,null);assert.equal(e.receipt.requestId,null);assert(!JSON.stringify(e.diagnostic).includes(id));
+ }
+ const base=(await capture(()=>dataForSeoKeywordProvider(options(async()=>task(null,0,{status_code:40100}))).research(command(),signal()))).diagnostic;
+ const projected=data.sanitizeDataForSeoDiagnostic({...base,Authorization:'private',body:{password:'private'},status_message:'private',cause:Error('private')});assert.deepEqual(projected,base);assert.equal(data.sanitizeDataForSeoDiagnostic(undefined),null);assert.equal(data.sanitizeDataForSeoDiagnostic({...base,endpoint:'https://evil.invalid/?password=private'}),null);
+});
+test('new diagnostic metadata does not reopen a failed spending approval',async()=>{
+ await env(approved,async()=>{
+  const db=memoryDatabase();let calls=0;const keyword=dataForSeoKeywordProvider(options(async()=>{calls++;return Response.json({status_code:40100,cost:0},{status:401});})),run=q=>executeResearch({db,tenant,actor,command:q,authorize:async()=>{},keyword,now:new Date(time.getTime()+120000)});
+  await capture(()=>run(command()));await assert.rejects(run(command({seeds:['Do not dispatch']})),e=>e.status===409);assert.equal(calls,1);const failure=db.rows.marketing_artifacts.find(r=>r.payload.workflow==='intelligence-failure/v1');assert.equal(failure.payload.approvalId,approved.DATAFORSEO_APPROVAL_ID);assert.equal(failure.payload.reservedMaximumUsd,.09);assert.equal(failure.payload.diagnostic.httpStatus,401);
+ });
+});
+test('owner-only failure projection exposes only sanitized diagnostics and keeps legacy unknowns unchanged',async()=>{
+ const db=memoryDatabase(),q=command(),keyword=dataForSeoKeywordProvider(options(async()=>Response.json({status_code:40100,cost:0,status_message:'fixture-api-password'},{status:401})));
+ await capture(()=>executeResearch({db,tenant,actor,command:q,authorize:async()=>{},keyword,enabled:true,now:time}));
+ const failed=db.rows.marketing_artifacts.find(r=>r.payload.workflow==='intelligence-failure/v1');failed.payload.diagnostic.authorization='fixture-api-password';failed.payload.diagnostic.body={password:'fixture-api-password'};
+ db.rows.marketing_artifacts.push({id:randomUUID(),tenant_id:tenant,kind:'measurement',created_at:'2026-11-17T04:00:00Z',payload:{domain:'opportunity-intelligence',workflow:'intelligence-failure/v1',receipt:null}});
+ const owner={db,tenantId:tenant,user:{id:actor}},route=load('src/app/api/admin/marketing/intelligence/route.ts',{...overrides,'./config':config,'../config':config,'@/lib/marketing/auth':{ownerAuth:async()=>db,requireOwner:async()=>owner},'@/lib/marketing/config':config});
+ const response=await route.GET(new Request('https://site.invalid/api/admin/marketing/intelligence')),body=await response.json();assert.equal(response.status,200);assert.match(response.headers.get('cache-control'),/no-store/);assert.equal(body.failureHistory[0].diagnostic.httpStatus,401);assert.equal(body.failureHistory[0].diagnostic.requestId,q.requestId);assert.equal(body.failureHistory[1].diagnostic,null);assert.equal(body.failureHistory[1].receipt,null);assert(!JSON.stringify(body).includes('fixture-api-password'));assert(!JSON.stringify(body).includes('authorization'));
+});

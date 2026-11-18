@@ -7,7 +7,7 @@ import {stableId} from '../opportunities/identity';
 import {MarketingError,marketingTenant,uuidPattern} from '../config';
 import type {Artifact} from '../opportunities/contracts';
 import {researchConnections,researchPolicy,googleAdsProvider,dataForSeoProvider,dataForSeoKeywordProvider} from './providers';
-import {dataForSeoApproval,dataForSeoTarget,dataForSeoPrices,DataForSeoError} from './dataforseo';
+import {dataForSeoApproval,dataForSeoTarget,dataForSeoPrices,DataForSeoError,dataForSeoFailureDiagnostic} from './dataforseo';
 import {approvedBusinessEvidence} from './context';
 
 export type ResearchCommand={requestId:string;provider?:'google_ads'|'dataforseo';locationCode?:number;mode:'ideas'|'historical'|'competition';service:'salesforce'|'ai-solutions'|'custom-applications';seeds:string[];target:{country:string;language:string}};
@@ -61,7 +61,7 @@ export async function executeResearch({db,tenant,actor,command,authorize,keyword
     intelligenceSchema.parse(bundle);if([...bundle.collections,...bundle.market.map(m=>m.provenance),...bundle.competition.map(c=>c.provenance)].some(p=>p.sourceUrls.some(u=>!safeSource(u)))||bundle.competition.some(c=>c.results.some(r=>!safeSource(r.url))))throw new MarketingError(503,'Research source provenance was unsafe.');await authorize();
     const saved=await db.from('marketing_artifacts').insert({id:resultId,tenant_id:tenant,kind:'measurement',title:command.seeds.join(', ').slice(0,200),parent_id:command.requestId,actor_id:actor,payload:{domain,workflow:'intelligence-research/v1',state:'completed',query:command,bundle,cached:false,scope}});if(saved.error)throw new MarketingError(503,'Provider research finished but could not be persisted. Inspect the request before any new action.');
     return {research:{id:resultId,createdAt:now.toISOString(),query:command,bundle,cached:false,scope},reused:false};
-  }catch(error){await db.from('marketing_artifacts').insert({id:stableId(command.requestId+':failure'),tenant_id:tenant,kind:'measurement',title:'Manual research failed',parent_id:command.requestId,actor_id:actor,payload:{domain,workflow:'intelligence-failure/v1',query:command,...(paid?{approvalId:approval.id,reservedMaximumUsd,receipt:error instanceof DataForSeoError?error.receipt:availableReceipt}:{}),error:'Provider access, response validation or persistence failed. No automatic retry was started.'}});throw error;}
+  }catch(error){await db.from('marketing_artifacts').insert({id:stableId(command.requestId+':failure'),tenant_id:tenant,kind:'measurement',title:'Manual research failed',parent_id:command.requestId,actor_id:actor,payload:{domain,workflow:'intelligence-failure/v1',query:command,...(paid?{approvalId:approval.id,reservedMaximumUsd,diagnostic:dataForSeoFailureDiagnostic(error,command.requestId,command.mode,availableReceipt),receipt:error instanceof DataForSeoError?error.receipt:availableReceipt}:{}),error:'Provider access, response validation or persistence failed. No automatic retry was started.'}});throw error;}
 }
 export async function linkResearch(db:SupabaseClient,tenant:string,actor:string,researchId:string,opportunityId:string,term:string){
   const [rows,backlog]=await Promise.all([intelligenceRecords(db,tenant),loadBacklog(db,tenant)]),research=savedResearch(rows).find(r=>r.id===researchId),opportunity=backlog.opportunities.find(o=>o.id===opportunityId);

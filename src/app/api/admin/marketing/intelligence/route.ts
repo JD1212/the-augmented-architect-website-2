@@ -5,7 +5,7 @@ import {MarketingError,uuidPattern} from '@/lib/marketing/config';
 import {seoDatabase} from '@/lib/marketing/seo/config';
 import {researchConnections,researchPolicy,type ProviderConnection} from '@/lib/marketing/intelligence/providers';
 import {intelligenceRecords,savedResearch,parseResearchCommand,executeResearch,linkResearch,providerScope} from '@/lib/marketing/intelligence/service';
-import {dataForSeoTarget,dataForSeoApproval,firstResearchExperiment} from '@/lib/marketing/intelligence/dataforseo';
+import {dataForSeoTarget,dataForSeoApproval,firstResearchExperiment,sanitizeDataForSeoDiagnostic} from '@/lib/marketing/intelligence/dataforseo';
 export const maxDuration=60;
 export async function GET(request:Request){
   try{
@@ -16,7 +16,7 @@ export async function GET(request:Request){
     const selected=id?all.find(r=>r.id===id):null;if(id&&!selected)throw new MarketingError(404,'Research not found in this workspace.');
     const requests=rows.filter(r=>r.payload.workflow==='intelligence-request/v1').length,failures=rows.filter(r=>r.payload.workflow==='intelligence-failure/v1').length;
     const collections=all.filter(r=>r.scope===providerScope(owner.tenantId,r.query)).flatMap(r=>r.bundle.collections),connections=researchConnections().filter(c=>c.id!=='google_ads').map((c):ProviderConnection=>{const last=collections.filter(p=>p.provider===c.id).sort((a,b)=>b.collectedAt.localeCompare(a.collectedAt))[0];return {...c,lastRetrievedAt:last?.collectedAt??null,...(c.ready&&last&&Date.parse(last.expiresAt)>Date.now()?{state:'connected' as const,message:'A successful read-only provider response is recorded for the configured account. Collection time is shown; credentials are not probed on page load.'}:{})};});
-    const failureHistory=rows.filter(r=>r.payload.workflow==='intelligence-failure/v1').sort((a,b)=>b.created_at.localeCompare(a.created_at)).slice(0,5).map(r=>({id:r.id,createdAt:r.created_at,receipt:provenanceSchema.safeParse(r.payload.receipt).success?provenanceSchema.parse(r.payload.receipt):null}));
+    const failureHistory=rows.filter(r=>r.payload.workflow==='intelligence-failure/v1').sort((a,b)=>b.created_at.localeCompare(a.created_at)).slice(0,5).map(r=>({id:r.id,createdAt:r.created_at,diagnostic:sanitizeDataForSeoDiagnostic(r.payload.diagnostic),receipt:provenanceSchema.safeParse(r.payload.receipt).success?provenanceSchema.parse(r.payload.receipt):null}));
     const {country,language,locationCode}=dataForSeoTarget(),approval=dataForSeoApproval();
     return privateJson({connections,failureHistory,target:{country,language},locationCode,experiment:firstResearchExperiment,approval:{maximumRequests:approval.maximumRequests,maximumCostUsd:approval.maximumCostUsd,configured:approval.configured},policy:{minimumIntervalSeconds:60,maximumDailyRequests:researchPolicy.maximumDailyRequests,maximumResults:50,maximumSerpResults:10},history:filtered.slice((Math.min(page,pages)-1)*10,Math.min(page,pages)*10).map(r=>({id:r.id,createdAt:r.createdAt,query:r.query,marketTerms:r.bundle.market.length,observedPages:r.bundle.competition.reduce((n,c)=>n+c.results.length,0)})),page:Math.min(page,pages),pages,total:filtered.length,requests,failures,selected});
   }catch(error){return marketingFailure(error);}
