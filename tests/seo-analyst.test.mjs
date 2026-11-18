@@ -8,8 +8,8 @@ const packageOverride={'@augmented-architect/seo-analyst':agentPackage};
 const seoConfig={seoRegistration:{name:'SEO Analyst',version:agentPackage.packageVersion,enabled:true},seoPolicy:{minimumIntervalMs:600000,maximumDailyRuns:6,leaseMs:300000},seoConfiguration:()=>({tenantId:tenant,ga4Property:'564904776',searchProperty:'sc-domain:theaugmentedarchitect.com',model:'fixture'})};
 const store=load('src/lib/marketing/seo/store.ts',{...packageOverride,'../config':config,'./config':seoConfig});
 test('SEO package is external, pinned and provenance-bearing; no Next or business IDs in reusable source',()=>{
- const p=JSON.parse(readFileSync('package.json','utf8'));assert.equal(p.dependencies['@augmented-architect/seo-analyst'],'file:vendor/augmented-architect-seo-analyst-0.1.3.tgz');
- assert(!agentPackage.seoInstructions.includes('564904776'));assert(!agentPackage.seoInstructions.includes(tenant));assert.equal(agentPackage.packageVersion,'0.1.3');
+ const p=JSON.parse(readFileSync('package.json','utf8'));assert.equal(p.dependencies['@augmented-architect/seo-analyst'],'file:vendor/augmented-architect-seo-analyst-0.1.4.tgz');
+ assert(!agentPackage.seoInstructions.includes('564904776'));assert(!agentPackage.seoInstructions.includes(tenant));assert.equal(agentPackage.packageVersion,'0.1.4');
 });
 test('execution scope rejects another tenant before any Google or database action',()=>{assert.throws(()=>store.assertExecutionScope('another-tenant'));assert.doesNotThrow(()=>store.assertExecutionScope(tenant));});
 test('distributed lease policy bounds concurrency, cooldown and daily requests',()=>{
@@ -48,7 +48,7 @@ test('SEO API checks owner first and refuses client tenant, property, model or a
 
 function leaseDatabase(){
  const rows={marketing_agents:[{id:'11111111-1111-4111-a111-111111111111',tenant_id:tenant,name:'SEO Analyst',version:agentPackage.packageVersion,enabled:true,config:{recentStarts:[]}}],marketing_executions:[]};
- return {rows,from(table){let action='select',payload,filters=[];const q={select(){return q;},eq(key,value){filters.push([key,value]);return q;},update(value){action='update';payload=value;return q;},insert(value){action='insert';payload=value;return q;},async maybeSingle(){const r=await execute();return {...r,data:r.data[0]??null};},then(resolve,reject){return execute().then(resolve,reject);}};
+ return {rows,from(table){let action='select',payload,filters=[];const q={select(){return q;},order(){return q;},limit(){return q;},eq(key,value){filters.push([key,value]);return q;},update(value){action='update';payload=value;return q;},insert(value){action='insert';payload=value;return q;},async maybeSingle(){const r=await execute();return {...r,data:r.data[0]??null};},then(resolve,reject){return execute().then(resolve,reject);}};
   async function execute(){await Promise.resolve();const found=rows[table].filter(row=>filters.every(([k,v])=>k==='config'?JSON.stringify(row[k])===JSON.stringify(JSON.parse(v)):row[k]===v));if(action==='update'){for(const row of found)Object.assign(row,structuredClone(payload));return {data:structuredClone(found),error:null};}if(action==='insert'){if(rows[table].some(r=>r.id===payload.id))return {data:[],error:{code:'23505'}};rows[table].push(structuredClone(payload));return {data:[payload],error:null};}return {data:structuredClone(found),error:null};}
  return q;}};
 }
@@ -59,4 +59,23 @@ test('atomic JSONB claim admits one concurrent execution, and a repeated ID cann
  const actual=db.rows.marketing_executions[0].id,reused=await a.claim(actual,ownerId,28);assert.equal(reused.reused,true);assert.equal(db.rows.marketing_executions.length,1);
  const leaseId=db.rows.marketing_agents[0].config.lease.id;await a.release(db.rows.marketing_agents[0].id,'not-the-owner');assert.equal(db.rows.marketing_agents[0].config.lease.id,leaseId);
  await a.release(db.rows.marketing_agents[0].id,actual);assert.equal(db.rows.marketing_agents[0].config.lease,undefined);
+});
+
+test('provider schema rejection is not mislabeled as an evidence-validation failure',()=>{
+ const {safeExecutionFailure}=load('src/lib/marketing/seo/service.ts',{...packageOverride,'../config':config,'./config':seoConfig});
+ const error=Object.assign(new Error("Invalid schema at sourceUrls: uri is not a valid format"),{status:400,code:'invalid_json_schema'});
+ assert.match(safeExecutionFailure(error,false),/provider rejected the structured-output schema/);
+ assert(!safeExecutionFailure(error,false).includes('evidence validation'));
+ assert.match(safeExecutionFailure(new Error('Unsupported source URL'),false),/evidence validation/);
+ assert(!safeExecutionFailure(new Error('A source server was unavailable'),false).includes('evidence validation'));
+});
+test('package upgrades preserve agent identity, execution history, disabled state and rate limits',async()=>{
+ const db=leaseDatabase(),agent=db.rows.marketing_agents[0],id=agent.id;
+ agent.version='0.1.3';agent.config.recentStarts=[new Date().toISOString()];agent.enabled=false;
+ db.rows.marketing_executions.push({id:'prior-failed-run',agent_id:id,tenant_id:tenant,state:'failed'});
+ const api=store.createSeoStore(db,tenant),upgraded=await api.register();
+ assert.equal(upgraded.id,id);assert.equal(upgraded.version,agentPackage.packageVersion);assert.equal(upgraded.enabled,false);
+ assert.equal(db.rows.marketing_agents.length,1);assert.equal(db.rows.marketing_executions.length,1);assert.equal(upgraded.config.recentStarts.length,1);
+ await assert.rejects(api.claim(ownerId,ownerId,28),e=>e.status===403);
+ agent.enabled=true;await assert.rejects(api.claim(ownerId,ownerId,28),e=>e.status===429);
 });

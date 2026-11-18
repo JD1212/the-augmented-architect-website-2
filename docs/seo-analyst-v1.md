@@ -4,9 +4,9 @@
 
 - Source repository: https://github.com/JD1212/augarch-seo-analyst (private).
 - Local source: `/Users/jdburkholder/Documents/augarch-seo-analyst`, a separate sibling Git repository, not inside the website or Docker.
-- Package: `@augmented-architect/seo-analyst@0.1.3`, source commit `9fd51a6babce3c5963d21b50eb702e4ef6706e15`, tag `v0.1.3`.
+- Package: `@augmented-architect/seo-analyst@0.1.4`, source commit `64159491fda593aeb6651355e027632decc8220d`, tag `v0.1.4`.
 - Reusable modules: `src/contracts.ts` (configuration, ports, evidence, outputs, limits), `instructions.ts`, `validation.ts`, `run.ts` (OpenAI Agents SDK runner), `index.ts`. No Next.js, Supabase, Google credentials/properties, tenant IDs, or business identity in that project.
-- Integration artifact: `vendor/augmented-architect-seo-analyst-0.1.3.tgz`. Source revision and SHA-512 integrity are recorded in `vendor/seo-analyst.provenance.json` and package-lock. No private registry credentials are needed by Vercel.
+- Integration artifact: `vendor/augmented-architect-seo-analyst-0.1.4.tgz`. Source revision and SHA-512 integrity are recorded in `vendor/seo-analyst.provenance.json` and package-lock. No private registry credentials are needed by Vercel.
 
 ## Application adapters
 
@@ -45,3 +45,9 @@ Token receipts come from actual API responses, including external research. Miss
 Augment can import the same package, validate `configSchema`, map its governed access packages onto `SeoTools`, and provide a `ModelProvider`, abort signal and progress/usage callbacks. It can persist `SeoResult` through its own authorized lifecycle. Business identity and authorization remain host responsibilities. No Augment service, governance system, DigitalOcean harness or agent-manager repository is modified.
 
 A future adapter must preserve tenant/property boundaries, budgets, source provenance and explicit owner approval. Recommendations are research proposals, not published changes. Schema validation can enforce citations and provenance but cannot prove every natural-language inference; owner review and focused factual review remain necessary.
+
+## Initial Preview failure and correction
+
+The initial v0.1.3 request was rejected by OpenAI with HTTP 400 `invalid_json_schema`: the generated `sourceUrls` item schema contained unsupported `format: uri`. It produced no model output or hosted research, and its failed execution was retained with unknown usage. V0.1.4 sends a compatible string shape to the provider and still applies the original full URL/provenance validation before accepting results. Schema compatibility and invalid/unlisted/unsafe URL rejection are covered deterministically.
+
+Provider request failures are classified by status/code rather than searching message substrings. Safe diagnostics retain the phase, provider code and parameter without raw prompts or credentials. The client refreshes status after both success and failure without retrying POST. Registration upgrades preserve the stable agent ID, history, disabled state, lease and budget counters; older code cannot downgrade a newer registration. Existing failed records are not deleted.

@@ -23,9 +23,21 @@ export function leaseDecision(config:Record<string,unknown>,id:string,now=new Da
 export function createSeoStore(db:SupabaseClient,tenantId:string){
   assertExecutionScope(tenantId);
   let executionActor:string|undefined;
-  async function findAgent():Promise<AgentRow|null>{const r=await db.from('marketing_agents').select('id,tenant_id,name,version,enabled,config').eq('tenant_id',tenantId).eq('name',seoRegistration.name).eq('version',seoRegistration.version).maybeSingle();if(r.error)fail();return r.data as AgentRow|null;}
+  async function findAgent():Promise<AgentRow|null>{const r=await db.from('marketing_agents').select('id,tenant_id,name,version,enabled,config').eq('tenant_id',tenantId).eq('name',seoRegistration.name).order('created_at',{ascending:false}).limit(1).maybeSingle();if(r.error)fail();return r.data as AgentRow|null;}
   async function register():Promise<AgentRow>{
-    const existing=await findAgent();if(existing)return existing;
+    const existing=await findAgent();
+    if(existing){
+      if(existing.version===seoRegistration.version)return existing;
+      const numeric=(version:string)=>version.split('.').map(Number);
+      const current=numeric(existing.version),requested=numeric(seoRegistration.version);
+      const difference=current.map((v,i)=>v-requested[i]).find(v=>v!==0)??0;
+      if(difference>0)throw new MarketingError(409,'A newer SEO Analyst version is registered. Open the latest workspace deployment.');
+      // Keep the stable identity, disable flag, lease and rate-limit history across package upgrades.
+      const upgraded=await db.from('marketing_agents').update({version:seoRegistration.version,instructions_version:seoRegistration.instructions_version}).eq('id',existing.id).eq('tenant_id',tenantId).eq('version',existing.version).select('id,tenant_id,name,version,enabled,config').maybeSingle();
+      if(upgraded.error)fail();if(upgraded.data)return upgraded.data as AgentRow;
+      const latest=await findAgent();if(latest?.version===seoRegistration.version)return latest;
+      throw new MarketingError(409,'The agent registration changed. Refresh before running analysis.');
+    }
     const r=await db.from('marketing_agents').insert({tenant_id:tenantId,...seoRegistration,config:{slug:'seo-analyst',executionMode:'manual',runtime:'OpenAI Agents SDK',sourceRepository:'JD1212/augarch-seo-analyst',recentStarts:[],readOnly:true}}).select('id,tenant_id,name,version,enabled,config').single();
     if(r.error){if(r.error.code==='23505'){const found=await findAgent();if(found)return found;}fail();}return r.data as AgentRow;
   }
@@ -48,7 +60,7 @@ export function createSeoStore(db:SupabaseClient,tenantId:string){
     const r=await db.from('marketing_agents').update({config:next}).eq('id',agentId).eq('tenant_id',tenantId).eq('config',JSON.stringify(current.config));if(r.error)fail();
   }
   async function progress(id:string,stage:Progress['stage'],receipts:UsageReceipt[]){
-    const r=await db.from('marketing_executions').update({usage:usageSummary(receipts),diagnostics:{stage,actorId:executionActor}}).eq('id',id).eq('tenant_id',tenantId).eq('state','running');if(r.error)fail();
+    const r=await db.from('marketing_executions').update({usage:usageSummary(receipts),diagnostics:{stage,actorId:executionActor,packageVersion:seoRegistration.version}}).eq('id',id).eq('tenant_id',tenantId).eq('state','running');if(r.error)fail();
   }
   async function complete(id:string,result:SeoResult,snapshots:ReportSnapshot[],actorId:string){
     const reportIds=new Map<string,string>();
@@ -65,7 +77,7 @@ export function createSeoStore(db:SupabaseClient,tenantId:string){
     }
     const done=await db.from('marketing_executions').update({state:'completed',finished_at:new Date().toISOString(),usage:usageSummary(result.usage),diagnostics:{stage:'completed',packageVersion:result.packageVersion,instructionsVersion:result.instructionsVersion,actorId,opportunities:result.analysis.opportunities.length}}).eq('id',id).eq('tenant_id',tenantId).eq('state','running').select('id').single();if(done.error)fail();
   }
-  async function failed(id:string,receipts:UsageReceipt[],message:string,failure?:{kind:string;status:number|null}){const r=await db.from('marketing_executions').update({state:'failed',finished_at:new Date().toISOString(),usage:usageSummary(receipts),diagnostics:{stage:'failed',actorId:executionActor,error:message,failure}}).eq('id',id).eq('tenant_id',tenantId).eq('state','running');if(r.error)fail();}
+  async function failed(id:string,receipts:UsageReceipt[],message:string,failure?:{kind:string;status:number|null;code?:string|null;param?:string|null;phase?:string}){const r=await db.from('marketing_executions').update({state:'failed',finished_at:new Date().toISOString(),usage:usageSummary(receipts),diagnostics:{stage:'failed',actorId:executionActor,packageVersion:seoRegistration.version,error:message,failure}}).eq('id',id).eq('tenant_id',tenantId).eq('state','running');if(r.error)fail();}
   return {findAgent,register,claim,release,progress,complete,failed};
 }
 export async function readSeoPanel(db:SupabaseClient,tenantId:string):Promise<SeoPanelData>{

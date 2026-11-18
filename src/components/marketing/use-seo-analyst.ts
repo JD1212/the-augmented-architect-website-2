@@ -15,9 +15,9 @@ export function useSeoAnalyst(demo:boolean){
   useEffect(()=>{if(demo||!running&&!submitting)return;const abort=new AbortController(),timer=setInterval(()=>void load(abort.signal),2500);return()=>{abort.abort();clearInterval(timer);};},[demo,running,submitting,load]);
   async function run(days:7|28|90){
     if(demo||submitting||running)return;setSubmitting(true);setRunError('');requestId.current??=crypto.randomUUID();
-    try{const r=await fetch('/api/admin/marketing/seo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({requestId:requestId.current,days})});const body=await r.json();if(!r.ok)throw Error(body.error||'Analysis could not complete.');await load();}
+    try{const r=await fetch('/api/admin/marketing/seo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({requestId:requestId.current,days})});const body=await r.json();if(!r.ok)throw Error(body.error||'Analysis could not complete.');}
     catch(e){setRunError(e instanceof Error?e.message:'Analysis could not complete. Refresh status before trying again.');}
-    finally{setSubmitting(false);}
+    finally{await load();setSubmitting(false);}
   }
   return {data:demo?null:data,error:demo?'':runError||statusError,submitting,running,run,refresh:()=>load()};
 }
