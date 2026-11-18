@@ -18,7 +18,7 @@ export const site: SiteContent = {
   url: 'https://theaugmentedarchitect.com',
   navigation: [{ label: 'AI Solutions', href: '/ai-solutions' }, { label: 'Salesforce', href: '/salesforce' }, { label: 'Custom Business Applications', href: '/custom-applications' }, { label: 'Our Approach', href: '/our-approach' }, { label: 'About', href: '/about' }, { label: 'Contact', href: '/contact' }],
   consultation: { label: 'Book a Consultation', href: '/book' },
-  signIn: { label: 'Sign in', href: '/admin/login' },
+  signIn: { label: 'Company Login', href: '/admin/login' },
   accessibility: { skip: 'Skip to content', navigation: 'Main navigation', menu: 'Menu', home: 'The Augmented Architect home' },
   hero: {
     eyebrow: 'SOFTWARE ARCHITECTURE · AI SOLUTIONS · SALESFORCE',

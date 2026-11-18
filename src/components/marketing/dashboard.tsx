@@ -1,59 +1,89 @@
 'use client';
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import type { MarketingDashboard, ReportTable, SourceResult } from '@/lib/marketing/types';
+import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { workspaceViews, marketingAgents } from '@/content/marketing-workspace';
+import type { MarketingDashboard, ReportTable, SourceResult, WorkspaceActivity } from '@/lib/marketing/types';
+import { demoReport } from './demo';
+import { comparison, eventValue, formatted, metric } from './report-utils';
+import { ChannelBars, Empty, ReportTableView, Sparkline, TrendChart } from './charts';
+import { AgentDetail, AgentTeam } from './agent-team';
+import { WorkspaceIcon } from './workspace-icon';
 import styles from './marketing.module.css';
 
-function formatted(value:number,column:string) {
-  return column==='CTR'?new Intl.NumberFormat(undefined,{style:'percent',maximumFractionDigits:2}).format(value):new Intl.NumberFormat(undefined,{maximumFractionDigits:column==='Avg. position'?1:0}).format(value);
+function Status({name,source,demo}:{name:string;source?:SourceResult;demo:boolean}) {
+  return <span className={styles.sourcePill} data-state={demo?'demo':source?.status??'loading'}><i/>{name}<span>{demo?'Simulated':source?.status.replaceAll('_',' ')??'Loading'}</span></span>;
 }
-function Table({title,table,label='Dimension'}:{title:string;table?:ReportTable;label?:string}) {
-  return <section className={styles.panel}><h3>{title}</h3>{!table?.rows.length?<p className={styles.empty}>No reportable rows for this period.</p>:<>
-    <div className={styles.tableWrap}><table><caption className={styles.srOnly}>{title}</caption><thead><tr><th scope="col">{label}</th>{table.columns.map(c=><th scope="col" key={c}>{c}</th>)}</tr></thead><tbody>{table.rows.slice(0,25).map((row,i)=><tr key={row.label+':'+i}><th scope="row">{row.label}</th>{row.values.map((n,j)=><td key={j}>{formatted(n,table.columns[j])}</td>)}</tr>)}</tbody></table></div>
-    {(table.rows.length>25||table.limited)&&<p className={styles.note}>Showing up to 25 rows. Provider limits and privacy thresholds can omit additional rows.</p>}
-  </>}</section>;
+function Kpis({source,prior,kind,demo}:{source?:SourceResult;prior?:SourceResult;kind:'ga4'|'search';demo:boolean}) {
+  const columns=kind==='ga4'?['Active users','Sessions','Page views']:['Clicks','Impressions','CTR','Avg. position'];
+  return <div className={styles.metrics}>{columns.map((label,i)=>{
+    const value=metric(source?.data?.overview,label),previous=metric(prior?.data?.overview,label),index=source?.data?.daily.columns.indexOf(label)??-1;
+    return <article className={styles.kpi} data-tone={i%2?'blue':'cyan'} key={label}><div className={styles.kpiTop}><span>{label}</span><WorkspaceIcon name={kind==='ga4'?'analytics':'search'}/></div><strong>{formatted(value,label)}</strong><Sparkline values={index<0?[]:source?.data?.daily.rows.map(r=>r.values[index])??[]}/><p>{demo?'Simulated · presentation only':comparison(value,previous,label)}</p><span className={styles.kpiSource}>{demo?'DEMO':kind==='ga4'?'GOOGLE ANALYTICS 4':'GOOGLE SEARCH CONSOLE'}</span></article>;
+  })}</div>;
 }
-function Metrics({source}:{source:SourceResult}) {
-  const values=source.data?.overview.rows[0]?.values;
-  return <div className={styles.metrics}>{source.data?.overview.columns.map((label,i)=><div key={label}><span>{label}</span><strong>{values?formatted(values[i],label):'—'}</strong></div>)}</div>;
+function SourceNotes({source,name,demo}:{source?:SourceResult;name:string;demo:boolean}) {
+  return <section className={styles.connectionCard}><div className={styles.panelHeading}><h3>{name}</h3><Status name={name==='Google Analytics 4'?'GA4':'Search'} source={source} demo={demo}/></div><p className={styles.muted}>{demo?'Simulated presentation data. No Google request or production write is made in Demo Mode.':source?.message??'Waiting for the reporting connection.'}</p><p className={styles.note}>{demo?'No live retrieval in Demo Mode.':source?.updatedAt?`Retrieved ${new Date(source.updatedAt).toLocaleString()}${source.cached?' · cached up to five minutes':''}${!source.persisted?' · live results; snapshot not saved':''}`:'No successful retrieval yet.'}</p>{source?.data?.notes.length? <details className={styles.chartDetails}><summary>Reporting context & limitations</summary><ul className={styles.notes}>{source.data.notes.map(n=><li key={n}>{n}</li>)}</ul></details>:null}</section>;
 }
-function Trend({table,metric}:{table:ReportTable;metric:string}) {
-  const column=table.columns.indexOf(metric),rows=table.rows,maximum=Math.max(...rows.map(r=>r.values[column]),1);
-  const points=rows.map((r,i)=>`${rows.length===1?300:20+i*560/(rows.length-1)},${150-r.values[column]/maximum*125}`).join(' ');
-  return <section className={styles.panel}><h3>Daily {metric.toLowerCase()}</h3>{rows.length?<>
-    <svg className={styles.trend} viewBox="0 0 600 180" role="img" aria-label={`${metric} trend. Exact daily values are in the table below.`}><line x1="20" x2="580" y1="150" y2="150"/><polyline points={points}/>{rows.length===1&&<circle cx="300" cy={150-rows[0].values[column]/maximum*125} r="4"/>}</svg>
-    <details><summary>View daily data</summary><div className={styles.tableWrap}><table><caption className={styles.srOnly}>Daily {metric.toLowerCase()}</caption><thead><tr><th scope="col">Date</th>{table.columns.map(c=><th key={c} scope="col">{c}</th>)}</tr></thead><tbody>{rows.map(r=><tr key={r.label}><th scope="row">{r.label.replace(/^(\d{4})(\d{2})(\d{2})$/,'$1-$2-$3')}</th>{r.values.map((n,i)=><td key={i}>{formatted(n,table.columns[i])}</td>)}</tr>)}</tbody></table></div></details>
-  </>:<p className={styles.empty}>A trend will appear once the provider has daily data. Missing dates are not invented as zero.</p>}</section>;
+function ConversionView({table,daily,demo}:{table?:ReportTable;daily?:ReportTable;demo:boolean}) {
+  const events=[['scout_open','Scout engagement','Assistant opened'],['consultation_start','Consultation intent','Booking experience initiated'],['consultation_booked','Completed bookings','Successful-booking browser event']];
+  const dailyTable:ReportTable|undefined=daily?{columns:['Bookings'],rows:daily.rows.filter(r=>r.label.endsWith(' / consultation_booked')).map(r=>({label:r.label.split(' / ')[0],values:r.values}))}:undefined;
+  return <><div className={styles.conversionGrid}>{events.map(([event,title,note],i)=><article className={styles.conversionCard} key={event}><span className={styles.step}>0{i+1}</span><WorkspaceIcon name={i===0?'agents':'conversions'}/><h3>{title}</h3><strong>{formatted(eventValue(table,event),'Event count')}</strong><p>{note}</p><span className={styles.micro}>{demo?'SIMULATED':'GA4 · OBSERVED EVENTS'}</span></article>)}</div><div className={styles.context}><WorkspaceIcon name="shield"/><p>These are consented GA4 events, not the complete first-party appointment ledger. A start is not a booking. Different deduplication rules mean these counts are not a conversion-rate funnel.</p></div><TrendChart title="Booking activity over time" source={demo?'SIMULATED · DEMO':'GA4 · CONSULTATION_BOOKED'} table={dailyTable} metric="Bookings"/><ReportTableView title="Consultation & Scout activity" table={table} label="Observed event"/></>;
 }
-function Source({title,source,children}:{title:string;source:SourceResult;children:React.ReactNode}) {
-  return <section className={styles.source} aria-label={title}>
-    <div className={styles.sourceHeading}><h2>{title}</h2><span className={styles.status} data-state={source.status}>{source.status.replaceAll('_',' ')}</span></div>
-    <p className={styles.muted}>{source.message}</p>
-    <p className={styles.note}>{source.updatedAt?`Retrieved ${new Date(source.updatedAt).toLocaleString()}${source.cached?' · cached for up to five minutes':''}`:'No successful retrieval yet.'}{source.data&&!source.persisted?' · Snapshot could not be saved; these are live provider results.':''}</p>
-    {source.data&&<><Metrics source={source}/>{children}<ul className={styles.notes}>{source.data.notes.map(note=><li key={note}>{note}</li>)}</ul></>}
-  </section>;
-}
-export function MarketingDashboardView() {
-  const router=useRouter();
-  const [days,setDays]=useState('28'),[report,setReport]=useState<MarketingDashboard|null>(null),[busy,setBusy]=useState(true),[error,setError]=useState(''),[retry,setRetry]=useState(0);
-  useEffect(()=>{const abort=new AbortController();
-    fetch('/api/admin/marketing?days='+days,{cache:'no-store',signal:abort.signal}).then(async response=>{const data=await response.json();if(!response.ok){if(response.status===401||response.status===403){setReport(null);router.replace('/admin/login');router.refresh();return;}throw Error(data.error||'Reports are unavailable.');}if(!abort.signal.aborted){setReport(data);setError('');setBusy(false);}}).catch(error=>{if(!abort.signal.aborted){setError(error instanceof Error?error.message:'Reports are unavailable.');setBusy(false);}});
+
+export function MarketingDashboardView({email}:{email:string}) {
+  const router=useRouter(),params=useSearchParams(),mobile=useRef<HTMLDialogElement>(null),main=useRef<HTMLElement>(null);
+  const selected=workspaceViews.find(v=>v[0]===params.get('view'))??workspaceViews[0],view=selected[0];
+  const agent=marketingAgents.find(a=>a.id===params.get('agent'));
+  useEffect(()=>{main.current?.scrollTo({top:0,behavior:'instant'});},[view,agent?.id]);
+  const [days,setDays]=useState<7|28|90>(28),[demo,setDemo]=useState(false),[report,setReport]=useState<MarketingDashboard|null>(null),[prior,setPrior]=useState<MarketingDashboard|null>(null),[activity,setActivity]=useState<WorkspaceActivity|null>(null),[activityError,setActivityError]=useState(''),[busy,setBusy]=useState(true),[error,setError]=useState(''),[retry,setRetry]=useState(0);
+  useEffect(()=>{
+    if(demo)return;
+    const abort=new AbortController();
+    async function load(){
+      try{
+        const response=await fetch('/api/admin/marketing?days='+days,{cache:'no-store',signal:abort.signal});
+        if(response.status===401||response.status===403){router.replace('/admin/login');router.refresh();return;}
+        const data=await response.json();if(!response.ok)throw Error(data.error||'Reports are unavailable.');
+        if(abort.signal.aborted)return;setReport(data);setError('');setBusy(false);
+        // Fetch a real preceding period only when there is enough signal to compare.
+        if([data.ga4,data.search].some((s:SourceResult)=>s.data?.overview.rows[0]?.values.some(v=>v>=10))){
+          const previous=await fetch('/api/admin/marketing?days='+days+'&period=previous',{cache:'no-store',signal:abort.signal});
+          if(previous.ok){const result=await previous.json();if(!abort.signal.aborted)setPrior(result);}
+        }
+      }catch(e){if(!abort.signal.aborted){setError(e instanceof Error?e.message:'Reports are unavailable.');setBusy(false);}}
+    }
+    void load();return()=>abort.abort();
+  },[days,retry,demo,router]);
+  useEffect(()=>{
+    if(demo||!['activity','agents'].includes(view))return;
+    const abort=new AbortController();
+    fetch('/api/admin/marketing/activity',{cache:'no-store',signal:abort.signal}).then(async r=>{
+      if(r.status===401||r.status===403){router.replace('/admin/login');router.refresh();return;}
+      if(!r.ok)throw Error('Activity is temporarily unavailable.');const data=await r.json();if(!abort.signal.aborted){setActivity(data);setActivityError('');}
+    }).catch(()=>{if(!abort.signal.aborted)setActivityError('Activity is temporarily unavailable.');});
     return()=>abort.abort();
-  },[days,retry,router]);
-  async function logout(){try{const response=await fetch('/api/admin/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'logout'})});if(!response.ok)throw Error('Sign out failed. Please retry.');setReport(null);router.replace('/admin/login');router.refresh();}catch(error){setError(error instanceof Error?error.message:'Please retry.');}}
-  return <div className={styles.dashboard}>
-    <header className={styles.heading}><div><p className={styles.eyebrow}>THE AUGMENTED ARCHITECT · OWNER INTELLIGENCE</p><h1>Marketing, with context.</h1><p className={styles.muted}>Real website and search performance. Evidence before assumptions.</p></div><button className={styles.secondary} onClick={()=>void logout()}>Sign out</button></header>
-    <div className={styles.toolbar}><label htmlFor="marketing-range">Reporting period</label><select id="marketing-range" value={days} onChange={event=>{setBusy(true);setReport(null);setDays(event.target.value);}}>{['7','28','90'].map(d=><option key={d} value={d}>Last {d} complete days</option>)}</select><button className={styles.secondary} onClick={()=>{setBusy(true);setRetry(value=>value+1);}} disabled={busy}>Refresh reports</button><span className={styles.note}>{report&&`${report.range.start} – ${report.range.end}`}</span></div>
-    {busy&&<p role="status" className={styles.empty}>Retrieving private reports…</p>}
-    {error&&<p role="alert" className={styles.error}>{error}</p>}
-    {report&&<div aria-busy={busy}>
-      <Source title="Website traffic & acquisition" source={report.ga4}>
-        {report.ga4.data&&<><Trend table={report.ga4.data.daily} metric="Sessions"/><div className={styles.grid}><Table title="Traffic sources & channels" table={report.ga4.data.acquisition}/><Table title="Top landing pages" table={report.ga4.data.pages} label="Landing page"/><Table title="Service-page engagement" table={report.ga4.data.services} label="Service page"/><Table title="Consultation & Scout activity" table={report.ga4.data.conversions} label="Observed event"/></div></>}
-      </Source>
-      <Source title="Google Search performance" source={report.search}>
-        {report.search.data&&<><Trend table={report.search.data.daily} metric="Clicks"/><div className={styles.grid}><Table title="Top search queries" table={report.search.data.queries} label="Search query"/><Table title="Search landing-page performance" table={report.search.data.pages} label="Page"/></div></>}
-      </Source>
-      <aside className={styles.context}><h2>Compare paths. Keep metrics distinct.</h2><p>Landing pages use consistent paths without query strings or fragments. Search Console clicks describe Google Search activity; GA4 sessions describe consented website visits. Their totals, timezones, latency and coverage differ. Neither alone proves why a result changed.</p></aside>
-    </div>}
-  </div>;
+  },[view,demo,retry,router]);
+  const data=demo?demoReport(days):report,ga=data?.ga4,search=data?.search;
+  const switchMode=()=>{setDemo(!demo);setReport(null);setPrior(null);setActivity(null);setActivityError('');setError('');setBusy(demo);};
+  async function logout(){try{const r=await fetch('/api/admin/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'logout'})});if(!r.ok)throw Error('Sign out failed. Please retry.');setReport(null);setPrior(null);setActivity(null);router.replace('/admin/login');router.refresh();}catch(e){setError(e instanceof Error?e.message:'Please retry.');}}
+  const navigation=<><Link href="/admin/marketing" className={styles.workspaceBrand} onClick={()=>mobile.current?.close()}><span className={styles.brandMark}>AA</span><span>THE AUGMENTED ARCHITECT<small>Marketing Intelligence</small></span></Link><p className={styles.navLabel}>WORKSPACE</p><nav aria-label="Workspace navigation">{workspaceViews.map(([key,label])=><Link key={key} href={'?view='+key} aria-current={view===key?'page':undefined} onClick={()=>mobile.current?.close()}><WorkspaceIcon name={key}/>{label}{key==='agents'&&<span className={styles.navCount}>3</span>}</Link>)}</nav><div className={styles.sidebarBottom}><div className={styles.workspaceSecure}><WorkspaceIcon name="shield"/><div>Private owner workspace<small>Secure · Access restricted</small></div></div><div className={styles.account}><span className={styles.accountAvatar}>JD</span><div><strong>Workspace owner</strong><span title={email}>{email}</span></div></div><button className={styles.signout} onClick={()=>void logout()}><WorkspaceIcon name="logout"/>Sign out</button><Link className={styles.returnSite} href="/">Return to website ↗</Link></div></>;
+  return <div className={styles.workspace}><a className={styles.skip} href="#workspace-main">Skip to workspace content</a><aside className={styles.sidebar}>{navigation}</aside><dialog ref={mobile} className={styles.mobileNav} aria-label="Workspace menu"><button className={styles.closeNav} aria-label="Close workspace menu" onClick={()=>mobile.current?.close()}><WorkspaceIcon name="close"/></button>{navigation}</dialog><div className={styles.workspaceBody}>
+    <header className={styles.appHeader}><button className={styles.mobileToggle} aria-label="Open workspace menu" onClick={()=>mobile.current?.showModal()}><WorkspaceIcon name="menu"/></button><div className={styles.breadcrumb}>Workspace <span>/</span><strong>{selected[1]}</strong></div><span className={styles.privateLabel}><WorkspaceIcon name="shield"/>Private workspace</span><span className={styles.headerAvatar} aria-label="Owner account">JD</span></header>
+    <main ref={main} id="workspace-main" className={styles.dashboard}>
+      <div className={styles.heading}><div><p className={styles.eyebrow}>MARKETING INTELLIGENCE <span>/ {demo?'DEMO WORKSPACE':'LIVE WORKSPACE'}</span></p><h1>{selected[2]}</h1><p className={styles.muted}>{view==='overview'?'Traffic, search, and business intent. A clearer view of what comes next.':view==='agents'?'Purpose-built identities. Evidence-backed decisions. Always under your control.':'Real signals. Shared context. Decisions grounded in evidence.'}</p></div><button className={styles.modeButton} aria-pressed={demo} onClick={switchMode}>{demo?'Return to live data':'Explore Demo Mode'}<WorkspaceIcon name="arrow"/></button></div>
+      {demo&&<div className={styles.demoBanner} role="status"><span className={styles.demoDot}/><div><strong>Demo Mode · Simulated data</strong><p>Presentation only. No production writes, live reporting requests, or agent executions.</p></div><button onClick={switchMode}>Exit Demo</button></div>}
+      <div className={styles.toolbar}><div className={styles.sourceGroup}><Status name="GA4" source={ga} demo={demo}/><Status name="Search Console" source={search} demo={demo}/></div><div className={styles.toolbarActions}><label className={styles.srOnly} htmlFor="marketing-range">Reporting period</label><select id="marketing-range" value={days} onChange={e=>{setDays(Number(e.target.value) as 7|28|90);setReport(null);setPrior(null);setBusy(!demo);}}>{[7,28,90].map(d=><option key={d} value={d}>Last {d} complete days</option>)}</select><button className={styles.refresh} aria-label="Refresh reports" disabled={busy&&!demo} onClick={()=>{setBusy(!demo);setPrior(null);setRetry(v=>v+1);}}><WorkspaceIcon name="refresh"/></button></div></div>
+      <div className={styles.reportMeta}><span>{data?`${data.range.start} — ${data.range.end}`:'Reporting period loading'}</span><span>{demo?'All figures below are simulated':ga?.updatedAt||search?.updatedAt?'Provider retrieval times in Integrations · reporting can lag':'Read-only reporting · awaiting retrieval'}</span></div>
+      {busy&&!demo&&<p className={styles.loading} role="status">Retrieving private reports…</p>}{error&&!demo&&<p className={styles.error} role="alert">{error}</p>}
+      <div aria-busy={busy&&!demo} className={styles.viewContent}>
+      {view==='overview'&&<><Kpis source={ga} prior={demo?undefined:prior?.ga4} kind="ga4" demo={demo}/><div className={styles.chartGrid}><TrendChart title="Your audience, over time" table={ga?.data?.daily} metric="Sessions" source={demo?'SIMULATED · DEMO':'GOOGLE ANALYTICS 4'}/><ChannelBars table={ga?.data?.acquisition} demo={demo}/></div><div className={styles.sectionHeading}><div><p className={styles.eyebrow}>ORGANIC DISCOVERY</p><h2>Visibility that builds momentum.</h2></div><Link href="?view=search" className={styles.textLink}>Explore search <WorkspaceIcon name="arrow"/></Link></div><Kpis source={search} prior={demo?undefined:prior?.search} kind="search" demo={demo}/><div className={styles.grid}><TrendChart title="Search clicks" table={search?.data?.daily} metric="Clicks" source={demo?'SIMULATED · DEMO':'GOOGLE SEARCH CONSOLE'}/><ReportTableView title="Top landing pages" table={ga?.data?.pages} label="Landing page"/></div><AgentTeam compact/><div className={styles.grid}><SourceNotes name="Google Analytics 4" source={ga} demo={demo}/><SourceNotes name="Google Search Console" source={search} demo={demo}/></div></>}
+      {view==='analytics'&&<><Kpis source={ga} prior={demo?undefined:prior?.ga4} kind="ga4" demo={demo}/><div className={styles.chartGrid}><TrendChart title="Daily traffic" table={ga?.data?.daily} metric="Sessions" source={demo?'SIMULATED · DEMO':'GA4'}/><ChannelBars table={ga?.data?.acquisition} demo={demo}/></div><div className={styles.grid}><ReportTableView title="Top landing pages" table={ga?.data?.pages} label="Landing page"/><ReportTableView title="Service-page engagement" table={ga?.data?.services} label="Service page"/><ReportTableView title="Traffic sources & channels" table={ga?.data?.acquisition}/><SourceNotes name="Google Analytics 4" source={ga} demo={demo}/></div></>}
+      {view==='search'&&<><Kpis source={search} prior={demo?undefined:prior?.search} kind="search" demo={demo}/><div className={styles.grid}><TrendChart title="Search clicks" table={search?.data?.daily} metric="Clicks" source={demo?'SIMULATED · DEMO':'SEARCH CONSOLE'}/><TrendChart title="Search impressions" table={search?.data?.daily} metric="Impressions" source={demo?'SIMULATED · DEMO':'SEARCH CONSOLE'}/><ReportTableView title="Top search queries" table={search?.data?.queries} label="Search query"/><ReportTableView title="Search landing-page performance" table={search?.data?.pages} label="Page"/></div><SourceNotes name="Google Search Console" source={search} demo={demo}/><div className={styles.context}><WorkspaceIcon name="search"/><p>Search clicks describe Google Search activity; GA4 sessions describe consented website visits. Paths are normalized for comparison, but coverage, dates, and metrics differ. Neither alone explains why a result changed.</p></div></>}
+      {view==='conversions'&&<><ConversionView table={ga?.data?.conversions} daily={ga?.data?.conversionDaily} demo={demo}/><SourceNotes name="Google Analytics 4" source={ga} demo={demo}/></>}
+      {view==='agents'&&(agent?<AgentDetail agent={agent} activity={demo?null:activity}/>:<><AgentTeam/><div className={styles.context}><WorkspaceIcon name="shield"/><p>All three agents are Planned. No runtime, scheduled execution, model calls, or automatic publishing is active. Recommendations and content will require owner review.</p></div></>)}
+      {view==='activity'&&<><section className={styles.panel}><div className={styles.panelHeading}><h2>Reporting activity</h2><span className={styles.status}>{demo?'Demo · no activity loaded':'READ-ONLY AUDIT VIEW'}</span></div>{demo?<Empty>Demo Mode does not load production activity or fabricate agent executions.</Empty>:activityError?<p className={styles.error} role="alert">{activityError}</p>:!activity?<p className={styles.muted}>Retrieving workspace activity…</p>:activity.reports.length?<ol className={styles.timeline}>{activity.reports.map(r=><li key={r.id}><span className={styles.timelineDot}/><div><strong>{r.source==='ga4'?'Google Analytics 4':'Search Console'} snapshot retrieved</strong><p>{r.start_date} — {r.end_date}</p></div><time dateTime={r.extracted_at}>{new Date(r.extracted_at).toLocaleString()}</time></li>)}</ol>:<Empty>No report snapshots have been saved yet.</Empty>}</section><div className={styles.grid}><section className={styles.panel}><h3>Agent executions</h3>{!demo&&activity?.executions.length?<ul className={styles.notes}>{activity.executions.map(e=><li key={e.id}>{e.state} · {new Date(e.created_at).toLocaleString()}</li>)}</ul>:<Empty>No agent executions available. Runtime integration is planned.</Empty>}</section><section className={styles.panel}><h3>Recommendations & approvals</h3>{!demo&&activity?.artifacts.length?<ul className={styles.notes}>{activity.artifacts.map(a=><li key={a.id}>{a.title} · {a.kind}</li>)}</ul>:<Empty>No findings, drafts, or approval decisions have been created.</Empty>}</section></div></>}
+      {view==='integrations'&&<><div className={styles.grid}><SourceNotes name="Google Analytics 4" source={ga} demo={demo}/><SourceNotes name="Google Search Console" source={search} demo={demo}/></div><section className={styles.panel}><p className={styles.eyebrow}>A SECURE REPORTING FOUNDATION</p><h2>Read-only access. No permanent Google keys.</h2><div className={styles.integrationFacts}><div><WorkspaceIcon name="shield"/><h3>Keyless federation</h3><p>Vercel workload identity and short-lived service-account impersonation. Credentials remain server-side.</p></div><div><WorkspaceIcon name="analytics"/><h3>Reporting, not collection</h3><p>GA4 property 564904776. Existing consent-aware website collection remains separate and unchanged.</p></div><div><WorkspaceIcon name="search"/><h3>Verified domain property</h3><p>Search Console: sc-domain:theaugmentedarchitect.com. Final web search data; recent days can lag.</p></div></div></section></>}
+      {view==='settings'&&<><section className={styles.panel}><p className={styles.eyebrow}>ACCOUNT & ACCESS</p><h2>Private by design.</h2><dl className={styles.settingsList}><div><dt>Signed in as</dt><dd>{email}</dd></div><div><dt>Workspace role</dt><dd>Owner · server-authorized UUID</dd></div><div><dt>Authentication</dt><dd>Email & password · MFA optional by account policy</dd></div><div><dt>Registration</dt><dd>Privately provisioned accounts only</dd></div><div><dt>Data access</dt><dd>Tenant-scoped Row Level Security and live-session validation</dd></div></dl><p className={styles.note}>Account policy and authenticator recovery are managed by your verified Supabase administrator. This screen does not change security settings.</p></section><section className={styles.panel}><span className={styles.planned}>Planned</span><h3>More workspaces. The same foundation.</h3><p className={styles.muted}>Client and staff roles, workspace preferences, and notification settings can build on the existing tenant-aware authorization. They are not enabled in this release.</p></section></>}
+      </div><footer className={styles.appFooter}><span>THE AUGMENTED ARCHITECT <b> / </b> MARKETING INTELLIGENCE</span><span>{demo?'Simulated presentation · not business results':'Evidence before assumptions.'}</span></footer>
+    </main></div></div>;
 }

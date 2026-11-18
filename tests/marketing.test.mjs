@@ -87,9 +87,9 @@ test('private report API checks owner before calling any reporting provider',asy
 const ga=(values,dimension)=>({rows:values===null?[]:[{...(dimension?{dimensionValues:[{value:dimension}]}:{}),metricValues:values.map(v=>({value:String(v)}))}]});
 test('GA4 adapters request numeric property, correct events, aggregate totals and safe landing paths',async()=>{
   const {ga4Report}=load('src/lib/marketing/providers.ts');const calls=[];
-  const responses=[ga([12,18,25]),ga([5,6,7],'20261116'),ga([4,3],'Organic Search'),ga([8],'/salesforce?email=private'),ga([2],'/ai-solutions'),ga([1],'consultation_booked')];
+  const responses=[ga([12,18,25]),ga([5,6,7],'20261116'),ga([4,3],'Organic Search'),ga([8],'/salesforce?email=private'),ga([2],'/ai-solutions'),ga([1],'consultation_booked'),ga([1],'20261116 / consultation_booked')];
   const data=await ga4Report('564904776',range,async(url,body)=>{calls.push({url,body});return responses[calls.length-1];});
-  assert.equal(calls.length,6);assert(calls.every(c=>c.url.includes('/properties/564904776:runReport')));
+  assert.equal(calls.length,7);assert(calls.every(c=>c.url.includes('/properties/564904776:runReport')));
   assert.deepEqual(data.overview.rows[0].values,[12,18,25]);assert.equal(data.pages.rows[0].path,'/salesforce');
   assert(!JSON.stringify(data).includes('email=private'));assert(JSON.stringify(calls[4]).includes('service_engagement'));assert(JSON.stringify(calls[5]).includes('consultation_booked'));
   assert(!JSON.stringify(calls).includes('customEvent:')); // No custom-dimension setup prerequisite.
@@ -164,4 +164,46 @@ test('marketing schema separates tenants, rejects cross-tenant evidence and has 
   assert.match(sql,/s\.id=.*session_id/);assert.match(sql,/aal2/);assert.match(sql,/security definer set search_path = ''/);
   assert.match(sql,/foreign key\(tenant_id,report_id\)/);assert.match(sql,/revoke all[\s\S]*from anon,authenticated/);
   assert(!/alter table public\.scout_/.test(sql));assert(!/grant (insert|update|delete).*marketing_artifacts to authenticated/.test(sql));
+});
+
+test('preceding reporting periods have equal length and never overlap the selected period',()=>{
+ const {previousReportingRange}=load('src/lib/marketing/ranges.ts');
+ for(const days of [7,28,90]){
+  const range={days,start:'2026-11-01',end:new Date(Date.UTC(2026,10,days)).toISOString().slice(0,10)};
+  const prior=previousReportingRange(range);assert.equal(prior.end,'2026-10-31');
+  assert.equal((Date.parse(prior.end)-Date.parse(prior.start))/86400000+1,days);
+ }
+});
+test('demo data is deterministic, isolated and internally derived, never an agent execution',()=>{
+ const {demoReport}=load('src/components/marketing/demo.ts');
+ for(const days of [7,28,90]){
+  const data=demoReport(days);assert.deepEqual(data,demoReport(days));assert.equal(data.ga4.data.daily.rows.length,days);
+  assert.equal(data.ga4.data.overview.rows[0].values[1],data.ga4.data.daily.rows.reduce((n,r)=>n+r.values[1],0));
+  assert.equal(data.search.data.overview.rows[0].values[2],data.search.data.overview.rows[0].values[0]/data.search.data.overview.rows[0].values[1]);
+  assert.equal(data.ga4.persisted,false);assert.equal(data.ga4.updatedAt,null);assert.match(data.ga4.message,/Simulated/);
+ }
+ for(const file of ['src/lib/marketing/reports.ts','src/lib/marketing/providers.ts','src/app/api/admin/marketing/route.ts'])assert(!readFileSync(file,'utf8').includes('demoReport'));
+});
+test('metric formatting distinguishes unavailable results, true zero and meaningful comparisons',()=>{
+ const {metric,formatted,comparison,eventValue}=load('src/components/marketing/report-utils.ts');
+ assert.equal(formatted(undefined,'Sessions'),'—');assert.equal(formatted(0,'Sessions'),'0');assert.equal(formatted(.045,'CTR'),'4.5%');
+ assert.equal(metric(undefined,'Sessions'),undefined);assert.equal(eventValue(undefined,'consultation_booked'),undefined);
+ assert.equal(eventValue({columns:['Event count'],rows:[]},'consultation_booked'),0);
+ assert.match(comparison(3,1,'Sessions'),/More data/);assert.equal(comparison(120,100,'Sessions'),'+20.0% vs previous period');
+});
+test('activity API denies unauthenticated access before any private database query',async()=>{
+ const route=load('src/app/api/admin/marketing/activity/route.ts',{'./config':config,'@/lib/marketing/config':config,'@/lib/marketing/auth':{ownerAuth:async()=>({}),requireOwner:async()=>{throw new config.MarketingError(401,'Please sign in.');}}});
+ const response=await route.GET(new Request('https://site.invalid/api/admin/marketing/activity'));assert.equal(response.status,401);assert.match(response.headers.get('cache-control'),/no-store/);
+});
+test('activity uses explicit tenant filters and returns metadata only',async()=>{
+ const reads=[];const db={from(table){const q={select(columns){reads.push({table,columns});return q;},eq(k,v){assert.equal(k,'tenant_id');assert.equal(v,config.marketingTenant);return q;},order(){return q;},limit(){return Promise.resolve({data:[],error:null});}};return q;}};
+ const route=load('src/app/api/admin/marketing/activity/route.ts',{'./config':config,'@/lib/marketing/config':config,'@/lib/marketing/auth':{ownerAuth:async()=>db,requireOwner:async()=>({db,tenantId:config.marketingTenant})}});
+ const response=await route.GET(new Request('https://site.invalid/api/admin/marketing/activity'));assert.equal(response.status,200);assert.deepEqual(await response.json(),{reports:[],executions:[],artifacts:[]});
+ assert.equal(reads.length,3);assert(reads.every(r=>!/(payload|diagnostics|config|usage)/.test(r.columns)));
+});
+
+test('chart spacing preserves real date gaps and centers a single observation',()=>{
+ const {seriesPositions}=load('src/components/marketing/report-utils.ts');
+ assert.deepEqual(seriesPositions(['20261101','20261102','20261111']),[0,.1,1]);
+ assert.deepEqual(seriesPositions(['2026-11-01']),[.5]);assert.deepEqual(seriesPositions([]),[]);
 });

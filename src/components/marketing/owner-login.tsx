@@ -1,5 +1,6 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import styles from './marketing.module.css';
 
@@ -31,8 +32,9 @@ export function OwnerLogin() {
     finally{setBusy(false);}
   }
   return <section className={styles.login} aria-labelledby="owner-title">
-    <p className={styles.eyebrow}>PRIVATE OWNER ACCESS</p><h1 id="owner-title">Marketing intelligence.</h1>
-    <p className={styles.muted}>Secure access to your website’s traffic, search performance and consultation activity.</p>
+    <Link className={styles.loginBrand} href="/" aria-label="The Augmented Architect home">AA<span>THE AUGMENTED ARCHITECT</span></Link>
+    <p className={styles.eyebrow}>THE AUGMENTED ARCHITECT · PRIVATE WORKSPACE</p><h1 id="owner-title">Secure Workspace Login</h1>
+    <p className={styles.muted}>Sign in to access your private business workspace.</p>
     {stage==='loading'&&<p role="status">Checking your session…</p>}
     {stage==='login'&&<form onSubmit={event=>{event.preventDefault();const form=event.currentTarget,data=new FormData(form);void action({action:'login',email:data.get('email'),password:data.get('password')});form.reset();}}>
       <label htmlFor="owner-email">Owner email</label><input id="owner-email" name="email" type="email" autoComplete="username" required disabled={busy}/>

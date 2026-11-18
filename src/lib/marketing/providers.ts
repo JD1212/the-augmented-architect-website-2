@@ -35,7 +35,7 @@ export async function ga4Report(property: string, range: DateRange, request = re
     dateRanges: [{ startDate: range.start, endDate: range.end }],
     dimensions: dimensions.map(name => ({ name })), metrics: metrics.map(name => ({ name })), limit: '1000', ...extra,
   }) as GAResponse;
-  const [overview, daily, acquisition, pages, services, conversions] = await Promise.all([
+  const [overview, daily, acquisition, pages, services, conversions, conversionDaily] = await Promise.all([
     run([], ['activeUsers', 'sessions', 'screenPageViews']),
     run(['date'], ['activeUsers', 'sessions', 'screenPageViews'], { orderBys: [{ dimension: { dimensionName: 'date' } }] }),
     run(['sessionDefaultChannelGroup','sessionSourceMedium'], ['sessions','activeUsers'], { orderBys: [{ metric: { metricName: 'sessions' }, desc: true }] }),
@@ -45,8 +45,9 @@ export async function ga4Report(property: string, range: DateRange, request = re
       { filter: { fieldName: 'pagePath', inListFilter: { values: ['/ai-solutions','/salesforce','/custom-applications'] } } },
     ] } } }),
     run(['eventName'], ['eventCount'], { dimensionFilter: { filter: { fieldName: 'eventName', inListFilter: { values: ['scout_open','consultation_start','consultation_booked'] } } } }),
+    run(['date','eventName'], ['eventCount'], { dimensionFilter: { filter: { fieldName: 'eventName', inListFilter: { values: ['scout_open','consultation_start','consultation_booked'] } } }, orderBys: [{ dimension: { dimensionName: 'date' } }] }),
   ]);
-  const responses = [overview,daily,acquisition,pages,services,conversions];
+  const responses = [overview,daily,acquisition,pages,services,conversions,conversionDaily];
   const notes = [
     `GA4 dates use the property's reporting timezone${overview.metadata?.timeZone ? ': '+overview.metadata.timeZone : ''}. Active users are distinct within each reported period; daily users must not be summed.`,
     'Consultation bookings are consented browser events, not the complete first-party booking ledger. Starts and Scout opens are not bookings.',
@@ -61,7 +62,7 @@ export async function ga4Report(property: string, range: DateRange, request = re
     acquisition: gaTable(acquisition,['Sessions','Active users']),
     pages: mergePageRows(gaTable(pages,['Sessions'],true)),
     services: gaTable(services,['Engagement events'],true),
-    conversions: gaTable(conversions,['Event count']), notes,
+    conversions: gaTable(conversions,['Event count']), conversionDaily: gaTable(conversionDaily,['Event count']), notes,
   };
 }
 function searchTable(response: SearchResponse, grouped: boolean, paths = false): ReportTable {

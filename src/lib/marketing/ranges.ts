@@ -16,3 +16,9 @@ export function publicPath(value: string): string | undefined {
     return /^\/(admin|api)(\/|$)/.test(path) ? undefined : path;
   } catch { return undefined; }
 }
+
+export function previousReportingRange(range: DateRange): DateRange {
+  const end = new Date(range.start+'T00:00:00Z'); end.setUTCDate(end.getUTCDate()-1);
+  const start = new Date(end); start.setUTCDate(start.getUTCDate()-range.days+1);
+  return {days:range.days,start:start.toISOString().slice(0,10),end:end.toISOString().slice(0,10)};
+}

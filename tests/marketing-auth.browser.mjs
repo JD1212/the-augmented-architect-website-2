@@ -45,7 +45,7 @@ try{
  const page=await(await fetch(origin+'/admin/marketing')).text();check(!page.includes('Top search queries')&&page.includes('/admin/login'),'Server-protected dashboard reveals no private data before login');
  browser=spawn(chrome(),['--headless','--no-sandbox','--remote-debugging-port=21302','--user-data-dir='+out+'/profile','about:blank'],{stdio:'ignore'});
  let targets;for(let i=0;i<150;i++){try{targets=await(await fetch('http://localhost:21302/json')).json();if(targets.length)break;}catch{}await sleep(100);}assert(targets?.length);
- ws=new WebSocket(targets[0].webSocketDebuggerUrl);await new Promise((r,j)=>{ws.onopen=r;ws.onerror=j});let id=0;const pending=new Map(),errors=[];let fixture=false,requestedDays=[];
+ ws=new WebSocket(targets[0].webSocketDebuggerUrl);await new Promise((r,j)=>{ws.onopen=r;ws.onerror=j});let id=0;const pending=new Map(),errors=[];let fixture=false,requestedDays=[],reportRequests=0;
  const metric=(columns,values,label='Selected period')=>({columns,rows:[{label,values}]});
  const ga4={overview:metric(['Active users','Sessions','Page views'],[18,24,35]),daily:metric(['Active users','Sessions','Page views'],[18,24,35],'20261116'),pages:metric(['Sessions'],[24],'/salesforce'),acquisition:metric(['Sessions','Active users'],[24,18],'Organic Search / google / organic'),services:metric(['Engagement events'],[7],'/salesforce'),conversions:metric(['Event count'],[1],'consultation_booked'),notes:['Fixture aggregate values for layout verification only.']};
  const search={overview:metric(['Clicks','Impressions','CTR','Avg. position'],[5,100,.05,8.2]),daily:metric(['Clicks','Impressions','CTR','Avg. position'],[5,100,.05,8.2],'2026-11-16'),pages:metric(['Clicks','Impressions','CTR','Avg. position'],[5,100,.05,8.2],'/salesforce'),queries:metric(['Clicks','Impressions','CTR','Avg. position'],[5,100,.05,8.2],'salesforce modernization'),notes:['Fixture search data, not production statistics.']};
@@ -54,7 +54,8 @@ try{
  const send=(method,params={})=>new Promise((resolve,reject)=>{const key=++id;pending.set(key,{resolve,reject});ws.send(JSON.stringify({id:key,method,params}));});
  ws.onmessage=event=>{const message=JSON.parse(event.data);if(message.id){const p=pending.get(message.id);pending.delete(message.id);if(message.error)p.reject(message.error);else p.resolve(message.result);}
    if(message.method==='Runtime.exceptionThrown')errors.push('runtime exception');
-   if(message.method==='Fetch.requestPaused')void(async()=>{const p=message.params,url=new URL(p.request.url);if(url.pathname==='/api/admin/marketing'&&fixture){const days=url.searchParams.get('days');requestedDays.push(days);const body=fixture==='error'?{error:'Reporting service unavailable for this fixture.'}:fixture==='empty'?{...report(days),ga4:{...source({...ga4,overview:{columns:ga4.overview.columns,rows:[]},daily:{columns:ga4.daily.columns,rows:[]}}),status:'empty',message:'No reportable data yet.'}}:report(days);await send('Fetch.fulfillRequest',{requestId:p.requestId,responseCode:fixture==='error'?503:200,responseHeaders:[{name:'Content-Type',value:'application/json'},{name:'Cache-Control',value:'private, no-store'}],body:Buffer.from(JSON.stringify(body)).toString('base64')});}
+   if(message.method==='Fetch.requestPaused')void(async()=>{const p=message.params,url=new URL(p.request.url);if(url.pathname==='/api/admin/marketing/activity'&&fixture){await send('Fetch.fulfillRequest',{requestId:p.requestId,responseCode:200,responseHeaders:[{name:'Content-Type',value:'application/json'}],body:Buffer.from(JSON.stringify({reports:[],executions:[],artifacts:[]})).toString('base64')});}
+    else if(url.pathname==='/api/admin/marketing'&&fixture){const days=url.searchParams.get('days');requestedDays.push(days);reportRequests++;const body=fixture==='error'?{error:'Reporting service unavailable for this fixture.'}:fixture==='empty'?{...report(days),ga4:{...source({...ga4,overview:{columns:ga4.overview.columns,rows:[]},daily:{columns:ga4.daily.columns,rows:[]}}),status:'empty',message:'No reportable data yet.'}}:report(days);await send('Fetch.fulfillRequest',{requestId:p.requestId,responseCode:fixture==='error'?503:200,responseHeaders:[{name:'Content-Type',value:'application/json'},{name:'Cache-Control',value:'private, no-store'}],body:Buffer.from(JSON.stringify(body)).toString('base64')});}
     else if(url.pathname.startsWith('/api/scout')||url.pathname.startsWith('/api/booking')||url.hostname.includes('google-analytics.com')||url.hostname.includes('googletagmanager.com'))await send('Fetch.failRequest',{requestId:p.requestId,errorReason:'BlockedByClient'});
     else await send('Fetch.continueRequest',{requestId:p.requestId});})().catch(()=>errors.push('interception failure'));};
  const ev=async expression=>{const r=await send('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});if(r.exceptionDetails)throw Error('Browser evaluation failed');return r.result.value;};
@@ -65,27 +66,58 @@ try{
  await send('Page.addScriptToEvaluateOnNewDocument',{source:"localStorage.setItem('aa.analytics.consent.v1',JSON.stringify({version:1,choice:'denied',expires:Date.now()+86400000}));"});
  await send('Page.navigate',{url:origin+'/admin/login'});await until("!!document.querySelector('#owner-email')");
  check(await ev("document.querySelector('meta[name=robots]').content.includes('noindex')"),'Owner login is noindex');
- await fill('#owner-email',email);await fill('#owner-password',password);await button('Sign in securely');await until("location.pathname==='/admin/marketing'&&document.body.textContent.includes('Configure the numeric GA4')");
+ await fill('#owner-email',email);await fill('#owner-password',password);await button('Sign in securely');await until("location.pathname==='/admin/marketing'&&document.body.textContent.includes('Your business, in focus.')&&!document.querySelector('[aria-busy=true]')");
  check(!await ev("!!document.querySelector('#owner-code')"),'Existing verified factor does not force MFA when the owner has not opted in');
  const cookies=await send('Network.getCookies',{urls:[origin]});const authCookies=cookies.cookies.filter(c=>c.name.startsWith('aa-owner-auth'));check(authCookies.length>0&&authCookies.every(c=>c.httpOnly&&c.secure&&c.sameSite==='Lax'),'Auth cookies are HttpOnly, Secure and SameSite=Lax');
  check(await ev("(async()=>{const r=await fetch('/api/admin/marketing');const j=await r.json();return r.ok&&j.ga4.status==='not_configured'&&j.search.status==='not_configured'})()"),'Password login opens the private dashboard directly with honest setup states');
- for(const width of [1440,1280,1191,1100,1051,390]){
-   await send('Emulation.setDeviceMetricsOverride',{width,height:1000,deviceScaleFactor:1,mobile:width===390});
-   const menu=await ev("document.querySelector('.menu-toggle').checkVisibility()");if(menu)await ev("document.querySelector('.menu-toggle').click()");
-   check(await ev("(()=>{const a=document.querySelector('.header-signin'),r=a.getBoundingClientRect();return a.getAttribute('href')==='/admin/login'&&a.checkVisibility()&&r.height>=44&&r.left>=0&&r.right<=innerWidth&&document.documentElement.scrollWidth===innerWidth})()"),'Discreet Sign in link fits and remains accessible '+width);
-   if(menu)await ev("document.querySelector('.menu-toggle').click()");
- }
+ check(!await ev("!!document.querySelector('.site-header')||!!document.querySelector('.site-footer')||!!document.querySelector('[aria-label=\"Open Scout\"]')"),'Private workspace never mounts public navigation, footer or Scout');
  fixture=true;
- for(const width of [1440,390]){
+ for(const width of [1440,1024,390]){
    await send('Emulation.setDeviceMetricsOverride',{width,height:width===390?844:1000,deviceScaleFactor:1,mobile:width===390});
-   await button('Refresh reports');await until("document.body.textContent.includes('salesforce modernization')&&!document.querySelector('[aria-busy=true]')");
+   await ev("document.querySelector('button[aria-label=\"Refresh reports\"]').click()");await until("!document.querySelector('[aria-busy=true]')&&document.body.textContent.includes('18')");
    check(await ev('document.documentElement.scrollWidth===innerWidth'),'Dashboard has no horizontal page overflow '+width);
-   check(await ev("!!document.querySelector('svg[aria-label*=trend]')&&document.querySelectorAll('table').length>=6"),'Real component charts and accessible reporting tables render '+width);
+   check(await ev("!!document.querySelector('svg[aria-label*=trend]')&&document.querySelectorAll('table').length>=1"),'Accessible charts and reporting tables render '+width);
+   if(width===390){await button('Explore Demo Mode');await until("document.body.textContent.includes('Demo Mode · Simulated data')");}
    const shot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});await writeFile(out+'/dashboard-'+width+'-fixture.png',Buffer.from(shot.data,'base64'));
+   if(width===390){
+     await ev("document.querySelector('a[href=\"?view=search\"]').click()");await until("document.body.textContent.includes('Top search queries')");
+     check(await ev('document.documentElement.scrollWidth===innerWidth'),'Mobile search charts and tables fit the viewport');
+     await ev("(()=>{const r=document.querySelector('input[type=range]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(r,'4');r.dispatchEvent(new Event('input',{bubbles:true}));r.dispatchEvent(new Event('change',{bubbles:true}));})()");
+     check(await ev("document.querySelector('input[type=range]').getAttribute('aria-valuetext').includes(':')"),'Chart explorer exposes exact day and value accessibly');
+     await ev("document.querySelector('[id=workspace-main]').scrollTop=450");const mobileChart=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});await writeFile(out+'/search-mobile-demo.png',Buffer.from(mobileChart.data,'base64'));
+     await ev("document.querySelector('a[href=\"?view=agents\"]').click()");await until("document.querySelectorAll('svg[aria-label*=illustrated]').length===3");
+     check(await ev('document.documentElement.scrollWidth===innerWidth'),'Planned agent cards stack cleanly on mobile');
+     await ev("document.querySelector('[id=workspace-main]').scrollTop=400");const mobileAgents=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});await writeFile(out+'/agents-mobile.png',Buffer.from(mobileAgents.data,'base64'));
+     await ev("document.querySelector('a[href=\"?view=overview\"]').click()");await until("document.body.textContent.includes('Your business, in focus.')");
+     await ev("[...document.querySelectorAll('button')].find(b=>b.getAttribute('aria-label')==='Open workspace menu').click()");check(await ev("document.querySelector('dialog').open"),'Mobile workspace menu opens a modal navigation');await send('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});await until("!document.querySelector('dialog').open");check(true,'Escape dismisses mobile navigation');await button('Return to live data');await until("!document.querySelector('[aria-busy=true]')");}
  }
- for(const days of ['7','90','28']){await ev(`(()=>{const s=document.querySelector('#marketing-range');Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(s,${JSON.stringify(days)});s.dispatchEvent(new Event('change',{bubbles:true}));})()`);await until("!document.body.textContent.includes('Retrieving private reports')");await sleep(300);check(requestedDays.includes(days),'Date selection requests supported range '+days);}
- fixture='empty';await button('Refresh reports');await until("document.body.textContent.includes('No reportable data yet.')");check(await ev("document.body.textContent.includes('Missing dates are not invented as zero.')"),'Empty report state explains absent data without manufactured trend');
- fixture='error';await button('Refresh reports');await until("!!document.querySelector('[role=alert]')");check(await ev("document.querySelector('[role=alert]').textContent.includes('unavailable')"),'Provider/API failure is recoverable and clearly disclosed');
+ await send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
+ await button('Explore Demo Mode');await sleep(500);const beforeDemo=reportRequests;
+ await ev("document.querySelector('a[href=\"?view=search\"]').click()");await until("document.body.textContent.includes('Top search queries')");
+ check(await ev("document.body.textContent.includes('Simulated data')&&document.body.textContent.includes('business AI architecture')"),'Demo search reports are explicitly simulated');
+ await ev("document.querySelector('a[href=\"?view=conversions\"]').click()");await until("document.body.textContent.includes('Booking activity over time')");
+ check(await ev("document.body.textContent.includes('consented GA4 events')"),'Conversion counts preserve the distinction from first-party appointments');
+ await ev("document.querySelector('a[href=\"?view=agents\"]').click()");await until("document.body.textContent.includes('SEO Analyst')");
+ check(await ev("document.querySelectorAll('svg[aria-label*=illustrated]').length===3&&document.body.textContent.includes('No executions yet')"),'Three distinct planned agent identities render without fabricated activity');
+ const agentsShot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});await writeFile(out+'/agents-desktop.png',Buffer.from(agentsShot.data,'base64'));
+ await ev("document.querySelector('a[aria-label=\"View SEO Analyst\"]').click()");await until("document.body.textContent.includes('Usage & operating cost')");
+ check(await ev("document.body.textContent.includes('Not available')&&document.body.textContent.includes('Not connected')"),'Reusable agent detail honestly reports unavailable usage and runtime');
+ await ev("document.querySelector('a[href=\"?view=activity\"]').click()");await until("document.body.textContent.includes('Demo Mode does not load production activity')");
+ check(reportRequests===beforeDemo,'Demo navigation makes no reporting requests or production writes');
+ await ev("document.querySelector('a[href=\"?view=overview\"]').click()");await until("document.body.textContent.includes('Your business, in focus.')");
+ const demoShot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});await writeFile(out+'/overview-demo-desktop.png',Buffer.from(demoShot.data,'base64'));
+ await button('Return to live data');await until("!document.querySelector('[aria-busy=true]')");
+ check(!await ev("document.body.textContent.includes('Demo Mode · Simulated data')"),'Live mode clears simulated reports');
+ await button('Explore Demo Mode');await send('Page.reload');await until("!!document.querySelector('button[aria-pressed=false]')&&!document.querySelector('[aria-busy=true]')");
+ check(!await ev("document.body.textContent.includes('Demo Mode · Simulated data')"),'Refreshing always returns to genuine reporting, never persistent Demo Mode');
+ for(const key of ['analytics','search','conversions','agents','activity','integrations','settings']){
+  await ev(`document.querySelector('a[href="?view=${key}"]').click()`);await until(`location.search.includes('view=${key}')`);await sleep(150);
+  check(await ev('document.documentElement.scrollWidth===innerWidth'),'Workspace navigation renders '+key);
+ }
+ await ev("document.querySelector('a[href=\"?view=overview\"]').click()");await until("document.body.textContent.includes('Your business, in focus.')");
+ for(const days of ['7','90','28']){await ev(`(()=>{const s=document.querySelector('#marketing-range');Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(s,${JSON.stringify(days)});s.dispatchEvent(new Event('change',{bubbles:true}));})()`);await until("!document.querySelector('[aria-busy=true]')");await sleep(300);check(requestedDays.includes(days),'Date selection requests supported range '+days);}
+ fixture='empty';await ev("document.querySelector('button[aria-label=\"Refresh reports\"]').click()");await until("document.body.textContent.includes('Missing dates are not invented as zero.')");check(true,'Empty report state explains absent data without manufactured trend');
+ fixture='error';await ev("document.querySelector('button[aria-label=\"Refresh reports\"]').click()");await until("!!document.querySelector('[role=alert]')");check(await ev("document.querySelector('[role=alert]').textContent.includes('unavailable')"),'Provider/API failure is recoverable and clearly disclosed');
  fixture=false;await button('Sign out');await until("location.pathname==='/admin/login'&&!!document.querySelector('#owner-email')");
  check(await ev("(async()=>{const r=await fetch('/api/admin/marketing');return r.status===401})()"),'Sign out removes browser access to private API');
  check(!await ev("document.body.textContent.includes('salesforce modernization')"),'Private report contents absent after sign out');
@@ -95,9 +127,11 @@ try{
  check(await ev("document.body.textContent.includes('Temporary QA authenticator')&&!document.querySelector('img[alt*=enrollment]')"),'Opted-in account identifies its existing factor without issuing a replacement QR');
  check(await ev("(async()=>{const r=await fetch('/api/admin/marketing');return r.status===403})()"),'Opted-in MFA policy blocks password-only report access');
  await button('I can’t access my authenticator');check(await ev("document.querySelector('#owner-mfa-recovery').textContent.includes('verified Supabase project administrator')"),'Recovery help requires administrator verification and provides no bypass');
- await sleep(30500-(Date.now()%30000));await fill('#owner-code',totp(secret));await button('Verify and open dashboard');await until("location.pathname==='/admin/marketing'&&document.body.textContent.includes('Configure the numeric GA4')");
+ await sleep(30500-(Date.now()%30000));await fill('#owner-code',totp(secret));await button('Verify and open dashboard');await until("location.pathname==='/admin/marketing'&&document.body.textContent.includes('Your business, in focus.')&&!document.querySelector('[aria-busy=true]')");
  check(await ev("(async()=>{const r=await fetch('/api/admin/marketing');return r.ok})()"),'Optional MFA verification still unlocks the same securely scoped dashboard');
  await button('Sign out');await until("location.pathname==='/admin/login'&&!!document.querySelector('#owner-email')");
+ await send('Page.navigate',{url:origin+'/'});await until("!!document.querySelector('.site-footer')");
+ check(await ev("!document.querySelector('.site-header').textContent.includes('Sign in')&&[...document.querySelectorAll('.site-footer a')].some(a=>a.textContent==='Company Login'&&a.getAttribute('href')==='/admin/login')"),'Public login is discreetly in the footer, absent from the header');
  check(errors.length===0,'No browser runtime errors');
  check(!prerenderError,'No Auth SDK clock/prerender errors in the production server');
  await writeFile(out+'/results.json',JSON.stringify({checks,fixtureScreenshots:true,realEmails:0,realAppointments:0},null,2));console.log(JSON.stringify({checks:checks.length,out,realEmails:0,realAppointments:0}));
