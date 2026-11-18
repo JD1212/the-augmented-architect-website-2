@@ -4,6 +4,7 @@ export const workspaceViews = [
   ['search','Search Intelligence','Turn visibility into opportunity.'],
   ['conversions','Conversions','From interest to intent.'],
   ['agents','AI Agents','Meet your intelligence team.'],
+  ['opportunities','Opportunity Backlog','Turn research into approved work.'],
   ['activity','Activity','An accountable record.'],
   ['integrations','Integrations','Connected. Read-only. Secure.'],
   ['settings','Settings','Your private workspace.'],

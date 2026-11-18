@@ -27,7 +27,7 @@ function totp(secret){
 }
 const port=await new Promise(resolve=>{const server=createServer();server.listen(0,'127.0.0.1',()=>{const port=server.address().port;server.close(()=>resolve(port));});});
 const origin='http://localhost:'+port,out=join(tmpdir(),'aa-marketing-review',String(Date.now()));await mkdir(out,{recursive:true});
-let userId,server,browser,ws,prerenderError=false;const checks=[];const check=(value,label)=>{assert(value,label);checks.push(label);console.log('PASS '+label);};
+let userId,server,browser,ws,fixtureAgentId,prerenderError=false;const checks=[];const check=(value,label)=>{assert(value,label);checks.push(label);console.log('PASS '+label);};
 try{
  const email='marketing-qa-'+randomUUID()+'@example.invalid',password=randomBytes(32).toString('base64url')+'aA1!';
  const created=await db.auth.admin.createUser({email,password,email_confirm:true});assert(!created.error,'Temporary Auth user creation failed');userId=created.data.user.id;
@@ -95,6 +95,27 @@ try{
      await ev("[...document.querySelectorAll('button')].find(b=>b.getAttribute('aria-label')==='Open workspace menu').click()");check(await ev("document.querySelector('dialog').open"),'Mobile workspace menu opens a modal navigation');await send('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});await until("!document.querySelector('dialog').open");check(true,'Escape dismisses mobile navigation');await button('Return to live data');await until("!document.querySelector('[aria-busy=true]')");}
  }
  await send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
+ // Real scoped persistence for isolated, explicitly labelled backlog QA records.
+ // This never invokes an agent or Google API; all fixture artifacts are removed in finally.
+ fixtureAgentId=randomUUID();const fixtureExecutionId=randomUUID(),fixtureOpportunityId=randomUUID(),fixtureFindingId=randomUUID(),fixtureEvidenceId=randomUUID();
+ const addedAgent=await db.from('marketing_agents').insert({id:fixtureAgentId,tenant_id:tenant,name:'Backlog QA '+fixtureAgentId,version:'fixture',instructions_version:'fixture',enabled:false});assert(!addedAgent.error);
+ const addedExecution=await db.from('marketing_executions').insert({id:fixtureExecutionId,tenant_id:tenant,agent_id:fixtureAgentId,state:'completed',usage:{receipts:[],measuredCost:null},diagnostics:{fixture:true}});assert(!addedExecution.error);
+ const qaFinding={change:'new',existingOpportunityId:null,priority:1,title:'QA opportunity — fixture only',targetCustomer:'Test administrators',searchIntent:'Fixture discovery',supportingEvidence:'Isolated QA evidence, not a real research finding.',recommendedAction:'Prepare a fixture guide for review.',businessRelevance:'Tests the owner review workflow only.',confidence:'low',limitations:['Fixture data, not market evidence.'],basis:'external_research',requiresOwnerReview:true,evidenceIds:['qa-external'],sourceUrls:['https://architect.salesforce.com/'],evidenceArtifactId:fixtureEvidenceId};
+ const qaEvidence={id:'qa-external',kind:'external_research',title:'QA reference fixture',content:'Isolated QA evidence.',retrievedAt:new Date().toISOString(),status:'connected',hasActualSearchData:false,sources:[{url:'https://architect.salesforce.com/',title:'Reference for fixture links'}]};
+ const insertedArtifacts=await db.from('marketing_artifacts').insert([{id:fixtureOpportunityId,kind:'opportunity',title:qaFinding.title,payload:qaFinding},{id:fixtureFindingId,kind:'recommendation',title:qaFinding.title,payload:qaFinding,parent_id:fixtureOpportunityId},{id:fixtureEvidenceId,kind:'measurement',title:'QA evidence fixture',payload:{documents:[qaEvidence]}}].map(a=>({...a,tenant_id:tenant,execution_id:fixtureExecutionId,actor_id:userId})));assert(!insertedArtifacts.error);
+ await ev("document.querySelector('a[href=\"?view=opportunities\"]').click()");await until("document.body.textContent.includes('QA opportunity — fixture only')");
+ await ev(`document.querySelector('a[href="?view=opportunities&opportunity=${fixtureOpportunityId}"]').click()`);await until("document.querySelector('#opportunity-title')?.textContent==='QA opportunity — fixture only'");
+ await ev("(()=>{const el=document.querySelector('#opportunity-note');Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(el,'QA owner note: draft only.');el.dispatchEvent(new Event('input',{bubbles:true}));})()");
+ await button('Approve for drafting');await until("document.body.textContent.includes('Ready for drafting · not dispatched')");
+ const approved=await ev(`(async()=>{const b=await(await fetch('/api/admin/marketing/opportunities?id=${fixtureOpportunityId}')).json();return {status:b.opportunity.status,note:b.opportunity.reviews[0].note,actor:b.opportunity.reviews[0].actorId,publish:b.assignment.approvalRequirements.publishingAuthorized,spend:b.assignment.approvalRequirements.spendingAuthorized}})()`);
+ check(approved.status==='approved_for_drafting'&&approved.note==='QA owner note: draft only.'&&approved.actor===userId&&approved.publish===false&&approved.spend===false,'Backlog approval persists with owner identity, note and a draft-only assignment');
+ await send('Page.reload');await until("document.body?.textContent.includes('Ready for drafting · not dispatched')");check(true,'Backlog approval and assignment survive a full browser refresh');
+ for(const width of [1440,390]){await send('Emulation.setDeviceMetricsOverride',{width,height:width===390?844:1000,deviceScaleFactor:1,mobile:width===390});check(await ev('document.documentElement.scrollWidth===innerWidth'),'Opportunity backlog fits '+width);await ev("document.querySelector('#workspace-main').scrollTop=600");const shot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});await writeFile(out+'/opportunity-backlog-'+width+'.png',Buffer.from(shot.data,'base64'));}
+ await button('Reject');await until("!![...document.querySelectorAll('button')].find(b=>b.textContent==='Reopen for review')");check(!await ev("document.body.textContent.includes('Ready for drafting · not dispatched')"),'Rejection withdraws the drafting handoff without deleting evidence');
+ await button('Reopen for review');await until("!![...document.querySelectorAll('button')].find(b=>b.textContent==='Approve for drafting')");await button('Defer');await until("!![...document.querySelectorAll('button')].find(b=>b.textContent==='Reopen for review')");
+ const deferred=await ev(`(async()=>{const b=await(await fetch('/api/admin/marketing/opportunities?id=${fixtureOpportunityId}')).json();return {status:b.opportunity.status,decisions:b.opportunity.reviews.length}})()`);check(deferred.status==='deferred'&&deferred.decisions===4,'Reject, reopen and defer persist an append-only four-decision history');
+ await button('Explore Demo Mode');await until("document.body.textContent.includes('Live research and review controls are hidden in Demo Mode')");check(!await ev("!!document.querySelector('#opportunity-note')"),'Demo cannot reveal real opportunities or issue owner review mutations');await button('Return to live data');await until("document.body.textContent.includes('QA opportunity — fixture only')");
+ await send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
  await button('Explore Demo Mode');await sleep(500);const beforeDemo=reportRequests;
  await ev("document.querySelector('a[href=\"?view=search\"]').click()");await until("document.body.textContent.includes('Top search queries')");
  check(await ev("document.body.textContent.includes('Simulated data')&&document.body.textContent.includes('business AI architecture')"),'Demo search reports are explicitly simulated');
@@ -153,5 +174,7 @@ try{
  await writeFile(out+'/results.json',JSON.stringify({checks,fixtureScreenshots:true,realEmails:0,realAppointments:0},null,2));console.log(JSON.stringify({checks:checks.length,out,realEmails:0,realAppointments:0}));
 }finally{
  ws?.close();browser?.kill('SIGTERM');server?.kill('SIGTERM');await auth.auth.signOut().catch(()=>{});
+ if(userId){const removed=await db.from('marketing_artifacts').delete().eq('tenant_id',tenant).eq('actor_id',userId);assert(!removed.error,'QA artifact cleanup failed');}
+ if(fixtureAgentId){const executions=await db.from('marketing_executions').delete().eq('tenant_id',tenant).eq('agent_id',fixtureAgentId);assert(!executions.error,'QA execution cleanup failed');const agent=await db.from('marketing_agents').delete().eq('tenant_id',tenant).eq('id',fixtureAgentId);assert(!agent.error,'QA agent cleanup failed');console.log('Isolated backlog QA artifacts, execution and agent removed.');}
  if(userId){const removed=await db.auth.admin.deleteUser(userId);assert(!removed.error,'Temporary QA Auth user cleanup failed');console.log('Temporary Auth user and membership removed.');}
 }

@@ -1,9 +1,9 @@
 {
   "name": "@augmented-architect/seo-analyst",
-  "version": "0.1.5",
+  "version": "0.2.0",
   "repository": "https://github.com/JD1212/augarch-seo-analyst",
-  "sourceCommit": "49694943e637df314a27309d972029ae4ca45de5",
-  "sourceTag": "v0.1.5",
-  "artifact": "augmented-architect-seo-analyst-0.1.5.tgz",
-  "integrity": "sha512-c4pbduZAcLRP8Zr4j0+znTiuFuh3JLKP1dxFtUMrQenkrvU9t0hkeWdp41n3GRumq8ldWMlDj1DtfIxXgETW5A=="
+  "sourceCommit": "b715a0647554ce0c798c6a1bfb39da55282d4d29",
+  "sourceTag": "v0.2.0",
+  "artifact": "augmented-architect-seo-analyst-0.2.0.tgz",
+  "integrity": "sha512-JuK16bVBzI8qUd3oCpGdejfmu/aV3K57/42KBnT6m7+qCfCRyiGgEceQcT5oXhjF+r2YBRJnVpP2igxcBR8xFg=="
 }

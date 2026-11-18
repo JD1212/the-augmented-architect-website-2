@@ -4,9 +4,9 @@
 
 - Source repository: https://github.com/JD1212/augarch-seo-analyst (private).
 - Local source: `/Users/jdburkholder/Documents/augarch-seo-analyst`, a separate sibling Git repository, not inside the website or Docker.
-- Package: `@augmented-architect/seo-analyst@0.1.5`, source commit `49694943e637df314a27309d972029ae4ca45de5`, tag `v0.1.5`.
+- Package: `@augmented-architect/seo-analyst@0.2.0`, source commit `b715a0647554ce0c798c6a1bfb39da55282d4d29`, tag `v0.2.0`.
 - Reusable modules: `src/contracts.ts` (configuration, ports, evidence, outputs, limits), `instructions.ts`, `validation.ts`, `run.ts` (OpenAI Agents SDK runner), `index.ts`. No Next.js, Supabase, Google credentials/properties, tenant IDs, or business identity in that project.
-- Integration artifact: `vendor/augmented-architect-seo-analyst-0.1.5.tgz`. Source revision and SHA-512 integrity are recorded in `vendor/seo-analyst.provenance.json` and package-lock. No private registry credentials are needed by Vercel.
+- Integration artifact: `vendor/augmented-architect-seo-analyst-0.2.0.tgz`. Source revision and SHA-512 integrity are recorded in `vendor/seo-analyst.provenance.json` and package-lock. No private registry credentials are needed by Vercel.
 
 ## Application adapters
 
@@ -60,4 +60,4 @@ Source inspection and a deterministic reconstructed fixture demonstrate a real a
 
 V0.1.5 adds typed validation rule/path diagnostics and a bounded reference-only snapshot on rejected results. The host stores fingerprints and public path displays, never URL query values/fragments, raw prompts, full provider bodies or rejected recommendation prose. The actual redacted failure-envelope fixture preserves known counts and missing diagnostic fields. The source-catalog regression is explicitly reconstructed. A mocked host-to-store regression verifies persistence of the precise redacted rule/path/reference mapping and provider receipts, lease release, and duplicate-request suppression.
 
-The approved release target for this correction is the protected `feature/seo-analyst-v1` Preview only. Package artifact SHA-512 must match both provenance and package-lock. Verification must not trigger a paid analysis: the owner will initiate one controlled run after Preview is Ready. Production remains unchanged until a real execution succeeds and its findings, evidence, history and measured token usage are verified.
+The citation correction was verified in protected Preview. The owner’s next execution, `d011de2d-003c-4033-81c7-9d8aa6c2fefc`, completed successfully under v0.1.5 with three persisted opportunities and evidence, 22,572 input tokens and 2,001 output tokens. Both failures remain unchanged. The subsequent v0.2.0 continuity and review release is documented in [opportunity-backlog.md](./opportunity-backlog.md); it requires protected Preview verification before Production and no further paid analysis for deterministic verification.

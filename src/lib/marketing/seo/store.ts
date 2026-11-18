@@ -6,6 +6,9 @@ import {MarketingError,marketingTenant} from '../config';
 import {seoRegistration,seoPolicy} from './config';
 import {usageSummary,type SeoPanelData,type SeoRun} from './contracts';
 import type {ReportSnapshot} from './tools';
+import {loadBacklog} from '../opportunities/repository';
+import {reconcileFinding,materiallyChanged,measuredEvidenceChanged} from '../opportunities/identity';
+import type {Opportunity} from '../opportunities/contracts';
 
 type AgentRow={id:string;tenant_id:string;name:string;version:string;enabled:boolean;config:Record<string,unknown>};
 type Lease={id:string;expiresAt:string};
@@ -63,14 +66,23 @@ export function createSeoStore(db:SupabaseClient,tenantId:string){
     const r=await db.from('marketing_executions').update({usage:usageSummary(receipts),diagnostics:{stage,actorId:executionActor,packageVersion:seoRegistration.version}}).eq('id',id).eq('tenant_id',tenantId).eq('state','running');if(r.error)fail();
   }
   async function complete(id:string,result:SeoResult,snapshots:ReportSnapshot[],actorId:string){
+    // The existing tenant execution lease serializes reconciliation and persistence.
+    // Read every accepted identity, including decisions omitted from bounded model context.
+    const backlog=await loadBacklog(db,tenantId),working=backlog.opportunities;
     const reportIds=new Map<string,string>();
     for(const s of snapshots){const reportId=uuid(id+':'+s.source),r=await db.from('marketing_reports').upsert({id:reportId,tenant_id:tenantId,source:s.source,property_id:s.propertyId,start_date:s.range.start,end_date:s.range.end,extracted_at:s.retrievedAt,payload:s.data},{onConflict:'id'});if(r.error)fail();reportIds.set(s.evidenceId,reportId);}
     const bundleId=uuid(id+':evidence');
     const bundle=await db.from('marketing_artifacts').upsert({id:bundleId,tenant_id:tenantId,kind:'measurement',title:'SEO research evidence bundle',execution_id:id,actor_id:actorId,payload:{documents:result.evidence,analysis:result.analysis,packageVersion:result.packageVersion,instructionsVersion:result.instructionsVersion,readOnly:true,requiresOwnerReview:true}},{onConflict:'id'});if(bundle.error)fail();
     for(const o of result.analysis.opportunities){
-      const opportunityId=uuid(id+':opportunity:'+o.priority),recommendationId=uuid(id+':recommendation:'+o.priority);
-      const opportunity=await db.from('marketing_artifacts').upsert({id:opportunityId,tenant_id:tenantId,kind:'opportunity',title:o.title,execution_id:id,actor_id:actorId,payload:{...o,evidenceArtifactId:bundleId,requiresOwnerReview:true}},{onConflict:'id'});if(opportunity.error)fail();
-      const recommendation=await db.from('marketing_artifacts').upsert({id:recommendationId,tenant_id:tenantId,kind:'recommendation',title:o.title,execution_id:id,parent_id:opportunityId,actor_id:actorId,payload:{...o,evidenceArtifactId:bundleId,requiresOwnerReview:true}},{onConflict:'id'});if(recommendation.error)fail();
+      const matched=reconcileFinding(o,working);
+      const previousBundle=matched.opportunity?.observations?.at(-1)?.evidenceArtifactId;
+      if(matched.opportunity&&!materiallyChanged(o,matched.opportunity.finding)&&!measuredEvidenceChanged(o,result.evidence,previousBundle?backlog.evidence[previousBundle]??[]:[]))continue;
+      const opportunityId=matched.opportunity?.id??uuid(id+':opportunity:'+o.priority),recommendationId=uuid(id+':recommendation:'+o.priority);
+      if(!matched.opportunity){
+        const opportunity=await db.from('marketing_artifacts').insert({id:opportunityId,tenant_id:tenantId,kind:'opportunity',title:o.title,execution_id:id,actor_id:actorId,payload:{...o,evidenceArtifactId:bundleId,requiresOwnerReview:true}});if(opportunity.error)fail();
+        working.push({id:opportunityId,finding:o} as Opportunity);
+      }else matched.opportunity.finding=o;
+      const recommendation=await db.from('marketing_artifacts').insert({id:recommendationId,tenant_id:tenantId,kind:'recommendation',title:o.title,execution_id:id,parent_id:opportunityId,actor_id:actorId,payload:{...o,evidenceArtifactId:bundleId,requiresOwnerReview:true,continuity:{version:1,reason:matched.reason,previousFindingId:matched.opportunity?.findingId??null}}});if(recommendation.error)fail();
       // Google rows anchor measured/empty report context. External sources remain explicit research documents in the bundle.
       const links=[...reportIds].map(([evidenceId,reportId])=>({tenant_id:tenantId,artifact_id:recommendationId,report_id:reportId,observation:{kind:'report_context',evidenceId,status:result.evidence.find(e=>e.id===evidenceId)?.status,externalEvidenceArtifactId:bundleId,doesNotProveDemand:true}}));
       if(links.length){const e=await db.from('marketing_evidence').upsert(links,{onConflict:'tenant_id,artifact_id,report_id'});if(e.error)fail();}

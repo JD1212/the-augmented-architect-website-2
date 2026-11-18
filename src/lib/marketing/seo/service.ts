@@ -10,6 +10,8 @@ import {createSeoTools} from './tools';
 import {assertExecutionScope,createSeoStore} from './store';
 import {findValidationError,validationDiagnostic} from './validation-diagnostics';
 import type {ResearchCatalog} from './research-evidence';
+import {loadBacklog} from '../opportunities/repository';
+import {historicalContext} from '../opportunities/model';
 
 type Owner=Awaited<ReturnType<typeof requireOwner>>;
 export function safeExecutionFailure(error:unknown,aborted:boolean){
@@ -37,7 +39,9 @@ export async function executeSeo(owner:Owner,requestId:string,days:7|28|90,signa
     const recordUsage=async(receipt:UsageReceipt)=>{if(receipt.responseId&&receipts.some(r=>r.responseId===receipt.responseId&&r.purpose===receipt.purpose))return;receipts.push(receipt);await store.progress(requestId,'model',receipts);};
     const authorize=async()=>{const current=await requireOwner(owner.db);if(current.user.id!==owner.user.id||current.tenantId!==owner.tenantId)throw new MarketingError(403,'Execution authorization changed.');};
     const {ports,snapshots}=createSeoTools({tenantId:owner.tenantId,days,client,onResearchUsage:recordUsage,onResearchMapping:mapping=>{researchMapping=mapping;},authorize});
-    const result=await runSeoAnalysis(seoBusinessConfig(c.model,days),ports,{modelProvider:new OpenAIProvider({openAIClient:client,useResponses:true}),signal:bounded,onProgress:p=>{lastStage=p.stage;return store.progress(requestId,p.stage,receipts);},onUsage:recordUsage});
+    const prior=await loadBacklog(owner.db,owner.tenantId);
+    const config={...seoBusinessConfig(c.model,days),history:historicalContext(prior.opportunities)};
+    const result=await runSeoAnalysis(config,ports,{modelProvider:new OpenAIProvider({openAIClient:client,useResponses:true}),signal:bounded,onProgress:p=>{lastStage=p.stage;return store.progress(requestId,p.stage,receipts);},onUsage:recordUsage});
     await authorize();
     await store.complete(requestId,result,snapshots,owner.user.id);
     return {executionId:requestId,reused:false};

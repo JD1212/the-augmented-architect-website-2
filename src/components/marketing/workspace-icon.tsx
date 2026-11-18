@@ -1,5 +1,6 @@
 import type { WorkspaceView } from '@/content/marketing-workspace';
 const paths:Record<WorkspaceView|string,string>={
+  opportunities:'M5 3h14v18H5zM8 8h8M8 12h8M8 16h5',
   overview:'M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z',
   analytics:'M4 20V10m8 10V4m8 16v-7M2 21h20',search:'m21 21-5-5M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0',
   conversions:'M4 4h16l-6 8v7l-4 2V12z',agents:'M5 8h14v12H5zM12 3v5M9 12v2m6-2v2M9 17h6M2 12v5m20-5v5',
