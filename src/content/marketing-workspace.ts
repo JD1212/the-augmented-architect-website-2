@@ -2,6 +2,7 @@ export const workspaceViews = [
   ['overview','Overview','Your business, in focus.'],
   ['analytics','Marketing Analytics','Understand your audience.'],
   ['search','Search Intelligence','Turn visibility into opportunity.'],
+  ['keywords','Keyword Intelligence','Establish demand. Understand competition.'],
   ['conversions','Conversions','From interest to intent.'],
   ['agents','AI Agents','Meet your intelligence team.'],
   ['opportunities','Opportunity Backlog','Turn research into approved work.'],

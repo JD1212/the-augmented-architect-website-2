@@ -44,7 +44,7 @@ test('future observations never silently change the finding or evidence an owner
 });
 test('API rejects unauthenticated, cross-origin, client-selected tenants and stale mutations before writing',async()=>{
  let writes=0;const owner={tenantId:tenant,user:{id:ids.owner},db:{}};
- const dependencies={'./config':config,'@/lib/marketing/config':config,'@/lib/marketing/auth':{ownerAuth:async()=>({}),requireOwner:async()=>owner},'@/lib/marketing/seo/config':{seoDatabase:()=>({})},'@/lib/marketing/opportunities/repository':{loadBacklog:async()=>({opportunities:[],evidence:{}}),saveReview:async()=>{writes++;return {}; }},'@/lib/marketing/opportunities/handoff':{contentAssignment:()=>null}};
+ const dependencies={...overrides,'./config':config,'@/lib/marketing/config':config,'@/lib/marketing/auth':{ownerAuth:async()=>({}),requireOwner:async()=>owner},'@/lib/marketing/seo/config':{seoDatabase:()=>({})},'@/lib/marketing/opportunities/repository':{loadBacklog:async()=>({opportunities:[],evidence:{}}),saveReview:async()=>{writes++;return {}; }},'@/lib/marketing/opportunities/handoff':{contentAssignment:()=>null}};
  const api=load('src/app/api/admin/marketing/opportunities/route.ts',dependencies),request=(body,origin='https://site.invalid')=>new Request('https://site.invalid/api/admin/marketing/opportunities',{method:'POST',headers:{origin,'content-type':'application/json'},body:JSON.stringify(body)});
  assert.equal((await api.POST(request({...command(),tenantId:'other'}))).status,400);assert.equal((await api.POST(request(command(),'https://evil.invalid'))).status,403);assert.equal(writes,0);assert.equal((await api.POST(request(command()))).status,200);assert.equal(writes,1);
  const denied=load('src/app/api/admin/marketing/opportunities/route.ts',{...dependencies,'@/lib/marketing/auth':{ownerAuth:async()=>({}),requireOwner:async()=>{throw new config.MarketingError(401,'Please sign in.');}}});assert.equal((await denied.POST(request(command()))).status,401);assert.equal((await denied.GET(new Request('https://site.invalid/api/admin/marketing/opportunities'))).status,401);assert.equal(writes,1);
@@ -67,4 +67,20 @@ test('new measured evidence and additional verified sources are material; wordin
  assert.equal(measuredEvidenceChanged(f,[old],[old]),false);assert.equal(measuredEvidenceChanged(f,[{...old,content:'{"clicks":8}'}],[old]),true);
  assert.equal(measuredEvidenceChanged(f,[{...old,status:'empty',hasActualSearchData:false,content:'No rows.'}],[old]),false);
  assert.equal(materiallyChanged({...finding,sourceUrls:[...finding.sourceUrls,'https://developer.salesforce.com/docs/']},finding),true);
+});
+test('archive and restore preserve prior owner approval and historical evidence; legacy readers ignore new events safely',async()=>{
+ const db=fixture();await saveReview(db,tenant,ids.owner,command());const before=await loadBacklog(db,tenant),approved=before.opportunities[0];
+ await saveReview(db,tenant,ids.owner,command('archive',{requestId:ids.nextRun,expectedReviewId:approved.reviewId}));let o=(await loadBacklog(db,tenant)).opportunities[0];assert.equal(o.status,'archived');assert.equal(contentAssignment(o,await loadBacklog(db,tenant)),null);
+ const archival=db.rows.marketing_artifacts.find(a=>a.payload.action==='archive');assert.equal(archival.payload.workflow,'seo-opportunity-review/v2');
+ const {projectBacklog}=load('src/lib/marketing/opportunities/model.ts',overrides),legacy=projectBacklog(db.rows.marketing_artifacts.filter(a=>a.payload.workflow!=='seo-opportunity-review/v2'),db.rows.marketing_executions);assert.equal(legacy.opportunities[0].status,'approved_for_drafting');
+ await saveReview(db,tenant,ids.owner,command('restore',{requestId:'99999999-9999-4999-a999-999999999999',expectedReviewId:o.reviewId}));const restored=await loadBacklog(db,tenant);o=restored.opportunities[0];assert.equal(o.status,'approved_for_drafting');assert.equal(o.reviews.length,3);assert.equal(contentAssignment(o,restored).approvalId,approved.reviewId);assert.equal(o.observations.length,1);assert.equal(o.id,approved.id);
+});
+test('compact backlog queries are paginated, filterable and clustered with stable identities',async()=>{
+ const {opportunityPage}=load('src/lib/marketing/opportunities/query.ts'),original=(await loadBacklog(fixture(),tenant)).opportunities[0];
+ const records=Array.from({length:25},(_,i)=>({...original,id:String(i).padStart(8,'0')+'-1111-4111-a111-111111111111',status:i===24?'archived':'pending',updatedAt:new Date(Date.UTC(2026,10,18,0,i)).toISOString()}));
+ const first=opportunityPage(records,new URLSearchParams());assert.equal(first.total,24);assert.equal(first.opportunities.length,10);assert.equal(first.pages,3);assert(!('observations' in first.opportunities[0]));
+ const archive=opportunityPage(records,new URLSearchParams({status:'archived'}));assert.equal(archive.total,1);assert.equal(opportunityPage(records,new URLSearchParams({q:'nonexistent'})).total,0);
+ assert.equal(opportunityPage(records,new URLSearchParams({topic:original.topic.id,priority:'1',evidence:'external_research',sort:'topic',page:'2'})).opportunities.length,10);
+ assert.throws(()=>opportunityPage(records,new URLSearchParams({pageSize:'10000'})),e=>e.status===400);assert.throws(()=>opportunityPage(records,new URLSearchParams({tenant:'other'})),e=>e.status===400);
+ assert.equal(records[0].topic.id,records[24].topic.id);
 });

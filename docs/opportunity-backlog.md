@@ -55,3 +55,7 @@ Future Augment integration can supply the same bounded history and read-only too
 5. Performance Analyst: compare real outcomes over appropriate reporting windows, distinguishing observations from hypotheses.
 
 No cron job, recurring model call, second agent, automatic publishing, campaign change or spending is enabled.
+
+## Additive intelligence extension
+
+The compact filtered backlog, append-only archive/restore, provider gates and saved-evidence contracts extend this release. See [opportunity-intelligence.md](./opportunity-intelligence.md) for the current behavior, shared-database compatibility and external setup boundaries.

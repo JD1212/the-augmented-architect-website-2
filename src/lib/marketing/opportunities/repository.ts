@@ -5,13 +5,13 @@ import {projectBacklog} from './model';
 import {reviewSlot} from './identity';
 import {nextReviewStatus,type Artifact,type ReviewCommand} from './contracts';
 function scope(tenant:string){if(tenant!==marketingTenant)throw new MarketingError(403,'Unauthorized opportunity workspace.');}
-async function rows(db:SupabaseClient,table:string,tenant:string){
+export async function marketingRows(db:SupabaseClient,table:'marketing_artifacts'|'marketing_executions',tenant:string,domain?:string){
   scope(tenant);const found:Record<string,unknown>[]=[];
-  for(let offset=0;offset<10000;offset+=500){const r=await db.from(table).select('*').eq('tenant_id',tenant).order('created_at').order('id').range(offset,offset+499);if(r.error)throw new MarketingError(503,'Opportunity history is temporarily unavailable.');found.push(...r.data);if(r.data.length<500)return found;}
+  for(let offset=0;offset<10000;offset+=500){let query=db.from(table).select('*').eq('tenant_id',tenant);if(domain)query=query.eq('payload->>domain',domain);const r=await query.order('created_at').order('id').range(offset,offset+499);if(r.error)throw new MarketingError(503,'Opportunity history is temporarily unavailable.');found.push(...r.data);if(r.data.length<500)return found;}
   throw new MarketingError(503,'Opportunity history needs archival pagination before another analysis. No history was silently omitted.');
 }
 export async function loadBacklog(db:SupabaseClient,tenant:string){
-  const [artifacts,executions]=await Promise.all([rows(db,'marketing_artifacts',tenant),rows(db,'marketing_executions',tenant)]);
+  const [artifacts,executions]=await Promise.all([marketingRows(db,'marketing_artifacts',tenant),marketingRows(db,'marketing_executions',tenant)]);
   return projectBacklog(artifacts as Artifact[],executions as {id:string;agent_id:string;state:string}[]);
 }
 export async function saveReview(db:SupabaseClient,tenant:string,actorId:string,command:ReviewCommand){
@@ -20,11 +20,12 @@ export async function saveReview(db:SupabaseClient,tenant:string,actorId:string,
   const reused=opportunity.reviews.find(r=>r.requestId===command.requestId);
   if(reused){if(reused.actorId!==actorId||reused.action!==command.action||reused.note!==command.note||reused.deliverable!==command.deliverable||reused.findingId!==command.expectedFindingId||reused.previousReviewId!==command.expectedReviewId)throw new MarketingError(409,'This request ID was already used for a different decision.');return {id:reused.id,reused:true};}
   if(opportunity.reviewId!==command.expectedReviewId||opportunity.findingId!==command.expectedFindingId)throw new MarketingError(409,'This opportunity changed. Refresh before recording a decision.');
-  const status=nextReviewStatus(opportunity.status,command.action);if(!status)throw new MarketingError(409,'This review transition is not available.');
+  const status=nextReviewStatus(opportunity.status,command.action,opportunity.reviews.at(-1)?.previousStatus);if(!status)throw new MarketingError(409,'This review transition is not available.');
   const id=reviewSlot(tenant,opportunity.id,opportunity.reviewId);
   // The primary key is a deterministic slot for the previous review revision.
   // Concurrent decisions compete for one INSERT; no UPDATE/upsert or last-writer-wins.
-  const r=await db.from('marketing_artifacts').insert({id,tenant_id:tenant,kind:'approval',title:`SEO opportunity: ${status}`,parent_id:opportunity.id,actor_id:actorId,payload:{workflow:'seo-opportunity-review/v1',action:command.action,status,note:command.note,previousReviewId:opportunity.reviewId,findingId:opportunity.findingId,deliverable:command.deliverable,requestId:command.requestId,draftOnly:true,publishingAuthorized:false,spendingAuthorized:false}});
+  const workflow=['archive','restore'].includes(command.action)?'seo-opportunity-review/v2':'seo-opportunity-review/v1';
+  const r=await db.from('marketing_artifacts').insert({id,tenant_id:tenant,kind:'approval',title:`SEO opportunity: ${status}`,parent_id:opportunity.id,actor_id:actorId,payload:{workflow,action:command.action,status,note:command.note,previousReviewId:opportunity.reviewId,findingId:opportunity.findingId,deliverable:command.deliverable,requestId:command.requestId,draftOnly:true,publishingAuthorized:false,spendingAuthorized:false}});
   if(r.error){if(r.error.code==='23505'){
     const latest=await loadBacklog(db,tenant),saved=latest.opportunities.find(o=>o.id===opportunity.id)?.reviews.find(v=>v.id===id);
     if(saved?.requestId===command.requestId&&saved.actorId===actorId&&saved.action===command.action&&saved.note===command.note&&saved.deliverable===command.deliverable&&saved.findingId===command.expectedFindingId)return {id,reused:true};

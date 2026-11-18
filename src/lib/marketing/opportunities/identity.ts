@@ -3,6 +3,11 @@ import type {Finding,Opportunity} from './contracts';
 import type {Evidence} from '@augmented-architect/seo-analyst';
 export function stableId(value:string){const h=createHash('sha256').update(value).digest('hex');return `${h.slice(0,8)}-${h.slice(8,12)}-4${h.slice(13,16)}-a${h.slice(17,20)}-${h.slice(20,32)}`;}
 export const reviewSlot=(tenant:string,opportunity:string,previous:string|null)=>stableId(`${tenant}:seo-review-v1:${opportunity}:${previous??'initial'}`);
+export function topicCluster(tenant:string,original:Finding){
+  const text=(original.title+' '+original.searchIntent).toLowerCase();
+  const label=/bulk|regression|governor/.test(text)?'Salesforce testing & safety':/salesforce|apex|flow|trigger/.test(text)?'Salesforce automation':/agent|runtime|\bai\b/.test(text)?'AI architecture':/portal|application|integration/.test(text)?'Connected applications':'Other research';
+  return {id:stableId(tenant+':topic-v1:'+label),label};
+}
 // Host-specific vocabulary, never model-supplied permissions or an LLM duplicate verdict.
 const aliases:Record<string,string>={mapping:'inventory',map:'inventory',discover:'inventory',discovery:'inventory',dependencies:'dependency',refactoring:'modernization',refactor:'modernization',modernize:'modernization',audit:'assessment',review:'assessment',choose:'decision',choosing:'decision',comparison:'decision',compare:'decision',versus:'decision',admins:'administrator',admin:'administrator',developers:'developer',testing:'test',tests:'test',bulkification:'bulk',bulkify:'bulk'};
 const stop=new Set('a an the to for of and or in on with your our their create publish offer build develop draft practical guide checklist page content salesforce owner reviewed business organization org organizations'.split(' '));

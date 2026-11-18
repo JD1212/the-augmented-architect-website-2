@@ -6,7 +6,7 @@ export function memoryDatabase(initial={}){
   async maybeSingle(){const r=await execute();return {...r,data:r.data[0]??null};},async single(){const r=await execute();return {...r,data:r.data[0]??null,error:r.error??(r.data.length!==1?{code:'fixture_single'}:null)};},then(resolve,reject){return execute().then(resolve,reject);},
  };
  async function execute(){await Promise.resolve();
-  const matches=row=>filters.every(([k,v])=>k==='config'?JSON.stringify(row[k])===JSON.stringify(JSON.parse(v)):row[k]===v);
+  const matches=row=>filters.every(([k,v])=>k==='config'?JSON.stringify(row[k])===JSON.stringify(JSON.parse(v)):k.startsWith('payload->>')?row.payload?.[k.slice(10)]===v:row[k]===v);
   let found=rows[table].filter(matches);
   if(action==='insert'||action==='upsert'){
    const list=Array.isArray(payload)?payload:[payload],saved=[];

@@ -4,7 +4,7 @@ import {approvedWebsiteEvidence,seoBusinessConfig} from '../seo/context';
 import type {Backlog,Opportunity} from './contracts';
 export function contentAssignment(opportunity:Opportunity,backlog:Backlog):ContentAssignment|null {
   if(opportunity.status!=='approved_for_drafting')return null;
-  const approval=opportunity.reviews.at(-1);if(!approval||approval.action!=='approve')return null;
+  const approval=[...opportunity.reviews].reverse().find(r=>r.action==='approve');if(!approval)return null;
   // Use the exact finding approved by the owner, even if later research exists.
   const observation=opportunity.observations.find(o=>o.id===approval.findingId);if(!observation)return null;
   const finding=observation.finding,evidence=backlog.evidence[observation.evidenceArtifactId];if(!evidence)throw Error('Approved evidence is unavailable.');

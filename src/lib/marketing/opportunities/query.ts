@@ -1,0 +1,13 @@
+import {MarketingError,uuidPattern} from '../config';
+import {reviewLabels,type Opportunity} from './contracts';
+export type OpportunityRow=Pick<Opportunity,'id'|'finding'|'status'|'createdAt'|'updatedAt'|'topic'|'evidenceLevel'>&{observationCount:number};
+export type OpportunityPage={opportunities:OpportunityRow[];total:number;page:number;pageSize:number;pages:number;topics:{id:string;label:string}[]};
+export function opportunityPage(all:Opportunity[],params:URLSearchParams):OpportunityPage {
+  const allowed=['q','status','topic','priority','evidence','sort','page','pageSize'];if([...params.keys()].some(k=>!allowed.includes(k)))throw new MarketingError(400,'Unsupported backlog filter.');
+  const q=(params.get('q')??'').trim().toLowerCase(),status=params.get('status')??'active',topic=params.get('topic')??'all',priority=params.get('priority')??'all',level=params.get('evidence')??'all',sort=params.get('sort')??'recent',page=Number(params.get('page')??1),pageSize=Number(params.get('pageSize')??10);
+  if(q.length>200||!['all','active',...Object.keys(reviewLabels)].includes(status)||topic!=='all'&&!uuidPattern.test(topic)||!['all','1','2','3'].includes(priority)||!['all','observed_search','external_research'].includes(level)||!['recent','priority','created','topic'].includes(sort)||!Number.isInteger(page)||page<1||page>10000||![10,20,50].includes(pageSize))throw new MarketingError(400,'Invalid backlog filter or page.');
+  const filtered=all.filter(o=>(status==='all'||status==='active'?status==='all'||o.status!=='archived':o.status===status)&&(topic==='all'||o.topic.id===topic)&&(priority==='all'||o.finding.priority===Number(priority))&&(level==='all'||o.evidenceLevel===level)&&(!q||[o.finding.title,o.finding.targetCustomer,o.finding.recommendedAction,o.topic.label].some(s=>s.toLowerCase().includes(q))));
+  const order=sort==='priority'?(a:Opportunity,b:Opportunity)=>a.finding.priority-b.finding.priority:sort==='created'?(a:Opportunity,b:Opportunity)=>b.createdAt.localeCompare(a.createdAt):sort==='topic'?(a:Opportunity,b:Opportunity)=>a.topic.label.localeCompare(b.topic.label): (a:Opportunity,b:Opportunity)=>b.updatedAt.localeCompare(a.updatedAt);
+  filtered.sort((a,b)=>order(a,b)||a.id.localeCompare(b.id));const pages=Math.max(1,Math.ceil(filtered.length/pageSize)),current=Math.min(page,pages);
+  return {opportunities:filtered.slice((current-1)*pageSize,current*pageSize).map(o=>({id:o.id,finding:o.finding,status:o.status,createdAt:o.createdAt,updatedAt:o.updatedAt,topic:o.topic,evidenceLevel:o.evidenceLevel,observationCount:o.observations.length})),total:filtered.length,page:current,pageSize,pages,topics:[...new Map(all.map(o=>[o.topic.id,o.topic])).values()].sort((a,b)=>a.label.localeCompare(b.label))};
+}
