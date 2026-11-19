@@ -3,7 +3,7 @@ import {createHash} from 'node:crypto';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {analysisSchema,type SeoResult,type UsageReceipt,type Progress} from '@augmented-architect/seo-analyst';
 import {MarketingError,marketingTenant} from '../config';
-import {seoRegistration,seoPolicy} from './config';
+import {seoRegistration,seoRegistrationScope,seoPolicy} from './config';
 import {usageSummary,type SeoPanelData,type SeoRun} from './contracts';
 import type {ReportSnapshot} from './tools';
 import {loadBacklog} from '../opportunities/repository';
@@ -42,7 +42,7 @@ export function createSeoStore(db:SupabaseClient,tenantId:string){
       const latest=await findAgent();if(latest?.version===seoRegistration.version)return latest;
       throw new MarketingError(409,'The agent registration changed. Refresh before running analysis.');
     }
-    const r=await db.from('marketing_agents').insert({tenant_id:tenantId,...seoRegistration,config:{slug:'seo-analyst',executionMode:'manual',runtime:'OpenAI Agents SDK',sourceRepository:'JD1212/augarch-seo-analyst',recentStarts:[],readOnly:true}}).select('id,tenant_id,name,version,enabled,config').single();
+    const r=await db.from('marketing_agents').insert({tenant_id:tenantId,...seoRegistration,config:{slug:'seo-analyst',executionMode:'manual',runtime:'OpenAI Agents SDK',sourceRepository:'JD1212/augarch-seo-analyst',recentStarts:[],readOnly:true,...(seoRegistrationScope?{registrationScope:seoRegistrationScope}:{})}}).select('id,tenant_id,name,version,enabled,config').single();
     if(r.error){if(r.error.code==='23505'){const found=await findAgent();if(found)return found;}fail();}return r.data as AgentRow;
   }
   async function claim(id:string,actorId:string,days:number,assignment?:{objective:string;mode:'research_plan'}){

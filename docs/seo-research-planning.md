@@ -6,6 +6,12 @@ The independent `JD1212/augarch-seo-analyst` package v0.4.0 extends the existing
 
 The website pins the vendor tarball with SHA-512 integrity in the lockfile and `vendor/seo-analyst.provenance.json`. `src/lib/marketing/seo/planning-service.ts` is the server execution adapter. The existing owner UUID/session checks, reporting adapters, agent registration, distributed execution lease, cooldown, daily cap and measured provider token receipts remain authoritative. The agent has no direct database or credential access.
 
+### Registration ownership
+
+Production retains the legacy registration name `SEO Analyst`. Preview uses `SEO Analyst [preview:<branch hash>]`, derived server-side from `VERCEL_ENV` and `VERCEL_GIT_COMMIT_REF`. The branch hash is stable across redeploys; different branches have different identities. Local development uses `SEO Analyst [development]`. A Preview missing its branch, or an unsupported environment, fails closed rather than falling back to Production.
+
+These are environment-owned registrations of the same package in the existing `marketing_agents` table, not another registry or runtime. No schema change or data migration is needed. First authorized execution creates its scoped row; status reads and deployment create none. Preview never upgrades or leases the Production registration. Version guards, disabled flags, leases, cooldowns, daily caps and execution history apply within the selected registration. Redeploying the same Preview branch cannot reset its budget. Existing tenant-scoped research, approved business content and opportunity decisions remain available as context; agent execution history is scoped to its registration. Execution diagnostics continue recording the actual package version.
+
 ## Owner flow
 
 Open Keyword Intelligence in LIVE mode, enter a business objective, and select **Prepare research plan**. This explicitly invokes planning (at most three model responses, 150 seconds and 160 KB aggregate model input; no retries). It reads GA4, Search Console, approved website facts, saved investigations, prior opportunities/decisions and any validated performance feedback. It can inspect cached keyword observations and the existing explainable scoring model via SDK tools. No DataForSEO or hosted web-search request is available to the planner.
