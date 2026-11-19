@@ -4,9 +4,9 @@
 
 - Source repository: https://github.com/JD1212/augarch-seo-analyst (private).
 - Local source: `/Users/jdburkholder/Documents/augarch-seo-analyst`, a separate sibling Git repository, not inside the website or Docker.
-- Package: `@augmented-architect/seo-analyst@0.3.0`, source commit `4b086509df11e883ba179a44c65cc5ba442725f7`, tag `v0.3.0`.
+- Package: `@augmented-architect/seo-analyst@0.4.0`, source commit `d50a1344053a3f9c5ac859ec1152afa8ccef5115`, branch `feature/research-planning-v1`. Objective-led planning is documented in [seo-research-planning.md](./seo-research-planning.md).
 - Reusable modules: `src/contracts.ts` (configuration, ports, evidence, outputs, limits), `instructions.ts`, `validation.ts`, `run.ts` (OpenAI Agents SDK runner), `index.ts`. No Next.js, Supabase, Google credentials/properties, tenant IDs, or business identity in that project.
-- Integration artifact: `vendor/augmented-architect-seo-analyst-0.3.0.tgz`. Source revision and SHA-512 integrity are recorded in `vendor/seo-analyst.provenance.json` and package-lock. No private registry credentials are needed by Vercel.
+- Integration artifact: `vendor/augmented-architect-seo-analyst-0.4.0.tgz`. Source revision and SHA-512 integrity are recorded in `vendor/seo-analyst.provenance.json` and package-lock. No private registry credentials are needed by Vercel.
 
 ## Application adapters
 

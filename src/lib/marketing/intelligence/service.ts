@@ -24,9 +24,9 @@ export function parseResearchCommand(value:Record<string,unknown>):ResearchComma
   return {...value,provider:'dataforseo',locationCode:configured.locationCode,seeds:value.seeds.map(s=>(s as string).trim())} as ResearchCommand;
 }
 const isDataForSeo=(q:ResearchCommand)=>q.mode==='competition'||q.provider==='dataforseo';
-const queryKey=(q:ResearchCommand)=>JSON.stringify({provider:isDataForSeo(q)?'dataforseo':'google_ads',location:isDataForSeo(q)?q.locationCode??2840:null,mode:q.mode,service:q.service,target:q.target,seeds:q.seeds.map(s=>s.toLocaleLowerCase('en')).sort(),api:isDataForSeo(q)?'v3':'v26'});
+export const queryKey=(q:ResearchCommand)=>JSON.stringify({provider:isDataForSeo(q)?'dataforseo':'google_ads',location:isDataForSeo(q)?q.locationCode??2840:null,mode:q.mode,service:q.service,target:q.target,seeds:q.seeds.map(s=>s.toLocaleLowerCase('en')).sort(),api:isDataForSeo(q)?'v3':'v26'});
 export const providerScope=(tenant:string,command:ResearchCommand)=>stableId(tenant+':research-scope-v1:'+command.mode+':'+(isDataForSeo(command)?(process.env.DATAFORSEO_LOGIN??'unconfigured')+':'+JSON.stringify(dataForSeoTarget()):(process.env.GOOGLE_ADS_CUSTOMER_ID??'').replaceAll('-','')));
-const cacheFresh=(r:SavedResearch,now:Date)=>{
+export const cacheFresh=(r:SavedResearch,now:Date)=>{
   const sources=[...r.bundle.collections,...r.bundle.market.map(m=>m.provenance),...r.bundle.competition.map(c=>c.provenance)];
   return sources.length>0&&sources.every(p=>Date.parse(p.expiresAt)>now.getTime())&&(r.query.mode==='competition'||r.createdAt.slice(0,7)===now.toISOString().slice(0,7));
 };
@@ -70,7 +70,7 @@ export async function linkResearch(db:SupabaseClient,tenant:string,actor:string,
   if(result.error&&result.error.code!=='23505')throw new MarketingError(503,'Research link could not be saved.');return {id,reused:Boolean(result.error)};
 }
 export function intelligenceContext(rows:Artifact[]):Intelligence|undefined {
-  const records=savedResearch(rows).filter(r=>r.query.service==='salesforce'&&cacheFresh(r,new Date()));if(!records.length)return undefined;
+  const records=savedResearch(rows).filter(r=>r.scope===providerScope(marketingTenant,r.query)&&cacheFresh(r,new Date()));if(!records.length)return undefined;
   const bundle:Intelligence={version:'opportunity-intelligence/v1',id:randomUUID(),collections:records.flatMap(r=>r.bundle.collections).slice(0,3),market:records.flatMap(r=>r.bundle.market).slice(0,10),competition:records.flatMap(r=>r.bundle.competition).slice(0,1).map(c=>({...c,results:c.results.slice(0,8),findings:c.findings.filter(f=>f.sourceUrls.every(u=>c.results.slice(0,8).some(r=>r.url===u)||c.provenance.sourceUrls.includes(u)))})),business:records.find(r=>r.bundle.business)?.bundle.business??null,limitations:['Saved research is bounded and may omit older or unrelated terms; at most eight observed competitor pages enter model context. Full source records remain available to the owner.','Keyword Planner volume is a provider estimate; SERP positions apply only to the recorded query, geography and collection time.']};
   while(new TextEncoder().encode(JSON.stringify(bundle)).length>9000||!intelligenceContextSchema.safeParse(bundle).success){if(bundle.market.length)bundle.market.pop();else if(bundle.competition.length)bundle.competition.pop();else if(bundle.collections.length)bundle.collections.pop();else return undefined;}
   return bundle;

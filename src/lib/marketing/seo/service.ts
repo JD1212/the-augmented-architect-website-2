@@ -13,6 +13,7 @@ import type {ResearchCatalog} from './research-evidence';
 import {loadBacklog} from '../opportunities/repository';
 import {historicalContext} from '../opportunities/model';
 import {intelligenceRecords,intelligenceContext} from '../intelligence/service';
+import {planningRecords,savedPlans,planningMemory} from '../intelligence/planning';
 
 type Owner=Awaited<ReturnType<typeof requireOwner>>;
 export function safeExecutionFailure(error:unknown,aborted:boolean){
@@ -41,8 +42,10 @@ export async function executeSeo(owner:Owner,requestId:string,days:7|28|90,signa
     const authorize=async()=>{const current=await requireOwner(owner.db);if(current.user.id!==owner.user.id||current.tenantId!==owner.tenantId)throw new MarketingError(403,'Execution authorization changed.');};
     const {ports,snapshots}=createSeoTools({tenantId:owner.tenantId,days,client,onResearchUsage:recordUsage,onResearchMapping:mapping=>{researchMapping=mapping;},authorize});
     const prior=await loadBacklog(owner.db,owner.tenantId);
-    const intelligence=intelligenceContext(await intelligenceRecords(owner.db,owner.tenantId));
-    const config={...seoBusinessConfig(c.model,days),history:historicalContext(prior.opportunities),...(intelligence?{intelligence}:{})};
+    const researchRows=await intelligenceRecords(owner.db,owner.tenantId),planRows=await planningRecords(owner.db,owner.tenantId);
+    const intelligence=intelligenceContext(researchRows),approvedPlan=savedPlans(planRows).find(p=>p.decision==='approved');
+    const websiteRead=ports.websiteResearch;ports.websiteResearch=async signal=>{const doc=await websiteRead(signal);return {...doc,content:JSON.stringify({website:doc.content,memory:planningMemory(researchRows,planRows),approvedPlan:approvedPlan?.plan??null}).slice(0,16000)};};
+    const config={...seoBusinessConfig(c.model,days,approvedPlan?.objective),history:historicalContext(prior.opportunities),...(intelligence?{intelligence}:{})};
     const result=await runSeoAnalysis(config,ports,{modelProvider:new OpenAIProvider({openAIClient:client,useResponses:true}),signal:bounded,onProgress:p=>{lastStage=p.stage;return store.progress(requestId,p.stage,receipts);},onUsage:recordUsage});
     await authorize();
     await store.complete(requestId,result,snapshots,owner.user.id);

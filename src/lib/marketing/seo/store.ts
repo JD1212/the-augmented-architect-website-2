@@ -26,6 +26,7 @@ export function leaseDecision(config:Record<string,unknown>,id:string,now=new Da
 export function createSeoStore(db:SupabaseClient,tenantId:string){
   assertExecutionScope(tenantId);
   let executionActor:string|undefined;
+  let executionAssignment:{objective:string;mode:"research_plan"}|undefined;
   async function findAgent():Promise<AgentRow|null>{const r=await db.from('marketing_agents').select('id,tenant_id,name,version,enabled,config').eq('tenant_id',tenantId).eq('name',seoRegistration.name).order('created_at',{ascending:false}).limit(1).maybeSingle();if(r.error)fail();return r.data as AgentRow|null;}
   async function register():Promise<AgentRow>{
     const existing=await findAgent();
@@ -44,17 +45,17 @@ export function createSeoStore(db:SupabaseClient,tenantId:string){
     const r=await db.from('marketing_agents').insert({tenant_id:tenantId,...seoRegistration,config:{slug:'seo-analyst',executionMode:'manual',runtime:'OpenAI Agents SDK',sourceRepository:'JD1212/augarch-seo-analyst',recentStarts:[],readOnly:true}}).select('id,tenant_id,name,version,enabled,config').single();
     if(r.error){if(r.error.code==='23505'){const found=await findAgent();if(found)return found;}fail();}return r.data as AgentRow;
   }
-  async function claim(id:string,actorId:string,days:number){
-    executionActor=actorId;
+  async function claim(id:string,actorId:string,days:number,assignment?:{objective:string;mode:'research_plan'}){
+    executionActor=actorId;executionAssignment=assignment;
     const agent=await register();if(!agent.enabled)throw new MarketingError(403,'SEO Analyst has been disabled by the workspace administrator.');
-    const existing=await db.from('marketing_executions').select('id,state').eq('id',id).eq('tenant_id',tenantId).eq('agent_id',agent.id).maybeSingle();if(existing.error)fail();if(existing.data)return {agent,reused:true};
+    const existing=await db.from('marketing_executions').select('id,state,diagnostics').eq('id',id).eq('tenant_id',tenantId).eq('agent_id',agent.id).maybeSingle();if(existing.error)fail();if(existing.data){if(assignment&&JSON.stringify(existing.data.diagnostics?.assignment)!==JSON.stringify(assignment))throw new MarketingError(409,'Execution ID belongs to a different objective or mode.');return {agent,reused:true};}
     const next=leaseDecision(agent.config,id);
     // JSONB compare-and-swap is atomic across Vercel instances. No broad database grants or new lock tables.
     const claimed=await db.from('marketing_agents').update({config:next}).eq('id',agent.id).eq('tenant_id',tenantId).eq('enabled',true).eq('config',JSON.stringify(agent.config)).select('id').maybeSingle();
     if(claimed.error)fail();if(!claimed.data)throw new MarketingError(409,'Another analysis claimed this workspace. Refresh to see its status.');
     const stale=agent.config.lease as Lease|undefined;
     if(stale)await db.from('marketing_executions').update({state:'failed',finished_at:new Date().toISOString(),diagnostics:{stage:'failed',error:'The previous execution exceeded its lease. No automatic retry was started.'}}).eq('id',stale.id).eq('tenant_id',tenantId).eq('agent_id',agent.id).eq('state','running');
-    const created=await db.from('marketing_executions').insert({id,tenant_id:tenantId,agent_id:agent.id,state:'running',started_at:new Date().toISOString(),usage:usageSummary([]),diagnostics:{stage:'starting',actorId,days,packageVersion:seoRegistration.version}});
+    const created=await db.from('marketing_executions').insert({id,tenant_id:tenantId,agent_id:agent.id,state:'running',started_at:new Date().toISOString(),usage:usageSummary([]),diagnostics:{stage:'starting',actorId,days,packageVersion:seoRegistration.version,...(assignment?{assignment}:{})}});
     if(created.error){await release(agent.id,id);fail();}return {agent,reused:false};
   }
   async function release(agentId:string,id:string){
@@ -63,7 +64,7 @@ export function createSeoStore(db:SupabaseClient,tenantId:string){
     const r=await db.from('marketing_agents').update({config:next}).eq('id',agentId).eq('tenant_id',tenantId).eq('config',JSON.stringify(current.config));if(r.error)fail();
   }
   async function progress(id:string,stage:Progress['stage'],receipts:UsageReceipt[]){
-    const r=await db.from('marketing_executions').update({usage:usageSummary(receipts),diagnostics:{stage,actorId:executionActor,packageVersion:seoRegistration.version}}).eq('id',id).eq('tenant_id',tenantId).eq('state','running');if(r.error)fail();
+    const r=await db.from('marketing_executions').update({usage:usageSummary(receipts),diagnostics:{stage,...(executionAssignment?{assignment:executionAssignment}:{}),actorId:executionActor,packageVersion:seoRegistration.version}}).eq('id',id).eq('tenant_id',tenantId).eq('state','running');if(r.error)fail();
   }
   async function complete(id:string,result:SeoResult,snapshots:ReportSnapshot[],actorId:string){
     // The existing tenant execution lease serializes reconciliation and persistence.
@@ -89,8 +90,11 @@ export function createSeoStore(db:SupabaseClient,tenantId:string){
     }
     const done=await db.from('marketing_executions').update({state:'completed',finished_at:new Date().toISOString(),usage:usageSummary(result.usage),diagnostics:{stage:'completed',packageVersion:result.packageVersion,instructionsVersion:result.instructionsVersion,actorId,opportunities:result.analysis.opportunities.length}}).eq('id',id).eq('tenant_id',tenantId).eq('state','running').select('id').single();if(done.error)fail();
   }
-  async function failed(id:string,receipts:UsageReceipt[],message:string,failure?:{kind:string;status:number|null;code?:string|null;param?:string|null;phase?:string;validation?:unknown}){const r=await db.from('marketing_executions').update({state:'failed',finished_at:new Date().toISOString(),usage:usageSummary(receipts),diagnostics:{stage:'failed',actorId:executionActor,packageVersion:seoRegistration.version,error:message,failure}}).eq('id',id).eq('tenant_id',tenantId).eq('state','running');if(r.error)fail();}
-  return {findAgent,register,claim,release,progress,complete,failed};
+  async function failed(id:string,receipts:UsageReceipt[],message:string,failure?:{kind:string;status:number|null;code?:string|null;param?:string|null;phase?:string;validation?:unknown}){const r=await db.from('marketing_executions').update({state:'failed',finished_at:new Date().toISOString(),usage:usageSummary(receipts),diagnostics:{stage:'failed',...(executionAssignment?{assignment:executionAssignment}:{}),actorId:executionActor,packageVersion:seoRegistration.version,error:message,failure}}).eq('id',id).eq('tenant_id',tenantId).eq('state','running');if(r.error)fail();}
+  async function completePlan(id:string,receipts:UsageReceipt[],assignment:{objective:string;mode:'research_plan'}){
+    const result=await db.from('marketing_executions').update({state:'completed',finished_at:new Date().toISOString(),usage:usageSummary(receipts),diagnostics:{stage:'completed',kind:'research_plan',assignment,actorId:executionActor,packageVersion:seoRegistration.version}}).eq('id',id).eq('tenant_id',tenantId).eq('state','running').select('id').single();if(result.error)fail();
+  }
+  return {findAgent,register,claim,release,progress,complete,completePlan,failed};
 }
 export async function readSeoPanel(db:SupabaseClient,tenantId:string):Promise<SeoPanelData>{
   assertExecutionScope(tenantId);const store=createSeoStore(db,tenantId),agent=await store.findAgent();
@@ -98,7 +102,7 @@ export async function readSeoPanel(db:SupabaseClient,tenantId:string):Promise<Se
   if(!agent)return {...base,runs:[],analysis:null,evidence:[],analysisExecutionId:null};
   const r=await db.from('marketing_executions').select('id,state,created_at,started_at,finished_at,usage,diagnostics').eq('tenant_id',tenantId).eq('agent_id',agent.id).order('created_at',{ascending:false}).limit(12);if(r.error)fail();
   const runs=(r.data??[]).map(row=>({...row,...(row.state==='running'&&row.started_at&&Date.now()-Date.parse(row.started_at)>seoPolicy.leaseMs?{state:'interrupted'}:{}),stage:typeof row.diagnostics?.stage==='string'?row.diagnostics.stage:'unknown',error:typeof row.diagnostics?.error==='string'?row.diagnostics.error:null,diagnostics:undefined})) as SeoRun[];
-  const completed=runs.find(run=>run.state==='completed');if(!completed)return {...base,runs,analysis:null,evidence:[],analysisExecutionId:null};
+  const completed=runs.find(run=>run.state==='completed'&&!(r.data??[]).find(row=>row.id===run.id)?.diagnostics?.kind);if(!completed)return {...base,runs,analysis:null,evidence:[],analysisExecutionId:null};
   const bundle=await db.from('marketing_artifacts').select('payload').eq('tenant_id',tenantId).eq('execution_id',completed.id).eq('kind','measurement').maybeSingle();if(bundle.error)fail();
   const parsed=analysisSchema.safeParse(bundle.data?.payload?.analysis);
   return {...base,runs,analysis:parsed.success?parsed.data:null,evidence:Array.isArray(bundle.data?.payload?.documents)?bundle.data.payload.documents:[],analysisExecutionId:completed.id};
