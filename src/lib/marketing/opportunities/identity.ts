@@ -5,7 +5,7 @@ export function stableId(value:string){const h=createHash('sha256').update(value
 export const reviewSlot=(tenant:string,opportunity:string,previous:string|null)=>stableId(`${tenant}:seo-review-v1:${opportunity}:${previous??'initial'}`);
 export function topicCluster(tenant:string,original:Finding){
   const text=(original.title+' '+original.searchIntent).toLowerCase();
-  const label=/bulk|regression|governor/.test(text)?'Salesforce testing & safety':/salesforce|apex|flow|trigger/.test(text)?'Salesforce automation':/agent|runtime|\bai\b/.test(text)?'AI architecture':/portal|application|integration/.test(text)?'Connected applications':'Other research';
+  const label=/salesforce|apex|flow|trigger/.test(text)&&/bulk|regression|governor/.test(text)?'Salesforce testing & safety':/salesforce|apex|flow|trigger/.test(text)?'Salesforce automation':/agent|runtime|\bai\b/.test(text)?'AI architecture':/portal|application|integration/.test(text)?'Connected applications':'Other research';
   return {id:stableId(tenant+':topic-v1:'+label),label};
 }
 // Host-specific vocabulary, never model-supplied permissions or an LLM duplicate verdict.
@@ -15,7 +15,7 @@ function words(text:string){return new Set(text.toLowerCase().replace(/[^a-z0-9 
 function overlap(a:Set<string>,b:Set<string>){const union=new Set([...a,...b]);return union.size?[...a].filter(w=>b.has(w)).length/union.size:0;}
 function facets(f:Finding){
   const text=(f.title+' '+f.searchIntent).toLowerCase(),audience=f.targetCustomer.toLowerCase();
-  const topic=/bulk|governor|regression/.test(text)?'bulk-regression':/choos|decis|compar|versus|\bvs\b|when to use/.test(text)&&/flow|apex|automation/.test(text)?'flow-apex-decision':/inventor|mapping|\bmap\b|dependency|dependencies|discover|what runs|trace|execution order/.test(text)&&/flow|apex|automation|trigger/.test(text)?'automation-inventory':null;
+  const topic=/salesforce|apex|flow|trigger/.test(text+' '+audience)&&/bulk|governor|regression/.test(text)?'bulk-regression':/choos|decis|compar|versus|\bvs\b|when to use/.test(text)&&/flow|apex|automation/.test(text)?'flow-apex-decision':/inventor|mapping|\bmap\b|dependency|dependencies|discover|what runs|trace|execution order/.test(text)&&/flow|apex|automation|trigger/.test(text)?'automation-inventory':null;
   const vertical=['healthcare','hospital','financial','banking','nonprofit','retail','manufacturing'].filter(v=>audience.includes(v)).join('|');
   return {topic,vertical};
 }

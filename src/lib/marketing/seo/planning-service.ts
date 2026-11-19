@@ -12,8 +12,11 @@ import {loadBacklog} from '../opportunities/repository';
 import {historicalContext} from '../opportunities/model';
 import {intelligenceRecords,intelligenceContext} from '../intelligence/service';
 import {planningRecords,planningMemory,savedPlanningEvidence,priceResearchPlan,saveResearchPlan} from '../intelligence/planning';
+import {intelligencePlanningEvidence,savedEvidenceDetails} from '../intelligence/planning-evidence';
 import {validationDiagnostic} from './validation-diagnostics';
 import {usageSummary} from './contracts';
+
+import {requirePlanningExecution} from './planning-policy';
 
 type PlanningPhase='context'|'evidence'|'model'|'validation'|'pricing'|'persistence'|'completion';
 export function planningFailureDiagnostic(error:unknown,phase:PlanningPhase){
@@ -27,6 +30,7 @@ export function planningFailureDiagnostic(error:unknown,phase:PlanningPhase){
 }
 
 export async function prepareSeoResearchPlan(owner:Awaited<ReturnType<typeof requireOwner>>,requestId:string,objective:string,days:7|28|90,signal:AbortSignal){
+ requirePlanningExecution();
  const c=seoConfiguration(),db=seoDatabase(),store=createSeoStore(db,owner.tenantId),assignment={objective,mode:'research_plan' as const};
  const claimed=await store.claim(requestId,owner.user.id,days,assignment);
  if(claimed.reused)return {executionId:requestId,reused:true};
@@ -39,8 +43,9 @@ export async function prepareSeoResearchPlan(owner:Awaited<ReturnType<typeof req
   const memory=planningMemory(rows,plans);
   memory.feedback=backlog.opportunities.flatMap(o=>o.outcomes.flatMap(outcome=>{const parsed=performanceFeedbackSchema.safeParse(outcome.payload.performanceFeedback);return parsed.success&&parsed.data.opportunityId===o.id?[parsed.data]:[];})).slice(0,10);
   const {ports}=createSeoTools({tenantId:owner.tenantId,days,client,authorize,onResearchUsage:async()=>{throw Error('External model research is not permitted in planning mode.');}});
+  const config=seoBusinessConfig(c.model,days,objective),asOf=new Date(config.asOf!),intelligence=intelligenceContext(rows);
   phase='evidence';
-  const result=await runSeoResearchPlan({...seoBusinessConfig(c.model,days,objective),history:historicalContext(backlog.opportunities),intelligence:intelligenceContext(rows)}, {...ports,services:[{id:'salesforce',title:'Salesforce Modernization'},{id:'ai-solutions',title:'AI Solutions'},{id:'custom-applications',title:'Custom Business Applications'}],savedResearch:async()=>{await authorize();return {evidence:savedPlanningEvidence(rows),memory};}}, {modelProvider:new OpenAIProvider({openAIClient:client,useResponses:true}),signal:bounded,onProgress:()=>{phase='model';},onUsage:async receipt=>{receipts.push(receipt);await store.progress(requestId,'model',receipts);phase='validation';}});
+  const result=await runSeoResearchPlan({...config,history:historicalContext(backlog.opportunities),intelligence}, {...ports,services:[{id:'salesforce',title:'Salesforce Modernization'},{id:'ai-solutions',title:'AI Solutions'},{id:'custom-applications',title:'Custom Business Applications'}],savedResearch:async()=>{await authorize();return {evidence:[...savedPlanningEvidence(rows,asOf),...(intelligence?[intelligencePlanningEvidence(intelligence,asOf)]:[])],memory};},evidenceDetails:async query=>{await authorize();return savedEvidenceDetails(rows,owner.tenantId,intelligence,query);}}, {modelProvider:new OpenAIProvider({openAIClient:client,useResponses:true}),signal:bounded,onProgress:()=>{phase='model';},onUsage:async receipt=>{receipts.push(receipt);await store.progress(requestId,'model',receipts);phase='validation';}});
   await authorize();phase='pricing';const plan=priceResearchPlan(result.plan,rows,owner.tenantId);phase='persistence';const id=await saveResearchPlan(db,owner.tenantId,owner.user.id,requestId,objective,plan,result.evidence,result.usage);
   phase='completion';await store.completePlan(requestId,result.usage,assignment);return {planId:id,executionId:requestId,reused:false};
  }catch(error){

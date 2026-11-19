@@ -7,6 +7,7 @@ import {marketingRows} from '../opportunities/repository';
 import {stableId} from '../opportunities/identity';
 import {cacheFresh,providerScope,queryKey,parseResearchCommand,savedResearch,type ResearchCommand} from './service';
 import {dataForSeoPrices,dataForSeoTarget} from './dataforseo';
+import {intelligencePlanningEvidence} from './planning-evidence';
 
 const domain='seo-research-planning';
 export type PricedPlan=Omit<ResearchPlan,'steps'>&{steps:(ResearchPlan['steps'][number]&{cachedResearchIds:string[];maximumCostUsd:number})[];maximumRequests:number;maximumCostUsd:number;paidExecutionEnabled:false};
@@ -38,7 +39,7 @@ export function planningMemory(research:Artifact[],plans:Artifact[]):ResearchMem
  return {investigations:[...latest.map(r=>{const q=r.payload.query as ResearchCommand,complete=research.some(a=>a.parent_id===r.id&&a.payload.workflow==='intelligence-research/v1'),failed=research.find(a=>a.parent_id===r.id&&a.payload.workflow==='intelligence-failure/v1');return {id:r.id,service:q.service,mode:q.mode,seeds:q.seeds,status:complete?'completed':failed?'failed':'uncertain',limitations:complete?['Provider estimates are not measured site conversions.']:[String((failed?.payload.diagnostic as {category?:string})?.category??'Result unconfirmed; do not replay automatically.')]};}),...priorPlans].slice(0,30),decisions:savedPlans(plans).slice(0,8).map(p=>({planId:p.id,decision:p.decision,note:p.note.slice(0,300)})),feedback:[]};
 }
 export function savedPlanningEvidence(rows:Artifact[],now=new Date()):Evidence[]{
- return savedResearch(rows).filter(r=>r.scope===providerScope(marketingTenant,r.query)).slice(0,5).map(r=>({id:r.id,kind:'external_research',title:`Saved ${r.query.service} ${r.query.mode} investigation`,content:JSON.stringify({query:r.query,bundle:r.bundle,stale:!cacheFresh(r,now)}).slice(0,8000),sources:r.bundle.collections.flatMap(p=>p.sourceUrls.map(url=>({url,title:p.provider}))).slice(0,15),retrievedAt:new Date(r.createdAt).toISOString(),status:'connected',hasActualSearchData:false}));
+ return savedResearch(rows).filter(r=>r.scope===providerScope(marketingTenant,r.query)).slice(0,5).map(r=>({...intelligencePlanningEvidence({...r.bundle,id:r.id},now),retrievedAt:new Date(r.createdAt).toISOString()}));
 }
 export async function saveResearchPlan(db:SupabaseClient,tenant:string,actor:string,executionId:string,objective:string,plan:PricedPlan,evidence:Evidence[],usage:UsageReceipt[]){
  if(tenant!==marketingTenant)throw new MarketingError(403,'Unauthorized research workspace.');

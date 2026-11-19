@@ -9,7 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@augmented-architect/seo-analyst": "file:vendor/augmented-architect-seo-analyst-0.4.0.tgz",
+    "@augmented-architect/seo-analyst": "file:vendor/augmented-architect-seo-analyst-0.5.0.tgz",
     "@openai/agents": "0.22.0",
     "@supabase/ssr": "0.12.7",
     "@supabase/supabase-js": "2.119.0",

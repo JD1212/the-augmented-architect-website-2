@@ -57,3 +57,13 @@ test('Preview status/history reads stay scoped and cannot replace Production ana
  const empty=await preview.readSeoPanel(db,tenant);assert.equal(empty.agent,null);assert.deepEqual(empty.runs,[]);
  await preview.createSeoStore(db,tenant).register();assert.deepEqual((await preview.readSeoPanel(db,tenant)).runs,[]);assert.equal((await prod.readSeoPanel(db,tenant)).analysis.summary,'Existing Production findings.');
 });
+test('candidate package and legacy Production coexist; status reads are rollback-safe and newer registrations reject old execution',async()=>{
+ const db=memoryDatabase({marketing_agents:[productionRow]}),before=JSON.stringify(db.rows.marketing_agents[0]);
+ const preview=moduleFor(previewIdentity,pkg.packageVersion);
+ await preview.createSeoStore(db,tenant).register();assert.equal(JSON.stringify(db.rows.marketing_agents[0]),before);
+ const production=moduleFor(productionIdentity,pkg.packageVersion);await production.readSeoPanel(db,tenant);assert.equal(JSON.stringify(db.rows.marketing_agents[0]),before);
+ // First explicit execution registration is an upgrade boundary, never a deployment side effect.
+ await production.createSeoStore(db,tenant).register();assert.equal(db.rows.marketing_agents[0].version,pkg.packageVersion);
+ await assert.rejects(moduleFor(productionIdentity,'0.3.0').createSeoStore(db,tenant).register(),e=>e.status===409);
+ assert.equal(db.rows.marketing_agents[0].config.readOnly,true);
+});
