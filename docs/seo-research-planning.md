@@ -36,6 +36,10 @@ Augment can invoke `runSeoResearchPlan(config, ports, host)` using its own autho
 
 ## Verification and limitations
 
+The first authorized planning attempt (`e10fe81e-060f-4527-9b9d-bc3c0675bd14`) exposed a saved-evidence timestamp mismatch. PostgreSQL JSON returns `created_at` with an explicit UTC offset and microseconds; the package's `retrievedAt` contract requires ISO UTC `Z`. The adapter now normalizes this DTO timestamp with `Date.toISOString()` and leaves original evidence records and provider provenance unchanged. Strict package validation remains intact. A regression reproduces the original format's `EVIDENCE_SCHEMA_INVALID` / `retrievedAt` failure before any model access, then verifies the corrected path through the actual SDK using a mocked transport.
+
+That historical failed execution retains its original empty receipts and unknown token/cost totals; no speculative diagnostics are backfilled. Future failures persist a sanitized phase, validation rule/path or allowlisted provider status/code/parameter, preserve returned usage, release the execution lease, and write the same redacted diagnostic to Preview logs. Prompts, source bodies, credentials and raw provider errors are excluded. No live retry is part of this correction.
+
 Package tests execute the real SDK against deterministic mock model responses. Website tests cover cache scope/freshness, unknown data, host-derived budgets, deduplication, persistence, immutable decisions, tenant authorization and private API rejection. No live paid research or model run is part of this release verification. The existing DataForSEO result is real; newly generated plans in browser tests are clearly fixtures. End-to-end live planning quality still requires a separately approved controlled model run.
 
 The engine can recommend gathering more evidence, improving an existing page or creating no content. It cannot yet execute an approved multi-step paid plan, research continuously, publish, schedule, or learn from performance that has not been observed. Provider keyword volume is an estimate, advertising competition is not organic difficulty, and report emptiness is not zero demand.
