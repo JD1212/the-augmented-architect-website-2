@@ -38,19 +38,8 @@ export async function executeResearch({db,tenant,actor,command,authorize,keyword
   const cached=results.find(r=>r.scope===scope&&queryKey(r.query)===queryKey(command)&&cacheFresh(r,now));if(cached)return {research:cached,reused:true};
   const providerId=command.mode==='competition'?'dataforseo':command.provider==='dataforseo'?'dataforseo_keywords':'google_ads',connection=researchConnections().find(c=>c.id===providerId)!;
   if(enabled!==true&&!connection.ready)throw new MarketingError(503,connection.message);
-  const guards=rows.filter(r=>r.payload.workflow==='intelligence-budget/v1').sort((a,b)=>b.created_at.localeCompare(a.created_at));
-  if(guards.some(r=>now.getTime()-Date.parse(r.created_at)<researchPolicy.minimumIntervalMs))throw new MarketingError(429,'Allow one minute between provider requests.');
-  if(guards.filter(r=>Date.parse(r.created_at)>now.getTime()-86400000).length>=researchPolicy.maximumDailyRequests)throw new MarketingError(429,'The ten-request daily research budget has been reached.');
   const paid=isDataForSeo(command),approval=dataForSeoApproval(),reservedMaximumUsd=paid?dataForSeoPrices[command.mode]:0;
-  if(paid&&enabled!==true){
-    const claims=rows.filter(r=>r.payload.workflow==='intelligence-request/v1'&&r.payload.approvalId===approval.id);
-    if(claims.some(c=>!results.some(r=>r.id===stableId(c.id+':result')))||rows.some(r=>r.payload.workflow==='intelligence-failure/v1'&&r.payload.approvalId===approval.id))throw new MarketingError(409,'This approval has a failed or uncertain request. Review its receipt before authorizing further spending.');
-    const reserved=claims.reduce((sum,r)=>sum+Number(r.payload.reservedMaximumUsd??1),0);
-    if(!approval.configured||claims.length>=approval.maximumRequests||reserved+reservedMaximumUsd>approval.maximumCostUsd+.000000001)throw new MarketingError(429,'The explicitly approved DataForSEO request or USD budget is exhausted.');
-  }
-  const guardId=stableId(tenant+':intelligence-budget-v1:'+(guards[0]?.id??'initial'));
-  const guard=await db.from('marketing_artifacts').insert({id:guardId,tenant_id:tenant,kind:'measurement',title:'Manual research budget reservation',actor_id:actor,payload:{domain,workflow:'intelligence-budget/v1',requestId:command.requestId,previousId:guards[0]?.id??null}});if(guard.error)throw new MarketingError(409,'Another research request claimed this workspace. No provider request was sent.');
-  const claim=await db.from('marketing_artifacts').insert({id:command.requestId,tenant_id:tenant,kind:'measurement',title:'Manual intelligence request',actor_id:actor,payload:{domain,workflow:'intelligence-request/v1',query:command,scope,...(paid?{approvalId:approval.id,reservedMaximumUsd}:{})}});if(claim.error)throw new MarketingError(409,'Research request already claimed. No duplicate provider request was sent.');
+  await claimResearchBudget({db,tenant,actor,requestId:command.requestId,query:{...command},scope,reservedMaximumUsd,rows,now,approvalRequired:paid&&enabled!==true});
   const resultId=stableId(command.requestId+':result');
   let availableReceipt:Provenance|null=null;
   try{
@@ -74,4 +63,23 @@ export function intelligenceContext(rows:Artifact[]):Intelligence|undefined {
   const bundle:Intelligence={version:'opportunity-intelligence/v1',id:randomUUID(),collections:records.flatMap(r=>r.bundle.collections).slice(0,3),market:records.flatMap(r=>r.bundle.market).slice(0,10),competition:records.flatMap(r=>r.bundle.competition).slice(0,1).map(c=>({...c,results:c.results.slice(0,8),findings:c.findings.filter(f=>f.sourceUrls.every(u=>c.results.slice(0,8).some(r=>r.url===u)||c.provenance.sourceUrls.includes(u)))})),business:records.find(r=>r.bundle.business)?.bundle.business??null,limitations:['Saved research is bounded and may omit older or unrelated terms; at most eight observed competitor pages enter model context. Full source records remain available to the owner.','Keyword Planner volume is a provider estimate; SERP positions apply only to the recorded query, geography and collection time.']};
   while(new TextEncoder().encode(JSON.stringify(bundle)).length>9000||!intelligenceContextSchema.safeParse(bundle).success){if(bundle.market.length)bundle.market.pop();else if(bundle.competition.length)bundle.competition.pop();else if(bundle.collections.length)bundle.collections.pop();else return undefined;}
   return bundle;
+}
+
+// Shared immutable ledger and tenant-wide rate/budget reservation for every provider surface.
+export async function claimResearchBudget({db,tenant,actor,requestId,query,scope,reservedMaximumUsd,rows,now,approvalRequired}:{db:SupabaseClient;tenant:string;actor:string;requestId:string;query:Record<string,unknown>;scope:string;reservedMaximumUsd:number;rows:Artifact[];now:Date;approvalRequired:boolean}){
+ if(tenant!==marketingTenant)throw new MarketingError(403,'Unauthorized research tenant.');
+  const guards=rows.filter(r=>r.payload.workflow==='intelligence-budget/v1').sort((a,b)=>b.created_at.localeCompare(a.created_at));
+  if(guards.some(r=>now.getTime()-Date.parse(r.created_at)<researchPolicy.minimumIntervalMs))throw new MarketingError(429,'Allow one minute between provider requests.');
+  if(guards.filter(r=>Date.parse(r.created_at)>now.getTime()-86400000).length>=researchPolicy.maximumDailyRequests)throw new MarketingError(429,'The ten-request daily research budget has been reached.');
+  const approval=dataForSeoApproval();
+  if(approvalRequired){
+    const claims=rows.filter(r=>r.payload.workflow==='intelligence-request/v1'&&r.payload.approvalId===approval.id);
+    if(claims.some(c=>!rows.some(r=>r.id===stableId(c.id+':result')&&r.payload.state==='completed'&&['intelligence-research/v1','intelligence-ai-observation/v1'].includes(String(r.payload.workflow))))||rows.some(r=>r.payload.workflow==='intelligence-failure/v1'&&r.payload.approvalId===approval.id))throw new MarketingError(409,'This approval has a failed or uncertain request. Review its receipt before authorizing further spending.');
+    const reserved=claims.reduce((sum,r)=>sum+Number(r.payload.reservedMaximumUsd??1),0);
+    if(!approval.configured||claims.length>=approval.maximumRequests||reserved+reservedMaximumUsd>approval.maximumCostUsd+.000000001)throw new MarketingError(429,'The explicitly approved DataForSEO request or USD budget is exhausted.');
+  }
+  const guardId=stableId(tenant+':intelligence-budget-v1:'+(guards[0]?.id??'initial'));
+  const guard=await db.from('marketing_artifacts').insert({id:guardId,tenant_id:tenant,kind:'measurement',title:'Manual research budget reservation',actor_id:actor,payload:{domain,workflow:'intelligence-budget/v1',requestId:requestId,previousId:guards[0]?.id??null}});if(guard.error)throw new MarketingError(409,'Another research request claimed this workspace. No provider request was sent.');
+  const claim=await db.from('marketing_artifacts').insert({id:requestId,tenant_id:tenant,kind:'measurement',title:'Manual intelligence request',actor_id:actor,payload:{domain,workflow:'intelligence-request/v1',query,scope,...(reservedMaximumUsd>0?{approvalId:approval.id,reservedMaximumUsd}:{})}});if(claim.error)throw new MarketingError(409,'Research request already claimed. No duplicate provider request was sent.');
+
 }

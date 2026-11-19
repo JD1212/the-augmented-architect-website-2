@@ -1,5 +1,6 @@
 import type { WorkspaceView } from '@/content/marketing-workspace';
 const paths:Record<WorkspaceView|string,string>={
+  'ai-visibility':'M12 3v4m0 10v4M3 12h4m10 0h4M6 6l3 3m6 6 3 3M6 18l3-3m6-6 3-3M9 9h6v6H9z',
   keywords:'M3 5h18M3 12h12M3 19h7m7-4 4 4m-2-5a4 4 0 1 0-8 0 4 4 0 0 0 8 0',
   opportunities:'M5 3h14v18H5zM8 8h8M8 12h8M8 16h5',
   overview:'M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z',

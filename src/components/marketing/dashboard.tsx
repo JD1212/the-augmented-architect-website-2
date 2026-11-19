@@ -10,6 +10,7 @@ import { ChannelBars, Empty, ReportTableView, Sparkline, TrendChart } from './ch
 import {useSeoAnalyst} from './use-seo-analyst';
 import {SeoAnalystPanel} from './seo-analyst-panel';
 import {OpportunityBacklog} from './opportunity-backlog';
+import {AiVisibility} from './ai-visibility';
 import {KeywordIntelligence} from './keyword-intelligence';
 import { AgentDetail, AgentTeam } from './agent-team';
 import { WorkspaceIcon } from './workspace-icon';
@@ -81,6 +82,7 @@ export function MarketingDashboardView({email}:{email:string}) {
       <div className={styles.reportMeta}><span>{data?`${data.range.start} — ${data.range.end}`:'Reporting period loading'}</span><span>{demo?'All figures below are simulated':ga?.updatedAt||search?.updatedAt?'Provider retrieval times in Integrations · reporting can lag':'Read-only reporting · awaiting retrieval'}</span></div>
       {busy&&!demo&&<p className={styles.loading} role="status">Retrieving private reports…</p>}{error&&!demo&&<p className={styles.error} role="alert">{error}</p>}
       <div aria-busy={busy&&!demo} className={styles.viewContent}>
+      {view==='ai-visibility'&&<AiVisibility demo={demo} days={days}/>}
       {view==='keywords'&&<KeywordIntelligence demo={demo} days={days}/>}
       {view==='opportunities'&&<OpportunityBacklog demo={demo}/>}
       {view==='overview'&&<><Kpis source={ga} prior={demo?undefined:prior?.ga4} kind="ga4" demo={demo}/><div className={styles.chartGrid}><TrendChart title="Your audience, over time" table={ga?.data?.daily} metric="Sessions" source={demo?'SIMULATED · DEMO':'GOOGLE ANALYTICS 4'}/><ChannelBars table={ga?.data?.acquisition} demo={demo}/></div><div className={styles.sectionHeading}><div><p className={styles.eyebrow}>ORGANIC DISCOVERY</p><h2>Visibility that builds momentum.</h2></div><Link href="?view=search" className={styles.textLink}>Explore search <WorkspaceIcon name="arrow"/></Link></div><Kpis source={search} prior={demo?undefined:prior?.search} kind="search" demo={demo}/><div className={styles.grid}><TrendChart title="Search clicks" table={search?.data?.daily} metric="Clicks" source={demo?'SIMULATED · DEMO':'GOOGLE SEARCH CONSOLE'}/><ReportTableView title="Top landing pages" table={ga?.data?.pages} label="Landing page"/></div><AgentTeam compact seo={seo.data} demo={demo}/><div className={styles.grid}><SourceNotes name="Google Analytics 4" source={ga} demo={demo}/><SourceNotes name="Google Search Console" source={search} demo={demo}/></div></>}

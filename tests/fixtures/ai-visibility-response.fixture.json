@@ -1,0 +1,20 @@
+{
+  "status_code": 20000,
+  "cost": 0.004,
+  "tasks": [{
+    "id": "fixture-ai-task",
+    "status_code": 20000,
+    "cost": 0.004,
+    "result": [{
+      "keyword": "Which partner can connect our customer and team systems?",
+      "location_code": 2840,
+      "language_code": "en",
+      "model": "fixture-model-not-a-live-observation",
+      "datetime": "2026-11-18 12:00:00 +00:00",
+      "markdown": "Example Business and Alternative Company are options to investigate. Compare their scope before choosing a partner.",
+      "sources": [{"url": "https://alternative.example/offer", "title": "Alternative Company offering"}],
+      "search_results": [{"url": "https://uncited.example/", "title": "Unused search result"}],
+      "brand_entities": [{"title": "Example Business"}, {"title": "Alternative Company"}]
+    }]
+  }]
+}

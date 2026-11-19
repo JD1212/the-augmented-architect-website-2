@@ -10,6 +10,7 @@ import {loadBacklog} from '../opportunities/repository';
 import {reconcileFinding,materiallyChanged,measuredEvidenceChanged} from '../opportunities/identity';
 import type {Opportunity} from '../opportunities/contracts';
 
+export type SeoAssignment={objective:string;mode:'research_plan'|'ai_visibility';planId?:string;quoteHash?:string;focus?:'ai_visibility'};
 type AgentRow={id:string;tenant_id:string;name:string;version:string;enabled:boolean;config:Record<string,unknown>};
 type Lease={id:string;expiresAt:string};
 function fail(message='SEO Analyst storage is temporarily unavailable.'):never{throw new MarketingError(503,message);}
@@ -26,7 +27,7 @@ export function leaseDecision(config:Record<string,unknown>,id:string,now=new Da
 export function createSeoStore(db:SupabaseClient,tenantId:string){
   assertExecutionScope(tenantId);
   let executionActor:string|undefined;
-  let executionAssignment:{objective:string;mode:"research_plan"}|undefined;
+  let executionAssignment:SeoAssignment|undefined;
   async function findAgent():Promise<AgentRow|null>{const r=await db.from('marketing_agents').select('id,tenant_id,name,version,enabled,config').eq('tenant_id',tenantId).eq('name',seoRegistration.name).order('created_at',{ascending:false}).limit(1).maybeSingle();if(r.error)fail();return r.data as AgentRow|null;}
   async function register():Promise<AgentRow>{
     const existing=await findAgent();
@@ -45,7 +46,7 @@ export function createSeoStore(db:SupabaseClient,tenantId:string){
     const r=await db.from('marketing_agents').insert({tenant_id:tenantId,...seoRegistration,config:{slug:'seo-analyst',executionMode:'manual',runtime:'OpenAI Agents SDK',sourceRepository:'JD1212/augarch-seo-analyst',recentStarts:[],readOnly:true,...(seoRegistrationScope?{registrationScope:seoRegistrationScope}:{})}}).select('id,tenant_id,name,version,enabled,config').single();
     if(r.error){if(r.error.code==='23505'){const found=await findAgent();if(found)return found;}fail();}return r.data as AgentRow;
   }
-  async function claim(id:string,actorId:string,days:number,assignment?:{objective:string;mode:'research_plan'}){
+  async function claim(id:string,actorId:string,days:number,assignment?:SeoAssignment){
     executionActor=actorId;executionAssignment=assignment;
     const agent=await register();if(!agent.enabled)throw new MarketingError(403,'SEO Analyst has been disabled by the workspace administrator.');
     const existing=await db.from('marketing_executions').select('id,state,diagnostics').eq('id',id).eq('tenant_id',tenantId).eq('agent_id',agent.id).maybeSingle();if(existing.error)fail();if(existing.data){if(assignment&&JSON.stringify(existing.data.diagnostics?.assignment)!==JSON.stringify(assignment))throw new MarketingError(409,'Execution ID belongs to a different objective or mode.');return {agent,reused:true};}
@@ -84,11 +85,14 @@ export function createSeoStore(db:SupabaseClient,tenantId:string){
         working.push({id:opportunityId,finding:o} as Opportunity);
       }else matched.opportunity.finding=o;
       const recommendation=await db.from('marketing_artifacts').insert({id:recommendationId,tenant_id:tenantId,kind:'recommendation',title:o.title,execution_id:id,parent_id:opportunityId,actor_id:actorId,payload:{...o,evidenceArtifactId:bundleId,requiresOwnerReview:true,continuity:{version:1,reason:matched.reason,previousFindingId:matched.opportunity?.findingId??null}}});if(recommendation.error)fail();
+      if(executionAssignment?.mode==='ai_visibility'){
+        const link=await db.from('marketing_artifacts').insert({id:uuid(id+':ai-link:'+o.priority),tenant_id:tenantId,kind:'measurement',parent_id:opportunityId,execution_id:id,actor_id:actorId,title:'AI visibility evidence linked to opportunity',payload:{domain:'opportunity-intelligence',workflow:'intelligence-ai-link/v1',planId:executionAssignment.planId,evidenceArtifactId:bundleId,evidenceIds:o.evidenceIds,doesNotProveDemand:true}});if(link.error)fail();
+      }
       // Google rows anchor measured/empty report context. External sources remain explicit research documents in the bundle.
       const links=[...reportIds].map(([evidenceId,reportId])=>({tenant_id:tenantId,artifact_id:recommendationId,report_id:reportId,observation:{kind:'report_context',evidenceId,status:result.evidence.find(e=>e.id===evidenceId)?.status,externalEvidenceArtifactId:bundleId,doesNotProveDemand:true}}));
       if(links.length){const e=await db.from('marketing_evidence').upsert(links,{onConflict:'tenant_id,artifact_id,report_id'});if(e.error)fail();}
     }
-    const done=await db.from('marketing_executions').update({state:'completed',finished_at:new Date().toISOString(),usage:usageSummary(result.usage),diagnostics:{stage:'completed',packageVersion:result.packageVersion,instructionsVersion:result.instructionsVersion,actorId,opportunities:result.analysis.opportunities.length}}).eq('id',id).eq('tenant_id',tenantId).eq('state','running').select('id').single();if(done.error)fail();
+    const done=await db.from('marketing_executions').update({state:'completed',finished_at:new Date().toISOString(),usage:usageSummary(result.usage),diagnostics:{stage:'completed',packageVersion:result.packageVersion,instructionsVersion:result.instructionsVersion,actorId,...(executionAssignment?{assignment:executionAssignment}:{}),opportunities:result.analysis.opportunities.length}}).eq('id',id).eq('tenant_id',tenantId).eq('state','running').select('id').single();if(done.error)fail();
   }
   async function failed(id:string,receipts:UsageReceipt[],message:string,failure?:{kind:string;status:number|null;code?:string|null;param?:string|null;phase?:string;validation?:unknown}){const r=await db.from('marketing_executions').update({state:'failed',finished_at:new Date().toISOString(),usage:usageSummary(receipts),diagnostics:{stage:'failed',...(executionAssignment?{assignment:executionAssignment}:{}),actorId:executionActor,packageVersion:seoRegistration.version,error:message,failure}}).eq('id',id).eq('tenant_id',tenantId).eq('state','running');if(r.error)fail();}
   async function completePlan(id:string,receipts:UsageReceipt[],assignment:{objective:string;mode:'research_plan'}){

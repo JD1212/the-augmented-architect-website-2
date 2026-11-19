@@ -1,7 +1,7 @@
 import 'server-only';
 import OpenAI from 'openai';
 import {OpenAIProvider} from '@openai/agents';
-import {runSeoResearchPlan,performanceFeedbackSchema,type UsageReceipt} from '@augmented-architect/seo-analyst';
+import {runSeoResearchPlan,performanceFeedbackSchema,visibilityEvidence,type UsageReceipt} from '@augmented-architect/seo-analyst';
 import {requireOwner} from '../auth';
 import {MarketingError} from '../config';
 import {seoConfiguration,seoDatabase} from './config';
@@ -13,6 +13,7 @@ import {historicalContext} from '../opportunities/model';
 import {intelligenceRecords,intelligenceContext} from '../intelligence/service';
 import {planningRecords,planningMemory,savedPlanningEvidence,priceResearchPlan,saveResearchPlan} from '../intelligence/planning';
 import {intelligencePlanningEvidence,savedEvidenceDetails} from '../intelligence/planning-evidence';
+import {savedVisibility} from '../intelligence/visibility';
 import {validationDiagnostic} from './validation-diagnostics';
 import {usageSummary} from './contracts';
 
@@ -29,9 +30,9 @@ export function planningFailureDiagnostic(error:unknown,phase:PlanningPhase){
  return {phase,kind:validation?provider?.name==='ZodError'?'ZodError':'SeoValidationError':typeof provider?.name==='string'&&kinds.includes(provider.name)?provider.name:'PlanningError',status:typeof provider?.status==='number'&&Number.isInteger(provider.status)&&provider.status>=400&&provider.status<=599?provider.status:null,code:validation?.rule??(typeof provider?.code==='string'&&codes.includes(provider.code)?provider.code:null),param:validation?.path??(typeof provider?.param==='string'&&params.includes(provider.param)?provider.param:null),validation};
 }
 
-export async function prepareSeoResearchPlan(owner:Awaited<ReturnType<typeof requireOwner>>,requestId:string,objective:string,days:7|28|90,signal:AbortSignal){
+export async function prepareSeoResearchPlan(owner:Awaited<ReturnType<typeof requireOwner>>,requestId:string,objective:string,days:7|28|90,signal:AbortSignal,focus?:'ai_visibility'){
  requirePlanningExecution();
- const c=seoConfiguration(),db=seoDatabase(),store=createSeoStore(db,owner.tenantId),assignment={objective,mode:'research_plan' as const};
+ const c=seoConfiguration(),db=seoDatabase(),store=createSeoStore(db,owner.tenantId),assignment={objective,mode:'research_plan' as const,...(focus?{focus}:{})};
  const claimed=await store.claim(requestId,owner.user.id,days,assignment);
  if(claimed.reused)return {executionId:requestId,reused:true};
  const receipts:UsageReceipt[]=[],bounded=AbortSignal.any([signal,AbortSignal.timeout(c.limits.maxRuntimeMs)]);
@@ -45,7 +46,7 @@ export async function prepareSeoResearchPlan(owner:Awaited<ReturnType<typeof req
   const {ports}=createSeoTools({tenantId:owner.tenantId,days,client,authorize,onResearchUsage:async()=>{throw Error('External model research is not permitted in planning mode.');}});
   const config=seoBusinessConfig(c.model,days,objective),asOf=new Date(config.asOf!),intelligence=intelligenceContext(rows);
   phase='evidence';
-  const result=await runSeoResearchPlan({...config,history:historicalContext(backlog.opportunities),intelligence}, {...ports,services:[{id:'salesforce',title:'Salesforce Modernization'},{id:'ai-solutions',title:'AI Solutions'},{id:'custom-applications',title:'Custom Business Applications'}],savedResearch:async()=>{await authorize();return {evidence:[...savedPlanningEvidence(rows,asOf),...(intelligence?[intelligencePlanningEvidence(intelligence,asOf)]:[])],memory};},evidenceDetails:async query=>{await authorize();return savedEvidenceDetails(rows,owner.tenantId,intelligence,query);}}, {modelProvider:new OpenAIProvider({openAIClient:client,useResponses:true}),signal:bounded,onProgress:()=>{phase='model';},onUsage:async receipt=>{receipts.push(receipt);await store.progress(requestId,'model',receipts);phase='validation';}});
+  const result=await runSeoResearchPlan({...config,...(focus?{researchFocus:focus}:{}),history:historicalContext(backlog.opportunities),intelligence}, {...ports,services:[{id:'salesforce',title:'Salesforce Modernization'},{id:'ai-solutions',title:'AI Solutions'},{id:'custom-applications',title:'Custom Business Applications'}],savedResearch:async()=>{await authorize();return {evidence:[...visibilityEvidence(savedVisibility(rows).slice(0,2).flatMap(r=>r.observations.slice(0,1)),asOf.toISOString()),{id:'ai-visibility-provider-coverage',kind:'external_research' as const,title:'Available governed AI observation methods and published pricing',content:JSON.stringify({coverage:'US/English',promptTests:{platforms:['chatgpt','gemini'],publishedMaximumPerTaskUsd:0.004},historicalIndex:{platforms:['chatgpt','google_ai_overview'],maximumRows:10,maximumQueryCharacters:250,publishedMaximumPerTaskUsd:0.11},limitations:['An interface sample is not population visibility. Google AI Overviews is not Gemini. Provider prices must be checked before purchase.','Every purchase requires a host quote, owner approval and separately enabled spending budget.']}),sources:[{url:'https://dataforseo.com/pricing/ai-optimization/llm-scraper',title:'DataForSEO LLM Scraper pricing'},{url:'https://dataforseo.com/pricing/ai-optimization/llm-mentions',title:'DataForSEO LLM Mentions pricing'}],retrievedAt:asOf.toISOString(),status:'connected' as const,hasActualSearchData:false},...(intelligence?[intelligencePlanningEvidence(intelligence,asOf)]:[]),...savedPlanningEvidence(rows,asOf)].slice(0,7),memory};},evidenceDetails:async query=>{await authorize();return savedEvidenceDetails(rows,owner.tenantId,intelligence,query);}}, {modelProvider:new OpenAIProvider({openAIClient:client,useResponses:true}),signal:bounded,onProgress:()=>{phase='model';},onUsage:async receipt=>{receipts.push(receipt);await store.progress(requestId,'model',receipts);phase='validation';}});
   await authorize();phase='pricing';const plan=priceResearchPlan(result.plan,rows,owner.tenantId);phase='persistence';const id=await saveResearchPlan(db,owner.tenantId,owner.user.id,requestId,objective,plan,result.evidence,result.usage);
   phase='completion';await store.completePlan(requestId,result.usage,assignment);return {planId:id,executionId:requestId,reused:false};
  }catch(error){

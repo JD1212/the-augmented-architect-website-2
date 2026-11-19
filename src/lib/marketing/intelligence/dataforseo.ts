@@ -3,8 +3,8 @@ import {marketEvidenceSchema,competitiveEvidenceSchema,safeSource,type KeywordRe
 import {MarketingError} from '../config';
 
 const root='https://api.dataforseo.com/v3/';
-const methods={ideas:'keywords_data/google_ads/keywords_for_keywords/live',historical:'keywords_data/google_ads/search_volume/live',competition:'serp/google/organic/live/advanced'} as const;
-export const dataForSeoPrices={ideas:.09,historical:.09,competition:.002} as const;
+const methods={ideas:'keywords_data/google_ads/keywords_for_keywords/live',historical:'keywords_data/google_ads/search_volume/live',competition:'serp/google/organic/live/advanced',aiChatgpt:'ai_optimization/chat_gpt/llm_scraper/live/advanced',aiGemini:'ai_optimization/gemini/llm_scraper/live/advanced',aiMentions:'ai_optimization/llm_mentions/search_mentions/live'} as const;
+export const dataForSeoPrices={ideas:.09,historical:.09,competition:.002,aiChatgpt:.004,aiGemini:.004,aiMentions:.11} as const;
 export const firstResearchExperiment={id:'salesforce-demand-v1',seeds:['Salesforce automation consulting','Salesforce Flow optimization','Salesforce Apex consultant','Salesforce org cleanup','Salesforce technical debt'],competitionTerms:['Salesforce automation consulting','Salesforce org cleanup'],maximumRequests:4,maximumCostUsd:.184} as const;
 export function dataForSeoTarget(env=process.env){
  const locationCode=Number(env.DATAFORSEO_LOCATION_CODE??2840),country=env.DATAFORSEO_COUNTRY_CODE??'US',language=env.DATAFORSEO_LANGUAGE_CODE??'en';
@@ -45,8 +45,8 @@ const object=(v:unknown):Record<string,unknown>=>v&&typeof v==='object'&&!Array.
 const numeric=(v:unknown,integer=false)=>{if(v===null||v===undefined)return null;if(typeof v!=='number'||!Number.isFinite(v)||v<0||integer&&!Number.isSafeInteger(v))throw new DataForSeoError('Provider numeric data did not pass validation.');return v;};
 const micros=(v:unknown)=>{const n=numeric(v);if(n===null)return null;const m=Math.round(n*1000000);if(!Number.isSafeInteger(m))throw new DataForSeoError('Provider bid amount exceeded the supported range.');return m;};
 const plain=(term:string)=>term.trim().length>0&&term.length<=80&&term.trim().split(/\s+/).length<=10&&!/[@\u0000-\u001f]|https?:|(?:^|\s)(?:site|inurl|intitle|intext|filetype|link|define|id|info|inanchor|allinurl|allintitle|allintext|allinanchor):/i.test(term);
-type Options={login:string;password:string;fetcher?:typeof fetch;now?:()=>Date;target?:ReturnType<typeof dataForSeoTarget>};
-function client({login,password,fetcher=fetch,now=()=>new Date(),target=dataForSeoTarget()}:Options){
+export type DataForSeoOptions={timeoutMs?:number;login:string;password:string;fetcher?:typeof fetch;now?:()=>Date;target?:ReturnType<typeof dataForSeoTarget>};
+export function dataForSeoClient({login,password,fetcher=fetch,now=()=>new Date(),target=dataForSeoTarget(),timeoutMs=20000}:DataForSeoOptions){
  const check=(terms:string[],market:TargetMarket)=>{if(!terms.length||terms.length>5||terms.some(t=>!plain(t))||market.country!==target.country||market.language!==target.language)throw new MarketingError(400,'Use plain seed terms and the configured research target.');};
  const request=async(mode:keyof typeof methods,data:object,signal:AbortSignal)=>{
   let receipt:Provenance|null=null,httpStatus:number|null=null,providerStatusCode:number|null=null,providerRequestId:string|null=null,reportedCostUsd:number|null=null;
@@ -55,7 +55,7 @@ function client({login,password,fetcher=fetch,now=()=>new Date(),target=dataForS
   const diagnostic=(category?:DataForSeoFailureCategory):DataForSeoDiagnostic=>({version:'dataforseo-failure/v1',requestId:null,endpoint:methods[mode],httpStatus,providerStatusCode,category:category??failureCategory(httpStatus,providerStatusCode),providerRequestId,reportedCostUsd,stage});
   const failure=(message:string,category?:DataForSeoFailureCategory)=>new DataForSeoError(message,receipt,diagnostic(category));
   try{
-   const r=await fetcher(root+methods[mode],{method:'POST',redirect:'error',cache:'no-store',headers:{Authorization:'Basic '+Buffer.from(login+':'+password).toString('base64'),'Content-Type':'application/json'},body:JSON.stringify([{location_code:target.locationCode,language_code:target.language,...data}]),signal:AbortSignal.any([signal,AbortSignal.timeout(20000)])});
+   const r=await fetcher(root+methods[mode],{method:'POST',redirect:'error',cache:'no-store',headers:{Authorization:'Basic '+Buffer.from(login+':'+password).toString('base64'),'Content-Type':'application/json'},body:JSON.stringify([{location_code:target.locationCode,language_code:target.language,...data}]),signal:AbortSignal.any([signal,AbortSignal.timeout(Math.min(120000,Math.max(1000,timeoutMs)))])});
    httpStatus=r.status;stage=r.ok?'provider_response':'http_response';
    // Read errors too, but only allow numeric codes/cost and a safe task ID to escape memory.
    let body:Record<string,unknown>={};
@@ -67,7 +67,7 @@ function client({login,password,fetcher=fetch,now=()=>new Date(),target=dataForS
    const tasks=body.tasks,task=Array.isArray(tasks)&&tasks.length===1?object(tasks[0]):{},envelopeCode=safeCode(body.status_code),taskCode=safeCode(task.status_code);
    providerStatusCode=envelopeCode!==null&&envelopeCode!==20000?envelopeCode:taskCode??envelopeCode;
    providerRequestId=safeId(task.id,secrets);reportedCostUsd=safeCost(task.cost)??safeCost(body.cost);
-   if(providerRequestId!==null||reportedCostUsd!==null){const time=now();receipt={provider:mode==='competition'?'dataforseo':'dataforseo_keywords',apiVersion:'v3',collectedAt:time.toISOString(),expiresAt:new Date(time.getTime()+(mode==='competition'?86400000:604800000)).toISOString(),requestId:providerRequestId,reportedCostUsd,sourceUrls:['https://docs.dataforseo.com/v3/'+methods[mode]+'/']};}
+   if(providerRequestId!==null||reportedCostUsd!==null){const time=now();receipt={provider:mode.startsWith('ai')?'dataforseo_ai':mode==='competition'?'dataforseo':'dataforseo_keywords',apiVersion:'v3',collectedAt:time.toISOString(),expiresAt:new Date(time.getTime()+(mode==='competition'||mode.startsWith('ai')?86400000:604800000)).toISOString(),requestId:providerRequestId,reportedCostUsd,sourceUrls:['https://docs.dataforseo.com/v3/'+methods[mode]+'/']};}
    if(!r.ok)throw failure(`DataForSEO request failed (HTTP ${httpStatus}; ${failureCategory(httpStatus,providerStatusCode)}${providerStatusCode===null?'':`; provider code ${providerStatusCode}`}). No retry was started.`);
    if(envelopeCode!==20000||!Array.isArray(tasks)||tasks.length!==1||taskCode!==20000)throw failure(`DataForSEO provider response failed (${failureCategory(httpStatus,providerStatusCode)}${providerStatusCode===null?'':`; code ${providerStatusCode}`}). No retry was started.`);
    if(reportedCostUsd===null||safeCost(task.cost)===null||reportedCostUsd>dataForSeoPrices[mode]+.000000001)throw failure('DataForSEO cost receipt exceeded or did not establish the reserved request price. Further requests require review.','unexpected_response');
@@ -77,8 +77,8 @@ function client({login,password,fetcher=fetch,now=()=>new Date(),target=dataForS
  };
  return {check,request};
 }
-export function dataForSeoKeywordProvider(options:Options):KeywordResearchProvider {
- const {check,request}=client(options);
+export function dataForSeoKeywordProvider(options:DataForSeoOptions):KeywordResearchProvider {
+ const {check,request}=dataForSeoClient(options);
  return {id:'dataforseo_keywords',async research(query,signal){
   check(query.seeds,query.target);
   const {results,receipt,diagnostic}=await request(query.mode,{keywords:query.seeds,search_partners:false,...(query.mode==='ideas'?{sort_by:'relevance',include_adult_keywords:false}:{})},signal);
@@ -92,8 +92,8 @@ export function dataForSeoKeywordProvider(options:Options):KeywordResearchProvid
   }catch{throw new DataForSeoError('DataForSEO keyword metrics did not pass evidence validation.',receipt,{...diagnostic,stage:'evidence',category:'unexpected_response'});}
  }};
 }
-export function dataForSeoProvider(options:Options):CompetitiveResearchProvider {
- const {check,request}=client(options);
+export function dataForSeoProvider(options:DataForSeoOptions):CompetitiveResearchProvider {
+ const {check,request}=dataForSeoClient(options);
  return {id:'dataforseo',async research(term,target,signal){
   check([term],target);const {results,receipt,diagnostic}=await request('competition',{keyword:term,device:'desktop',depth:10,max_crawl_pages:1},signal);
   try{

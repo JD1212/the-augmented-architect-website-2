@@ -14,5 +14,5 @@ export function opportunityIntelligence(opportunityId:string,rows:Artifact[],now
       sourceIds.push(link.id);inputs.demonstratedDemand={value:Math.min(100,25*Math.log10(1+market.estimatedMonthlySearches)),rationale:`Initial log-scale heuristic: min(100, 25 × log10(1 + ${market.estimatedMonthlySearches})). Uses a provider estimate, not qualified lead demand.`,sourceReferences:[link.id],confidence:'unknown'};
     }
   }
-  return {links,score:scoreOpportunity(inputs,initialWeights,sourceIds)};
+  return {links,aiEvidenceLinks:rows.filter(r=>r.parent_id===opportunityId&&r.payload.workflow==='intelligence-ai-link/v1').map(r=>({id:r.id,evidenceArtifactId:String(r.payload.evidenceArtifactId),evidenceIds:r.payload.evidenceIds,planId:r.payload.planId})),score:scoreOpportunity(inputs,initialWeights,sourceIds)};
 }

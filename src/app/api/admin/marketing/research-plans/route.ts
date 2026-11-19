@@ -14,8 +14,8 @@ export async function POST(request:Request){
   const owner=await requireOwner(await ownerAuth()),body=await privateBody(request);
   if(body.operation==='prepare'){
    requirePlanningExecution();
-   if(Object.keys(body).some(k=>!['operation','requestId','objective','days'].includes(k))||typeof body.requestId!=='string'||!uuidPattern.test(body.requestId)||typeof body.objective!=='string'||body.objective.trim().length<10||body.objective.length>1500||![7,28,90].includes(Number(body.days))||typeof body.days!=='number')throw new MarketingError(400,'Provide a business objective, execution ID, and authorized reporting window.');
-   return privateJson(await prepareSeoResearchPlan(owner,body.requestId,body.objective,body.days as 7|28|90,request.signal));
+   if(Object.keys(body).some(k=>!['operation','requestId','objective','days','focus'].includes(k))||body.focus!==undefined&&body.focus!=='ai_visibility'||typeof body.requestId!=='string'||!uuidPattern.test(body.requestId)||typeof body.objective!=='string'||body.objective.trim().length<10||body.objective.length>1500||![7,28,90].includes(Number(body.days))||typeof body.days!=='number')throw new MarketingError(400,'Provide a business objective, execution ID, and authorized reporting window.');
+   return privateJson(await prepareSeoResearchPlan(owner,body.requestId,body.objective,body.days as 7|28|90,request.signal,body.focus as 'ai_visibility'|undefined));
   }
   if(body.operation==='review'){
    if(Object.keys(body).some(k=>!['operation','planId','decision','note'].includes(k))||typeof body.planId!=='string'||!uuidPattern.test(body.planId)||!['approved','deferred','rejected'].includes(String(body.decision))||typeof body.note!=='string'||body.note.length>600)throw new MarketingError(400,'Provide a saved plan, decision, and optional short note.');

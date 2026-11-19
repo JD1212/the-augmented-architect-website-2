@@ -9,8 +9,8 @@ const packageOverride={'@augmented-architect/seo-analyst':agentPackage};
 const seoConfig={seoRegistration:{name:'SEO Analyst',version:agentPackage.packageVersion,enabled:true},seoPolicy:{minimumIntervalMs:600000,maximumDailyRuns:6,leaseMs:300000},seoConfiguration:()=>({tenantId:tenant,ga4Property:'564904776',searchProperty:'sc-domain:theaugmentedarchitect.com',model:'fixture'})};
 const store=load('src/lib/marketing/seo/store.ts',{...packageOverride,'../config':config,'./config':seoConfig});
 test('SEO package is external, pinned and provenance-bearing; no Next or business IDs in reusable source',()=>{
- const p=JSON.parse(readFileSync('package.json','utf8'));assert.equal(p.dependencies['@augmented-architect/seo-analyst'],'file:vendor/augmented-architect-seo-analyst-0.5.0.tgz');
- assert(!agentPackage.seoInstructions.includes('564904776'));assert(!agentPackage.seoInstructions.includes(tenant));assert.equal(agentPackage.packageVersion,'0.5.0');
+ const p=JSON.parse(readFileSync('package.json','utf8'));assert.equal(p.dependencies['@augmented-architect/seo-analyst'],'file:vendor/augmented-architect-seo-analyst-0.6.2.tgz');
+ assert(!agentPackage.seoInstructions.includes('564904776'));assert(!agentPackage.seoInstructions.includes(tenant));assert.equal(agentPackage.packageVersion,'0.6.2');
  const provenance=JSON.parse(readFileSync('vendor/seo-analyst.provenance.json','utf8')),lock=JSON.parse(readFileSync('package-lock.json','utf8')).packages['node_modules/@augmented-architect/seo-analyst'];
  const integrity='sha512-'+createHash('sha512').update(readFileSync('vendor/'+provenance.artifact)).digest('base64');
  assert.match(provenance.sourceCommit,/^[a-f0-9]{40}$/);assert.equal(provenance.version,agentPackage.packageVersion);assert.equal(lock.version,provenance.version);assert.equal(integrity,provenance.integrity);assert.equal(integrity,lock.integrity);
@@ -99,6 +99,6 @@ test('host persists precise redacted validation diagnostics and usage, releases 
  const owner={tenantId:tenant,user:{id:ownerId},db:{}};
  await assert.rejects(executeSeo(owner,requestId,28,new AbortController().signal),e=>e.status===503&&e.message.includes('UNSUPPORTED_SOURCE_URL'));
  const row=db.rows.marketing_executions[0],failure=row.diagnostics.failure;
- assert.equal(row.state,'failed');assert.equal(row.diagnostics.packageVersion,'0.5.0');assert.equal(failure.phase,'validating');assert.equal(failure.code,'UNSUPPORTED_SOURCE_URL');assert.equal(failure.param,'opportunities[0].sourceUrls');assert.equal(failure.validation.rule,'UNSUPPORTED_SOURCE_URL');assert.equal(failure.validation.opportunityIndex,0);assert.equal(failure.validation.research.annotated.length,1);assert.equal(row.usage.totalTokens,120);assert.equal(row.usage.measuredCost,null);assert.equal(db.rows.marketing_agents[0].config.lease,undefined);
+ assert.equal(row.state,'failed');assert.equal(row.diagnostics.packageVersion,'0.6.2');assert.equal(failure.phase,'validating');assert.equal(failure.code,'UNSUPPORTED_SOURCE_URL');assert.equal(failure.param,'opportunities[0].sourceUrls');assert.equal(failure.validation.rule,'UNSUPPORTED_SOURCE_URL');assert.equal(failure.validation.opportunityIndex,0);assert.equal(failure.validation.research.annotated.length,1);assert.equal(row.usage.totalTokens,120);assert.equal(row.usage.measuredCost,null);assert.equal(db.rows.marketing_agents[0].config.lease,undefined);
  const json=JSON.stringify(row);assert(!json.includes('fixture-private-value'));assert(!json.includes('private-fragment'));assert.equal((await executeSeo(owner,requestId,28,new AbortController().signal)).reused,true);assert.equal(runs,1);assert.equal(db.rows.marketing_executions.length,1);
 });
