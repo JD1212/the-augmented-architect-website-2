@@ -16,7 +16,7 @@ export const site: SiteContent = {
   name: 'The Augmented Architect', brandLines: ['THE AUGMENTED', 'ARCHITECT'], monogram: 'AA',
   // Canonical public origin for metadata, sitemap, and robots.
   url: 'https://theaugmentedarchitect.com',
-  navigation: [{ label: 'AI Solutions', href: '/ai-solutions' }, { label: 'Salesforce', href: '/salesforce' }, { label: 'Custom Business Applications', href: '/custom-applications' }, { label: 'Our Approach', href: '/our-approach' }, { label: 'About', href: '/about' }, { label: 'Contact', href: '/contact' }],
+  navigation: [{ label: 'AI Solutions', href: '/ai-solutions' }, { label: 'Salesforce', href: '/salesforce' }, { label: 'Custom Business Applications', href: '/custom-applications' }, { label: 'Our Approach', href: '/our-approach' }, { label: 'How We Work', href: '/how-we-work' }, { label: 'About', href: '/about' }, { label: 'Contact', href: '/contact' }],
   consultation: { label: 'Book a Consultation', href: '/book' },
   signIn: { label: 'Company Login', href: '/admin/login' },
   accessibility: { skip: 'Skip to content', navigation: 'Main navigation', menu: 'Menu', home: 'The Augmented Architect home' },
