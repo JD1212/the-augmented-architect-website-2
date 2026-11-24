@@ -26,3 +26,5 @@ Deterministic tests reproduce the former null diagnostic for SDK-wrapped failure
 ## Remaining limitation and execution controls
 
 The original generation root cause remains unproven. No speculative agent behavior, citation relaxation, token-budget increase or tool changes were made. Generation is explicitly disabled in the corrected Preview, and the previous authorization remains consumed. No new authorization, model execution, paid research or publication is part of this correction. A second attempt requires separate owner authorization after review. The independent package and Production remain unchanged.
+
+Further investigation is documented in [the model-to-agent boundary audit](content-strategist-boundary-audit.md). It reproduces and corrects a context-budget blocker separately from the still-unproven historical exception, and introduces independent package v0.1.1 with safe boundary observations. The statements above describe the earlier diagnostic-only correction.
