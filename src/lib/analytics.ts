@@ -3,22 +3,24 @@ import { privacy } from '@/content/privacy';
 export const consentKey = 'aa.analytics.consent.v1';
 const dedupeKey = 'aa.analytics.events.v1';
 const armedKey = 'aa.analytics.pending.v1';
+const attributionKey = 'aa.analytics.publication-origin.v1';
 export const publicPages: Record<string, string> = {
   '/': 'The Augmented Architect', '/ai-solutions': 'AI Solutions', '/salesforce': 'Salesforce Modernization',
   '/custom-applications': 'Custom Business Applications', '/about': 'About', '/contact': 'Contact', '/book': 'Book a Consultation',
-  '/how-we-work':'How We Work With You',
+  '/how-we-work':'How We Work With You', '/insights':'Insights',
   '/our-approach': 'Our Approach', '/our-approach/philosophy': 'Our Philosophy',
   '/our-approach/ai-architecture': 'AI & Architecture', '/our-approach/salesforce': 'Our Approach to Salesforce', '/privacy': privacy.title,
 };
 export type ArticleAnalyticsPage={path:string;title:string;publicationId?:string};
 const articlePublications=new Map<string,string>();
-export function registerArticleAnalytics(pages:readonly ArticleAnalyticsPage[]){for(const path of articlePublications.keys())delete publicPages[path];articlePublications.clear();for(const page of pages){if(!/^\/our-approach\/articles\/[a-z0-9]+(?:-[a-z0-9]+)*$/.test(page.path)||!page.title.trim())continue;publicPages[page.path]=page.title;articlePublications.set(page.path,page.publicationId&&/^[a-zA-Z0-9-]{1,64}$/.test(page.publicationId)?page.publicationId:'');}}
+export function registerArticleAnalytics(pages:readonly ArticleAnalyticsPage[]){for(const path of articlePublications.keys())delete publicPages[path];articlePublications.clear();for(const page of pages){if(!/^\/insights\/articles\/[a-z0-9]+(?:-[a-z0-9]+)*$/.test(page.path)||!page.title.trim())continue;publicPages[page.path]=page.title;articlePublications.set(page.path,page.publicationId&&/^[a-zA-Z0-9-]{1,64}$/.test(page.publicationId)?page.publicationId:'');}}
 export const isRegisteredArticle=(path:string)=>articlePublications.has(path);
 export type ConsentChoice = 'granted' | 'denied';
 declare global {
   interface Window { dataLayer?: unknown[]; gtag?: (...args: unknown[]) => void; [key: `ga-disable-${string}`]: boolean }
 }
 const denied = { analytics_storage: 'denied', ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied' };
+let publicationOrigin = '';
 let active = false, initialized = false, measurementId = '', currentPath = '', previousPath = '';
 let seen = new Set<string>();
 const armed = new Set<string>();
@@ -61,6 +63,7 @@ export function startAnalytics(id: string, path: string, choice: ConsentChoice |
     };
     try { const stored = JSON.parse(sessionStorage.getItem(dedupeKey) ?? '[]'); if (Array.isArray(stored)) seen = new Set(stored.filter(key => typeof key === 'string')); } catch { /* No persisted dedupe state. */ }
     try { const stored = JSON.parse(sessionStorage.getItem(armedKey) ?? '[]'); if (Array.isArray(stored)) for (const id of stored) if (typeof id === 'string' && /^[0-9a-f-]{36}$/i.test(id)) armed.add(id); } catch { /* No pending measurement state. */ }
+    try { const saved=sessionStorage.getItem(attributionKey); if(saved&&[...articlePublications.values()].includes(saved))publicationOrigin=saved; } catch { /* Optional attribution. */ }
     command('consent', 'default', denied);
     command('consent', 'update', { ...denied, analytics_storage: 'granted' });
     command('set', 'ads_data_redaction', true);
@@ -85,7 +88,12 @@ export function analyticsPage(path: string) {
   if (currentPath) emit('page_view');
 }
 export function trackScoutOpen() { if (active && mark('scout_open')) emit('scout_open'); }
-export function trackConsultationStart() { if (active && mark('consultation_start')) emit('consultation_start'); }
+export function trackConsultationStart() {
+  if (!active) return;
+  const publication=articlePublications.get(currentPath);
+  if(publication){publicationOrigin=publication;try{sessionStorage.setItem(attributionKey,publication);}catch{/* Session-memory attribution remains available. */}if(mark('article-consultation:'+publication))emit('article_consultation_start');}
+  if (mark('consultation_start')) emit('consultation_start');
+}
 export function trackServiceEngagement(path: string) {
   const service = ({ '/ai-solutions': 'ai_solutions', '/salesforce': 'salesforce', '/custom-applications': 'custom_applications' } as Record<string, string>)[path];
   if (active && service && mark('service:' + path)) emit('service_engagement', { service, threshold_seconds: 10 });
@@ -94,12 +102,12 @@ export function trackArticleEngagement(path:string){if(active&&isRegisteredArtic
 function persistArmed() { try { sessionStorage.setItem(armedKey, JSON.stringify([...armed].slice(-20))); } catch { /* Memory state remains available. */ } }
 export function armBooking(id: string) { if (active && /^[0-9a-f-]{36}$/i.test(id)) { trackConsultationStart(); armed.add(id); persistArmed(); } }
 export function trackConfirmedBooking(id: string, source: 'scout' | 'form') {
-  if (active && armed.has(id) && mark('booked:' + id)) { armed.delete(id); persistArmed(); emit('consultation_booked', { booking_channel: source }); }
+  if (active && armed.has(id) && mark('booked:' + id)) { armed.delete(id); persistArmed(); emit('consultation_booked', { booking_channel: source, ...(publicationOrigin?{origin_publication_id:publicationOrigin}:{}) }); }
 }
 export function stopAnalytics() {
-  active = false; armed.clear(); seen.clear(); currentPath = ''; previousPath = '';
+  active = false; publicationOrigin=''; armed.clear(); seen.clear(); currentPath = ''; previousPath = '';
   win()[`ga-disable-${measurementId || privacy.measurementId}`] = true;
-  try { sessionStorage.removeItem(dedupeKey); sessionStorage.removeItem(armedKey); } catch { /* No optional storage. */ }
+  try { sessionStorage.removeItem(dedupeKey); sessionStorage.removeItem(armedKey); sessionStorage.removeItem(attributionKey); } catch { /* No optional storage. */ }
   try { for (const cookie of document.cookie.split(';')) {
     const name = cookie.trim().split('=')[0]; if (name !== '_ga' && !name.startsWith('_ga_') && !name.startsWith('_gid')) continue;
     for (const domain of ['', location.hostname, '.' + location.hostname, '.theaugmentedarchitect.com']) document.cookie = `${name}=; Max-Age=0; Path=/; SameSite=Lax${domain ? '; Domain=' + domain : ''}`;

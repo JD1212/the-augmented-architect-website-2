@@ -1,0 +1,9 @@
+An AI agent’s tool call is a request—not permission.
+
+Imagine a customer asks an assistant to change an account’s billing contact. The model can propose the update. Your application still needs to check who is asking, which account they can access, what can change, and whether approval is required.
+
+Then comes the less glamorous question: what happens if the API times out halfway through? Retrying blindly can create a second problem.
+
+Good agent architecture separates a proposed action from the authority to execute it—and tests uncertain outcomes as carefully as successful ones.
+
+We’ve put together a practical control checklist for connecting AI agents to business systems.

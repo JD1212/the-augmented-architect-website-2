@@ -3,7 +3,10 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   async redirects() {
     // Keep inbound links, nested article URLs and query parameters intact.
-    return [{ source: '/insights/:path*', destination: '/our-approach/:path*', permanent: true }];
+    return [
+      { source: '/our-approach/articles/:slug', destination: '/insights/articles/:slug', permanent: true },
+      ...['philosophy', 'ai-architecture', 'salesforce'].map(category => ({ source: '/insights/'+category, destination: '/our-approach/'+category, permanent: true })),
+    ];
   },
   cacheComponents: true,
   outputFileTracingIncludes: {

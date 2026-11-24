@@ -48,7 +48,7 @@ test('an empty registry produces no published articles or invented article sitem
   assert.equal(library.getArticleBySlug('missing'), undefined);
   const sitemap = load('src/app/sitemap.ts').default();
   assert(sitemap.some(entry => entry.url.endsWith('/our-approach/philosophy')));
-  assert.equal(sitemap.filter(entry => entry.url.includes('/our-approach/articles/')).length, 0);
+  assert.equal(sitemap.filter(entry => entry.url.includes('/insights/articles/')).length, 0);
 });
 
 test('only published articles are public, and related articles share a category', () => {
@@ -71,19 +71,19 @@ test('invalid metadata, duplicate slugs, invalid categories and invalid dates fa
 
 test('article routes, metadata and JSON-LD omit dates unless explicitly supplied', async () => {
   const load = loadWithArticles([philosophy]);
-  const route = load('src/app/our-approach/articles/[slug]/page.tsx');
+  const route = load('src/app/insights/articles/[slug]/page.tsx');
   const { articleStructuredData } = load('src/lib/article-seo.ts');
   const metadata = await route.generateMetadata({ params: Promise.resolve({ slug: philosophy.slug }) });
   assert.equal(metadata.title, philosophy.title);
   assert.equal(metadata.description, philosophy.seoDescription);
   assert.equal(metadata.openGraph.type, 'article');
   assert.equal(metadata.openGraph.publishedTime, undefined);
-  assert.equal(metadata.alternates.canonical, '/our-approach/articles/test-philosophy');
+  assert.equal(metadata.alternates.canonical, '/insights/articles/test-philosophy');
   const schema = articleStructuredData(philosophy, 'https://example.com', 'The Augmented Architect');
   assert.equal(schema['@type'], 'Article');
   assert.equal(schema.datePublished, undefined);
   assert.equal(schema.author, undefined);
-  assert.equal(schema.mainEntityOfPage['@id'], 'https://example.com/our-approach/articles/test-philosophy');
+  assert.equal(schema.mainEntityOfPage['@id'], 'https://example.com/insights/articles/test-philosophy');
   assert.equal(articleStructuredData({ ...philosophy, publishedDate: '2024-02-29' }, 'https://example.com', 'The Augmented Architect').datePublished, '2024-02-29');
   assert.deepEqual(route.generateStaticParams(), [{ slug: philosophy.slug }]);
   await assert.rejects(route.generateMetadata({ params: Promise.resolve({ slug: 'missing' }) }));
@@ -92,7 +92,7 @@ test('article routes, metadata and JSON-LD omit dates unless explicitly supplied
 test('published article routes render typed content safely, without dates or fake authors', async () => {
   const article = { ...philosophy, content: [{ type: 'paragraph', text: '<script>must stay text</script>' }, { type: 'heading', text: 'Shared context' }, { type: 'list', items: ['Governance', 'Maintainability'] }, { type: 'list', ordered: true, items: ['Business process', 'Technology choice'] }, { type: 'quote', text: philosophy.title }] };
   const load = loadWithArticles([article]);
-  const route = load('src/app/our-approach/articles/[slug]/page.tsx');
+  const route = load('src/app/insights/articles/[slug]/page.tsx');
   const element = await route.default({ params: Promise.resolve({ slug: article.slug }) });
   const { renderToStaticMarkup } = nativeRequire('react-dom/server');
   const html = renderToStaticMarkup(element);
@@ -106,7 +106,7 @@ test('published article routes render typed content safely, without dates or fak
   assert.equal(json.datePublished, undefined);
   const escapedArticle = { ...article, title: '</script><script>alert(1)</script>' };
   const escapedLoad = loadWithArticles([escapedArticle]);
-  const escapedRoute = escapedLoad('src/app/our-approach/articles/[slug]/page.tsx');
+  const escapedRoute = escapedLoad('src/app/insights/articles/[slug]/page.tsx');
   const escapedHtml = renderToStaticMarkup(await escapedRoute.default({ params: Promise.resolve({ slug: article.slug }) }));
   const scripts = escapedHtml.match(/<script/g) || [];
   assert.equal(scripts.length, 1);
@@ -116,8 +116,28 @@ test('published article routes render typed content safely, without dates or fak
 
 test('the sitemap includes published articles and excludes drafts', () => {
   const load = loadWithArticles([philosophy, { ...philosophy, slug: 'private-draft', status: 'draft' }]);
-  const entries = load('src/app/sitemap.ts').default().filter(entry => entry.url.includes('/our-approach/articles/'));
+  const entries = load('src/app/sitemap.ts').default().filter(entry => entry.url.includes('/insights/articles/'));
   assert.equal(entries.length, 1);
-  assert(entries[0].url.endsWith('/our-approach/articles/test-philosophy'));
+  assert(entries[0].url.endsWith('/insights/articles/test-philosophy'));
   assert.equal(entries[0].lastModified, undefined);
+});
+
+test('review drafts are visible only in the protected editorial branch, never Production, unrelated Previews, related feeds or sitemaps',()=>{
+ const original={VERCEL_ENV:process.env.VERCEL_ENV,VERCEL_GIT_COMMIT_REF:process.env.VERCEL_GIT_COMMIT_REF};
+ try{for(const [environment,branch,expected] of [['production','main',false],['preview','feature/other',false],['development','feature/content-strategist',false],['preview','feature/content-strategist',true]]){
+ process.env.VERCEL_ENV=environment;process.env.VERCEL_GIT_COMMIT_REF=branch;
+ const load=loadWithArticles([{...philosophy,status:'draft'}]),library=load('src/lib/articles.ts');assert.equal(Boolean(library.getArticleBySlug(philosophy.slug)),expected);assert.equal(library.getPublishedArticles().length,0);assert.equal(library.getVisibleArticles().length,expected?1:0);assert(!load('src/app/sitemap.ts').default().some(e=>e.url.includes('/articles/')));
+ }}finally{for(const [key,value] of Object.entries(original)){if(value===undefined)delete process.env[key];else process.env[key]=value;}}
+});
+
+test('citations, list introductions, source anchors and safe code render with working reference targets',()=>{
+ const {renderToStaticMarkup}=nativeRequire('react-dom/server');const load=loadWithArticles(),{ArticleBody}=load('src/components/insights/article-body.tsx');
+ const html=renderToStaticMarkup(ArticleBody({blocks:[{type:'list',text:'Check these boundaries:',items:['Authorization','Approval'],citationIds:['nist']},{type:'code',text:'<script>kept as text</script>',language:'typescript'}],references:[{id:'nist',title:'NIST',url:'https://www.nist.gov/itl/ai-risk-management-framework'}]}));
+ assert(html.includes('Check these boundaries:'));assert(html.includes('href="#reference-nist"'));assert(html.includes('id="reference-nist"'));assert(html.includes('&lt;script&gt;kept as text&lt;/script&gt;'));
+});
+
+test('an editorial Preview draft is explicitly noindex and has no publication time',async()=>{
+ const saved={VERCEL_ENV:process.env.VERCEL_ENV,VERCEL_GIT_COMMIT_REF:process.env.VERCEL_GIT_COMMIT_REF};try{
+ process.env.VERCEL_ENV='preview';process.env.VERCEL_GIT_COMMIT_REF='feature/content-strategist';const route=loadWithArticles([{...philosophy,status:'draft'}])('src/app/insights/articles/[slug]/page.tsx');const meta=await route.generateMetadata({params:Promise.resolve({slug:philosophy.slug})});assert.deepEqual(meta.robots,{index:false,follow:false});assert.equal(meta.openGraph.publishedTime,undefined);
+ }finally{for(const[k,v]of Object.entries(saved)){if(v===undefined)delete process.env[k];else process.env[k]=v;}}
 });

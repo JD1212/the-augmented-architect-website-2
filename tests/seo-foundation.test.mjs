@@ -63,5 +63,5 @@ test('sitemap contains only unique, canonical public pages and real published ar
   assert.equal(new Set(sitemap.map(item => item.url)).size, sitemap.length);
   assert(sitemap.every(item => new URL(item.url).origin === site.url));
   for (const path of ['/ai-solutions', '/salesforce', '/custom-applications', '/our-approach/philosophy', '/our-approach/ai-architecture', '/our-approach/salesforce']) assert(sitemap.some(item => item.url === site.url + path));
-  assert(sitemap.every(item => !/\/api\/|\/admin|\/insights|__empty__/.test(item.url)));
+  assert(sitemap.every(item => !/\/api\/|\/admin|__empty__/.test(item.url)));
 });

@@ -63,9 +63,17 @@ test('withdrawal disables further events and clears optional deduplication',()=>
 });
 
 test('only server-registered published article paths receive privacy-safe views and engagement',()=>{
- const f=fixture(),path='/our-approach/articles/approved-guide';assert.equal(f.api.startAnalytics(id,path,'granted'),false);
+ const f=fixture(),path='/insights/articles/approved-guide';assert.equal(f.api.startAnalytics(id,path,'granted'),false);
  f.api.registerArticleAnalytics([{path,title:'Approved guide',publicationId:reference},{path:'/admin/private',title:'Private report'}]);assert(!f.api.publicPages['/admin/private']);
  assert.equal(f.api.startAnalytics(id,path,'denied'),false);assert.equal(f.commands().length,0);assert.equal(f.api.startAnalytics(id,path,'granted'),true);f.api.analyticsPage(path);f.api.analyticsPage(path);f.api.trackArticleEngagement(path);f.api.trackArticleEngagement(path);
  assert.equal(f.events().filter(e=>e[1]==='page_view').length,1);assert.equal(f.events().filter(e=>e[1]==='article_engagement').length,1);assert.equal(f.events()[0][2].publication_id,reference);assert(!JSON.stringify(f.commands()).includes('private@example.invalid'));
  f.api.registerArticleAnalytics([]);assert(!f.api.publicPages[path]);
+});
+
+test('article consultation intent deduplicates and attribution survives navigation/reload without sharing booking identity',()=>{
+ const f=fixture(),path='/insights/articles/approved-guide';f.api.registerArticleAnalytics([{path,title:'Approved guide',publicationId:reference}]);f.api.startAnalytics(id,path,'granted');f.api.analyticsPage(path);
+ f.api.trackConsultationStart();f.api.trackConsultationStart();assert.equal(f.events().filter(e=>e[1]==='article_consultation_start').length,1);
+ f.api.analyticsPage('/salesforce');f.api.armBooking(reference);
+ const next=loadScoutModule('src/lib/analytics.ts');next.registerArticleAnalytics([{path,title:'Approved guide',publicationId:reference}]);next.startAnalytics(id,'/salesforce','granted');next.analyticsPage('/salesforce');next.trackConfirmedBooking(reference,'scout');next.trackConfirmedBooking(reference,'scout');
+ const events=f.events().filter(e=>e[1]==='consultation_booked');assert.equal(events.length,1);assert.equal(events[0][2].origin_publication_id,reference);assert.equal(events[0][2].booking_channel,'scout');assert(!('booking_id' in events[0][2]));
 });

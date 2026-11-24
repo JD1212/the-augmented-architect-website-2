@@ -7,9 +7,9 @@ export function ArticleBody({blocks,references=[]}:{blocks:readonly ArticleBlock
  return <div className={`insights-article-body ${styles.body}`}>{blocks.map((block,index)=>{
   switch(block.type){
    case 'paragraph':return <p key={index}>{block.text}{annotations(block)}</p>;
-   case 'heading':return block.level===3?<h3 key={index}>{block.text}</h3>:<h2 key={index}>{block.text}</h2>;
+   case 'heading':return block.level===3?<h3 id={'section-'+index} key={index}>{block.text}</h3>:<h2 id={'section-'+index} key={index}>{block.text}</h2>;
    case 'quote':return <blockquote key={index}><p>{block.text}{annotations(block)}</p></blockquote>;
-   case 'list':{const List=block.ordered?'ol':'ul';return <div key={index}><List>{block.items.map((item,i)=><li key={i}>{item}</li>)}</List>{annotations(block)}</div>;}
+   case 'list':{const List=block.ordered?'ol':'ul';return <div key={index}>{block.text&&<p>{block.text}</p>}<List>{block.items.map((item,i)=><li key={i}>{item}</li>)}</List>{annotations(block)}</div>;}
    case 'code':return <figure key={index}><figcaption>Illustrative {block.language} example{annotations(block)}</figcaption><pre><code>{block.text}</code></pre></figure>;
    case 'diagram':return <figure key={index}><figcaption>{block.text}{annotations(block)}</figcaption><ol className={styles.diagram}>{block.items.map((item,i)=><li key={i}>{item}</li>)}</ol></figure>;
    case 'cta':return <aside key={index} className={styles.cta}><p>{block.text}</p><Link className="button" href={block.link.url}>{block.link.label}</Link></aside>;

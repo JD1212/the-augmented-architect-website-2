@@ -42,8 +42,14 @@ export function getPublishedArticles(category?: ArticleCategory): readonly Artic
   return articles.filter(article => article.status === 'published' && (!category || article.category === category));
 }
 
+// Review drafts are public only inside this protected feature-branch Preview.
+export function getVisibleArticles(): readonly Article[] {
+  return process.env.VERCEL_ENV === 'preview' && process.env.VERCEL_GIT_COMMIT_REF === 'feature/content-strategist'
+    ? articles : getPublishedArticles();
+}
+
 export function getArticleBySlug(slug: string): Article | undefined {
-  return getPublishedArticles().find(article => article.slug === slug);
+  return getVisibleArticles().find(article => article.slug === slug);
 }
 
 export function getRelatedArticles(article: Article): readonly Article[] {
@@ -51,7 +57,7 @@ export function getRelatedArticles(article: Article): readonly Article[] {
 }
 
 export function articleHref(slug: string): string {
-  return `/our-approach/articles/${slug}`;
+  return `/insights/articles/${slug}`;
 }
 
 export function formatPublishedDate(date: string): string {

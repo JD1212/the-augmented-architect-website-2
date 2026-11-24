@@ -1,5 +1,6 @@
 import type { Article } from './types';
 
-// Import article objects from sibling .ts files and add them here.
-// Deliberately empty until real articles are supplied. See README.md.
-export const articles: readonly Article[] = [];
+import {article as governanceGuide} from './connecting-ai-agents-to-business-systems-control-checklist';
+
+// Published entries are public; drafts are restricted to the protected editorial Preview.
+export const articles: readonly Article[] = [governanceGuide];

@@ -25,13 +25,16 @@ test('navigation and sitemap advertise the permanent pages without legacy URLs o
   const entries = loadScoutModule('src/app/sitemap.ts', { '@/content/articles': { articles: [] } }, cache).default();
   for (const id of approachIds) assert(entries.some(e => e.url.endsWith(approachHref(id))));
   assert(entries.some(e => e.url.endsWith('/about')));
-  assert(!entries.some(e => /\/insights|\/articles\//.test(e.url)));
+  assert(entries.some(e => e.url.endsWith('/insights')));
+  assert(!entries.some(e => /\/articles\//.test(e.url)));
 });
 
 test('all legacy Insights paths have a permanent nested-path redirect', async () => {
   const { default: config } = loadScoutModule('next.config.ts');
   const rules = await config.redirects();
-  assert(rules.some(r => r.source === '/insights/:path*' && r.destination === '/our-approach/:path*' && r.permanent));
+  assert(!rules.some(r=>r.source==='/insights/:path*'));
+  assert(rules.some(r=>r.source==='/our-approach/articles/:slug'&&r.destination==='/insights/articles/:slug'&&r.permanent));
+  for(const id of approachIds)assert(rules.some(r=>r.source==='/insights/'+id&&r.destination===approachHref(id)&&r.permanent));
 });
 
 test('Scout receives the approved summaries and links through its existing registry, without full editorial pages', () => {

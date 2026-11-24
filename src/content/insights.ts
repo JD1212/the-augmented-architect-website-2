@@ -23,3 +23,15 @@ export const insights = {
   notFound: { title: 'Page not found', description: 'This page is not available. Explore Our Approach to business systems, AI, and Salesforce.' },
 } as const;
 export const categoryHref = approachHref;
+
+
+export const libraryContent = {
+  title: 'Insights',
+  eyebrow: 'PRACTICAL THINKING FOR CONNECTED BUSINESS',
+  introduction: 'Technical guides and practical perspectives on AI, business applications, and Salesforce modernization. Built for the decisions behind reliable software.',
+  seoDescription: 'Practical guides to AI integrations, agent governance, custom business applications, and Salesforce modernization from The Augmented Architect.',
+  articles: 'Ideas you can put to work',
+  back: 'All insights →',
+  topics: 'Explore our thinking',
+  empty: 'Our first guides are being prepared. Explore Our Approach while the library grows.',
+} as const;
