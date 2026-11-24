@@ -10,6 +10,7 @@ import {intelligenceRecords} from '../intelligence/service';
 import {usageSummary} from '../seo/contracts';
 import {contentConfiguration,contentDatabase,contentCapabilities,contentDomain} from './config';
 import {groundedOpportunity,contentInput} from './grounding';
+import {contentFailure} from './diagnostics';
 import {contentRows,revisionHead,revisions,saveRevision,claimContentExecution,releaseContentExecution,approvedRevision,type Revision} from './repository';
 export async function contentState(db:SupabaseClient,tenant:string,opportunityId:string){
  if(tenant!==marketingTenant)throw new MarketingError(403,'Unauthorized content workspace.');
@@ -18,12 +19,14 @@ export async function contentState(db:SupabaseClient,tenant:string,opportunityId
  const visible=rows.filter(r=>r.kind!=='content_draft'||!r.execution_id||runs.some(e=>e.id===r.execution_id&&e.state==='completed'));
  const grounding=groundedOpportunity(opportunity,backlog,research),head=revisionHead(visible,opportunityId);
  const related=revisions(visible,opportunityId),ids=new Set(related.map(r=>r.id));
- return {opportunity:{id:opportunity.id,title:opportunity.finding.title,status:opportunity.status,findingId:opportunity.findingId},grounding,head,revisions:related,capabilities:contentCapabilities(),approvals:rows.filter(r=>r.payload.workflow==='content-publication-approval/v1'&&r.parent_id&&ids.has(r.parent_id)),feedback:rows.filter(r=>r.payload.workflow==='content-feedback/v1'&&r.parent_id&&ids.has(r.parent_id)),publications:rows.filter(r=>r.kind==='published_change'&&r.parent_id===opportunityId),runs:runs.filter(r=>(r.diagnostics as {opportunityId?:string})?.opportunityId===opportunityId&&(r.diagnostics as {agentKind?:string})?.agentKind==='content-strategist').slice(-10).reverse(),automaticPublishingEnabled:false};
+ const capabilities={...contentCapabilities(),approvalConsumed:Boolean(process.env.CONTENT_STRATEGIST_APPROVAL_ID)&&rows.some(r=>r.payload.workflow==='content-execution-reservation/v1'&&r.payload.approvalId===process.env.CONTENT_STRATEGIST_APPROVAL_ID)};
+ return {opportunity:{id:opportunity.id,title:opportunity.finding.title,status:opportunity.status,findingId:opportunity.findingId},grounding,head,revisions:related,capabilities,approvals:rows.filter(r=>r.payload.workflow==='content-publication-approval/v1'&&r.parent_id&&ids.has(r.parent_id)),feedback:rows.filter(r=>r.payload.workflow==='content-feedback/v1'&&r.parent_id&&ids.has(r.parent_id)),publications:rows.filter(r=>r.kind==='published_change'&&r.parent_id===opportunityId),runs:runs.filter(r=>(r.diagnostics as {opportunityId?:string})?.opportunityId===opportunityId&&(r.diagnostics as {agentKind?:string})?.agentKind==='content-strategist').slice(-10).reverse(),automaticPublishingEnabled:false};
 }
 export async function findRevision(db:SupabaseClient,tenant:string,id:string,opportunityId:string){const state=await contentState(db,tenant,opportunityId);const revision=state.revisions.find(r=>r.id===id);if(!revision)throw new MarketingError(404,'Completed draft revision not found.');return {state,revision};}
 export function validateEditedDraft(draft:unknown,revision:Revision):ContentDraft{try{return validateDraft(draft,revision.input);}catch(error){const rule=error instanceof Error&&/^[A-Z_]+/.test(error.message)?error.message.match(/^[A-Z_]+/)![0]:'INVALID_CONTENT_PACKAGE';throw new MarketingError(400,'Draft validation failed: '+rule+'. Review the content and citation map before saving.');}}
 export async function generateContent(owner:Awaited<ReturnType<typeof requireOwner>>,requestId:string,opportunityId:string,expectedRevisionId:string|null,signal:AbortSignal){
- const config=contentConfiguration(),state=await contentState(owner.db,owner.tenantId,opportunityId);
+ const config=contentConfiguration();if(config.opportunityId!==opportunityId)throw new MarketingError(403,'This execution authorization belongs to a different opportunity.');
+ const state=await contentState(owner.db,owner.tenantId,opportunityId);
  if((state.head?.id??null)!==expectedRevisionId)throw new MarketingError(409,'Refresh the current draft before generating.');
  if(!state.grounding.assignment)throw new MarketingError(403,'The owner must approve this finding for drafting first.');
  if(state.grounding.sources.filter(s=>s.verified).length<2)throw new MarketingError(409,'Review at least two relevant primary sources before model execution.');
@@ -38,7 +41,7 @@ export async function generateContent(owner:Awaited<ReturnType<typeof requireOwn
   await authorize();await progress('persistence');
   const revision=await saveRevision(db,owner.tenantId,owner.user.id,opportunityId,expectedRevisionId,result.draft,input,structuredClone(state.grounding) as unknown as Record<string,unknown>,requestId);
   await progress('completed','completed',{revisionId:revision.revisionId,packageVersion:result.packageVersion,instructionsVersion:result.instructionsVersion,sourceIds:result.sourceIds});return {executionId:requestId,...revision};
- }catch(error){const e=error as {status?:unknown;message?:string},rule=/^[A-Z_]+(?: at [a-zA-Z0-9.]+)?$/.test(e.message??'')?e.message:null;await progress('failed','failed',{failure:{phase:stage,rule,httpStatus:typeof e.status==='number'?e.status:null},error:'Content generation did not complete. Returned provider usage is preserved; no automatic retry was started.'});throw new MarketingError(503,'Content generation failed. Review execution history and its redacted diagnostic before any new authorization.');}
+ }catch(error){await progress('failed','failed',{failure:contentFailure(error,stage),error:'Content generation did not complete. Returned provider usage is preserved; no automatic retry was started.'});throw new MarketingError(503,'Content generation failed. Review execution history and its redacted diagnostic before any new authorization.');}
  finally{await releaseContentExecution(db,owner.tenantId,claim.agent.id,requestId);}
 }
 export async function editedRevision(db:SupabaseClient,tenant:string,actor:string,revision:Revision,raw:unknown){const draft=validateEditedDraft(raw,revision);return saveRevision(db,tenant,actor,revision.opportunityId,revision.id,draft,revision.input,revision.grounding,null);}
