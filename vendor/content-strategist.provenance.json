@@ -1,8 +1,8 @@
 {
   "name": "@augmented-architect/content-strategist",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "repository": "https://github.com/JD1212/augarch-content-strategist",
-  "sourceCommit": "8ea09e9135a4597016b56a342d423b4a9f50674f",
-  "artifact": "augmented-architect-content-strategist-0.1.1.tgz",
-  "integrity": "sha512-mnPuf/RrFQC1r2cOeoZbR2mabCSO6p29O/Zfr50+bBxNUlgiB/tdvBEnWQ9fmys08qhol33iPfVH4sJ1vcsOog=="
+  "sourceCommit": "0dabfc4964b12540d57b9af7e69b4f8635bc5350",
+  "artifact": "augmented-architect-content-strategist-0.1.2.tgz",
+  "integrity": "sha512-/NHAOIBljk774lPtVPTIFYsV2H+23NlBc45l/b+ypooDHXiWxie2rYWeo2JbqC6DnSqr6IjNu/16222hmwyE4w=="
 }
