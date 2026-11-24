@@ -61,3 +61,11 @@ test('withdrawal disables further events and clears optional deduplication',()=>
   const f=fixture();f.api.startAnalytics(id,'/','granted');f.api.analyticsPage('/');const before=f.events().length;f.api.stopAnalytics();f.api.analyticsPage('/salesforce');f.api.trackConsultationStart();
   assert.equal(f.events().length,before);assert.equal(window['ga-disable-'+id],true);assert.equal(sessionStorage.values.size,0);
 });
+
+test('only server-registered published article paths receive privacy-safe views and engagement',()=>{
+ const f=fixture(),path='/our-approach/articles/approved-guide';assert.equal(f.api.startAnalytics(id,path,'granted'),false);
+ f.api.registerArticleAnalytics([{path,title:'Approved guide',publicationId:reference},{path:'/admin/private',title:'Private report'}]);assert(!f.api.publicPages['/admin/private']);
+ assert.equal(f.api.startAnalytics(id,path,'denied'),false);assert.equal(f.commands().length,0);assert.equal(f.api.startAnalytics(id,path,'granted'),true);f.api.analyticsPage(path);f.api.analyticsPage(path);f.api.trackArticleEngagement(path);f.api.trackArticleEngagement(path);
+ assert.equal(f.events().filter(e=>e[1]==='page_view').length,1);assert.equal(f.events().filter(e=>e[1]==='article_engagement').length,1);assert.equal(f.events()[0][2].publication_id,reference);assert(!JSON.stringify(f.commands()).includes('private@example.invalid'));
+ f.api.registerArticleAnalytics([]);assert(!f.api.publicPages[path]);
+});

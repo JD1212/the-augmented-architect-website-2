@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
   const article = getArticleBySlug(slug);
   if (!article) notFound();
-  return createPageMetadata({ title: article.title, description: article.seoDescription }, articleHref(article.slug), {
+  return createPageMetadata({ title: article.seoTitle ?? article.title, description: article.seoDescription }, articleHref(article.slug), {
     type: 'article', section: insights.categories[article.category].title,
     ...(article.publishedDate ? { publishedTime: article.publishedDate } : {}),
   });
@@ -41,7 +41,7 @@ export default async function ArticlePage({ params }: Props) {
         <header className="insights-page-heading"><p className="eyebrow">{category.title}</p><h1>{article.title}</h1><p className="detail-description">{article.summary}</p>
           {article.publishedDate && <p className="insights-published">{insights.publishedLabel} <time dateTime={article.publishedDate}>{formatPublishedDate(article.publishedDate)}</time></p>}
         </header>
-        <ArticleBody blocks={article.content} />
+        <ArticleBody blocks={article.content} references={article.references} />
       </article>
       <Link className="text-link insights-back-link" href={categoryHref(article.category)}>{insights.backToCategory}</Link>
       {related.length > 0 && <section className="insights-articles" aria-labelledby="related-heading"><h2 id="related-heading">{insights.relatedHeading}</h2><ArticleList articles={related} /></section>}

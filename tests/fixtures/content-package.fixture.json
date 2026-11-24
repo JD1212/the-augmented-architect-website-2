@@ -1,0 +1,315 @@
+{
+  "input": {
+    "assignment": {
+      "version": "content-assignment/v1",
+      "opportunityId": "11111111-1111-4111-a111-111111111111",
+      "approvalId": "11111111-1111-4111-a111-111111111111",
+      "findingId": "11111111-1111-4111-a111-111111111111",
+      "business": {
+        "name": "Example business",
+        "website": "https://example.com",
+        "objective": "Explain useful architectural decisions.",
+        "targetCustomers": [
+          "Business and technical leaders"
+        ]
+      },
+      "targetAudience": "Business and technical leaders",
+      "objective": "Prepare a practical, evidence-supported guide.",
+      "existingPages": [
+        {
+          "url": "https://example.com/services",
+          "title": "Services"
+        },
+        {
+          "url": "https://example.com/book",
+          "title": "Consultation"
+        }
+      ],
+      "evidence": [],
+      "approvedSources": [
+        {
+          "url": "https://standards.example/guidance",
+          "title": "Primary architecture guidance"
+        },
+        {
+          "url": "https://security.example/review",
+          "title": "Primary review guidance"
+        }
+      ],
+      "deliverableType": "technical_guide",
+      "brandRequirements": [
+        "Clear and concrete."
+      ],
+      "constraints": [
+        "No invented results."
+      ],
+      "approvalRequirements": {
+        "draftOnly": true,
+        "ownerReviewRequired": true,
+        "publishingAuthorized": false,
+        "spendingAuthorized": false
+      }
+    },
+    "sources": [
+      {
+        "id": "source-a",
+        "url": "https://standards.example/guidance",
+        "title": "Primary architecture guidance",
+        "content": "Access decisions belong to the application boundary. A model instruction does not replace an authorization decision.",
+        "retrievedAt": "2026-11-23",
+        "verified": true,
+        "snapshotHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "limitations": []
+      },
+      {
+        "id": "source-b",
+        "url": "https://security.example/review",
+        "title": "Primary review guidance",
+        "content": "Consequential operations need an explicit review policy. Test failures as well as successful outcomes.",
+        "retrievedAt": "2026-11-23",
+        "verified": true,
+        "snapshotHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "limitations": []
+      }
+    ],
+    "facts": [
+      {
+        "id": "observed-cell",
+        "evidenceId": "report",
+        "label": "Query impressions",
+        "value": 4,
+        "unit": "Impressions",
+        "period": "Example period",
+        "classification": "verified",
+        "display": "Query impressions: 4 in the example period."
+      }
+    ],
+    "channels": [
+      "website",
+      "linkedin"
+    ],
+    "model": "fixture-model",
+    "asOf": "2026-11-23T00:00:00Z",
+    "researchAuthorized": false,
+    "context": {
+      "categories": [
+        "architecture"
+      ],
+      "preferredCategory": "architecture",
+      "editorialFeedback": [],
+      "priorDraft": null,
+      "consultationUrls": [
+        "https://example.com/book"
+      ],
+      "positioning": "Connected applications with explicit operational ownership.",
+      "voice": [
+        "Natural, practical, knowledgeable."
+      ],
+      "existingContent": [],
+      "guidelines": [
+        "Only the host approves publication."
+      ]
+    }
+  },
+  "draft": {
+    "version": "content-package/v1",
+    "decision": "article",
+    "rationale": "A focused guide fills an explanatory gap in the existing content.",
+    "audience": "Business and technical leaders",
+    "searchIntent": "Evaluate controlled application actions.",
+    "website": {
+      "category": "architecture",
+      "title": "A practical guide to controlled application actions",
+      "slug": "controlled-application-actions",
+      "summary": "A substantive mocked editorial fixture, never published content.",
+      "seoTitle": "Controlled application actions",
+      "seoDescription": "Understand practical permission boundaries and review decisions.",
+      "targetUrl": null,
+      "blocks": [
+        {
+          "type": "heading",
+          "text": "Start with the business operation",
+          "level": "2",
+          "items": [],
+          "language": null,
+          "links": [],
+          "citationIds": [],
+          "factId": null
+        },
+        {
+          "type": "paragraph",
+          "text": "Start by defining which business operation the application is allowed to perform and who is responsible for it. The interface should make that boundary visible rather than assuming that a confident answer means an action is safe. Before adding another tool, inspect the information it receives, the permission it needs, and the confirmation a person should see. This example describes a design choice, not a report of a deployed customer system. Keep the existing reliable workflow available while checking how the new capability behaves when a dependency is unavailable. Document the tradeoff and review it with the operational owner.",
+          "level": null,
+          "items": [],
+          "language": null,
+          "links": [],
+          "citationIds": [
+            "source-a"
+          ],
+          "factId": null
+        },
+        {
+          "type": "paragraph",
+          "text": "Start by defining which business operation the application is allowed to perform and who is responsible for it. The interface should make that boundary visible rather than assuming that a confident answer means an action is safe. Before adding another tool, inspect the information it receives, the permission it needs, and the confirmation a person should see. This example describes a design choice, not a report of a deployed customer system. Keep the existing reliable workflow available while checking how the new capability behaves when a dependency is unavailable. Document the tradeoff and review it with the operational owner.",
+          "level": null,
+          "items": [],
+          "language": null,
+          "links": [],
+          "citationIds": [],
+          "factId": null
+        },
+        {
+          "type": "heading",
+          "text": "Separate access from interpretation",
+          "level": "2",
+          "items": [],
+          "language": null,
+          "links": [],
+          "citationIds": [],
+          "factId": null
+        },
+        {
+          "type": "paragraph",
+          "text": "Start by defining which business operation the application is allowed to perform and who is responsible for it. The interface should make that boundary visible rather than assuming that a confident answer means an action is safe. Before adding another tool, inspect the information it receives, the permission it needs, and the confirmation a person should see. This example describes a design choice, not a report of a deployed customer system. Keep the existing reliable workflow available while checking how the new capability behaves when a dependency is unavailable. Document the tradeoff and review it with the operational owner.",
+          "level": null,
+          "items": [],
+          "language": null,
+          "links": [],
+          "citationIds": [
+            "source-a"
+          ],
+          "factId": null
+        },
+        {
+          "type": "code",
+          "text": "if (!authorized) return deny();",
+          "level": null,
+          "items": [],
+          "language": "typescript",
+          "links": [],
+          "citationIds": [
+            "source-a"
+          ],
+          "factId": null
+        },
+        {
+          "type": "paragraph",
+          "text": "Start by defining which business operation the application is allowed to perform and who is responsible for it. The interface should make that boundary visible rather than assuming that a confident answer means an action is safe. Before adding another tool, inspect the information it receives, the permission it needs, and the confirmation a person should see. This example describes a design choice, not a report of a deployed customer system. Keep the existing reliable workflow available while checking how the new capability behaves when a dependency is unavailable. Document the tradeoff and review it with the operational owner.",
+          "level": null,
+          "items": [],
+          "language": null,
+          "links": [],
+          "citationIds": [],
+          "factId": null
+        },
+        {
+          "type": "heading",
+          "text": "Make review and failure handling explicit",
+          "level": "2",
+          "items": [],
+          "language": null,
+          "links": [],
+          "citationIds": [],
+          "factId": null
+        },
+        {
+          "type": "paragraph",
+          "text": "Start by defining which business operation the application is allowed to perform and who is responsible for it. The interface should make that boundary visible rather than assuming that a confident answer means an action is safe. Before adding another tool, inspect the information it receives, the permission it needs, and the confirmation a person should see. This example describes a design choice, not a report of a deployed customer system. Keep the existing reliable workflow available while checking how the new capability behaves when a dependency is unavailable. Document the tradeoff and review it with the operational owner.",
+          "level": null,
+          "items": [],
+          "language": null,
+          "links": [],
+          "citationIds": [
+            "source-b"
+          ],
+          "factId": null
+        },
+        {
+          "type": "diagram",
+          "text": "A conceptual approval boundary",
+          "level": null,
+          "items": [
+            "Proposed operation",
+            "Application authorization",
+            "Human confirmation",
+            "Bounded tool execution"
+          ],
+          "language": null,
+          "links": [],
+          "citationIds": [
+            "source-b"
+          ],
+          "factId": null
+        },
+        {
+          "type": "paragraph",
+          "text": "Start by defining which business operation the application is allowed to perform and who is responsible for it. The interface should make that boundary visible rather than assuming that a confident answer means an action is safe. Before adding another tool, inspect the information it receives, the permission it needs, and the confirmation a person should see. This example describes a design choice, not a report of a deployed customer system. Keep the existing reliable workflow available while checking how the new capability behaves when a dependency is unavailable. Document the tradeoff and review it with the operational owner.",
+          "level": null,
+          "items": [],
+          "language": null,
+          "links": [],
+          "citationIds": [],
+          "factId": null
+        },
+        {
+          "type": "cta",
+          "text": "Discuss an appropriate boundary for your business.",
+          "level": null,
+          "items": [],
+          "language": null,
+          "links": [
+            {
+              "label": "Book a consultation",
+              "url": "https://example.com/book"
+            }
+          ],
+          "citationIds": [],
+          "factId": null
+        }
+      ]
+    },
+    "linkedin": {
+      "text": "A confident answer is not an authorization decision. Before connecting an assistant to a business operation, define who can approve it and what happens when the tool fails. Start with one boundary you can explain to the person who owns the workflow.",
+      "centralIdea": "Separate interpretation from permission.",
+      "takeaway": "Name the operation owner and the review boundary before adding a tool.",
+      "linkStrategy": "after_website_publication",
+      "targetUrl": null,
+      "citationIds": [
+        "source-a",
+        "source-b"
+      ]
+    },
+    "claims": [
+      {
+        "text": "Permission decisions belong at an application boundary.",
+        "classification": "supported",
+        "sourceIds": [
+          "source-a"
+        ],
+        "support": [
+          {
+            "sourceId": "source-a",
+            "excerpt": "Access decisions belong to the application boundary."
+          }
+        ]
+      },
+      {
+        "text": "Review policy should address consequential operations.",
+        "classification": "supported",
+        "sourceIds": [
+          "source-b"
+        ],
+        "support": [
+          {
+            "sourceId": "source-b",
+            "excerpt": "Consequential operations need an explicit review policy."
+          }
+        ]
+      }
+    ],
+    "additionalEvidenceNeeded": [],
+    "limitations": [
+      "Fixture content is illustrative and requires owner review."
+    ]
+  }
+}

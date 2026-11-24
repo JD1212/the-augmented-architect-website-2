@@ -23,8 +23,14 @@ export function validateArticles(collection: readonly Article[]): void {
       }
     }
     if (!article.content.length) throw new Error(`Missing article content: ${article.slug}`);
+    const references = new Map((article.references??[]).map(r=>[r.id,r]));
+    if(references.size!==(article.references??[]).length)throw new Error(`Duplicate article references: ${article.slug}`);
+    for(const reference of references.values())if(!/^[a-zA-Z0-9_-]+$/.test(reference.id)||!/^https:\/\//.test(reference.url)||new URL(reference.url).username||new URL(reference.url).password)throw new Error(`Invalid article reference: ${article.slug}`);
     for (const block of article.content) {
-      const values = block.type === 'list' ? block.items : [block.text];
+      if('citationIds' in block&&block.citationIds?.some(id=>!references.has(id)))throw new Error(`Unknown article citation: ${article.slug}`);
+      const links=block.type==='cta'?[block.link]:('links' in block?block.links??[]:[]);
+      if(links.some(l=>!l.label.trim()||!l.url.startsWith('/')&&!/^https:\/\//.test(l.url)||l.url.startsWith('//')||/^https:\/\//.test(l.url)&&(new URL(l.url).username||new URL(l.url).password)))throw new Error(`Unsafe article link: ${article.slug}`);
+      const values = block.type === 'list' || block.type === 'diagram' ? block.items : [block.text];
       if (!values.length || values.some(value => !value.trim())) throw new Error(`Empty article content block: ${article.slug}`);
     }
   }

@@ -4,7 +4,7 @@ import Script from 'next/script';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { privacy as copy } from '@/content/privacy';
-import { analyticsActive, analyticsPage, browserAllowsAnalytics, consentKey, readConsent, saveConsent, startAnalytics, stopAnalytics, trackServiceEngagement, type ConsentChoice } from '@/lib/analytics';
+import { registerArticleAnalytics, isRegisteredArticle, trackArticleEngagement, type ArticleAnalyticsPage, analyticsActive, analyticsPage, browserAllowsAnalytics, consentKey, readConsent, saveConsent, startAnalytics, stopAnalytics, trackServiceEngagement, type ConsentChoice } from '@/lib/analytics';
 import styles from './analytics.module.css';
 const serverSnapshot = () => null;
 const serverDisabled = () => false;
@@ -16,10 +16,10 @@ function subscribeReady(update: () => void) { window.addEventListener('aa:analyt
 export function PrivacyPreferences() {
   return <button type="button" className={styles.preference} onClick={() => window.dispatchEvent(new Event('aa:privacy-preferences'))}>{copy.preferences}</button>;
 }
-export function AnalyticsConsent({ enabled }: { enabled: boolean }) {
-  return <Suspense fallback={null}><Consent enabled={enabled} /></Suspense>;
+export function AnalyticsConsent({ enabled, articlePages=[] }: { enabled: boolean;articlePages?:readonly ArticleAnalyticsPage[] }) {
+  return <Suspense fallback={null}><Consent enabled={enabled} articlePages={articlePages} /></Suspense>;
 }
-function Consent({ enabled }: { enabled: boolean }) {
+function Consent({ enabled,articlePages }: { enabled: boolean;articlePages:readonly ArticleAnalyticsPage[] }) {
   const path = usePathname();
   const raw = useSyncExternalStore(subscribeChoice, storedChoice, serverSnapshot);
   const [visitChoice, setVisitChoice] = useState<ConsentChoice | null>(null), [settingsOpen, setSettingsOpen] = useState(false);
@@ -40,13 +40,14 @@ function Consent({ enabled }: { enabled: boolean }) {
     window.addEventListener('aa:privacy-preferences', preferences); window.addEventListener('storage', storage);
     return () => { window.removeEventListener('aa:privacy-preferences', preferences); window.removeEventListener('storage', storage); };
   }, []);
+  useEffect(()=>{registerArticleAnalytics(articlePages);},[articlePages]);
   useEffect(() => {
     if (enabled && choice === 'granted') { startAnalytics(id, path, choice); analyticsPage(path); }
   }, [enabled, choice, id, path]);
   useEffect(() => {
-    if (!load || !['/ai-solutions', '/salesforce', '/custom-applications'].includes(path)) return;
+    if (!load || !isRegisteredArticle(path)&&!['/ai-solutions', '/salesforce', '/custom-applications'].includes(path)) return;
     let timer: ReturnType<typeof setTimeout> | undefined;
-    const watch = () => { clearTimeout(timer); if (document.visibilityState === 'visible') timer = setTimeout(() => trackServiceEngagement(path), 10000); };
+    const watch = () => { clearTimeout(timer); if (document.visibilityState === 'visible') timer = setTimeout(() => isRegisteredArticle(path)?trackArticleEngagement(path):trackServiceEngagement(path), isRegisteredArticle(path)?30000:10000); };
     watch(); document.addEventListener('visibilitychange', watch);
     return () => { clearTimeout(timer); document.removeEventListener('visibilitychange', watch); };
   }, [load, path]);

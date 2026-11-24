@@ -25,7 +25,7 @@ function loadWithArticles(articles = []) {
     }).outputText;
     const loaded = { exports: {} };
     cache.set(resolved, loaded.exports);
-    const require = specifier => specifier.startsWith('@/') ? load(path.join(root, 'src', specifier.slice(2))) : specifier.startsWith('.') ? load(path.resolve(path.dirname(resolved), specifier)) : nativeRequire(specifier);
+    const require = specifier => specifier.endsWith('.module.css') ? new Proxy({}, { get: (_target, key) => String(key) }) : specifier.startsWith('@/') ? load(path.join(root, 'src', specifier.slice(2))) : specifier.startsWith('.') ? load(path.resolve(path.dirname(resolved), specifier)) : nativeRequire(specifier);
     vm.runInThisContext(`(function(require,module,exports){${output}\n})`, { filename: resolved })(require, loaded, loaded.exports);
     cache.set(resolved, loaded.exports);
     return loaded.exports;

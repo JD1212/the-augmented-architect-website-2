@@ -6,9 +6,14 @@ const armedKey = 'aa.analytics.pending.v1';
 export const publicPages: Record<string, string> = {
   '/': 'The Augmented Architect', '/ai-solutions': 'AI Solutions', '/salesforce': 'Salesforce Modernization',
   '/custom-applications': 'Custom Business Applications', '/about': 'About', '/contact': 'Contact', '/book': 'Book a Consultation',
+  '/how-we-work':'How We Work With You',
   '/our-approach': 'Our Approach', '/our-approach/philosophy': 'Our Philosophy',
   '/our-approach/ai-architecture': 'AI & Architecture', '/our-approach/salesforce': 'Our Approach to Salesforce', '/privacy': privacy.title,
 };
+export type ArticleAnalyticsPage={path:string;title:string;publicationId?:string};
+const articlePublications=new Map<string,string>();
+export function registerArticleAnalytics(pages:readonly ArticleAnalyticsPage[]){for(const path of articlePublications.keys())delete publicPages[path];articlePublications.clear();for(const page of pages){if(!/^\/our-approach\/articles\/[a-z0-9]+(?:-[a-z0-9]+)*$/.test(page.path)||!page.title.trim())continue;publicPages[page.path]=page.title;articlePublications.set(page.path,page.publicationId&&/^[a-zA-Z0-9-]{1,64}$/.test(page.publicationId)?page.publicationId:'');}}
+export const isRegisteredArticle=(path:string)=>articlePublications.has(path);
 export type ConsentChoice = 'granted' | 'denied';
 declare global {
   interface Window { dataLayer?: unknown[]; gtag?: (...args: unknown[]) => void; [key: `ga-disable-${string}`]: boolean }
@@ -71,7 +76,7 @@ export const analyticsActive = () => active;
 function emit(name: string, parameters: Record<string, string | number> = {}) {
   if (!active || !browserAllowsAnalytics() || !publicPages[currentPath]) return;
   command('event', name, { send_to: measurementId, page_location: 'https://theaugmentedarchitect.com' + currentPath,
-    page_title: publicPages[currentPath], page_referrer: previousPath ? 'https://theaugmentedarchitect.com' + previousPath : safeReferrer(document.referrer), ...(debugEnabled() ? { debug_mode: true } : {}), ...parameters });
+    page_title: publicPages[currentPath], page_referrer: previousPath ? 'https://theaugmentedarchitect.com' + previousPath : safeReferrer(document.referrer), ...(debugEnabled() ? { debug_mode: true } : {}), ...(articlePublications.get(currentPath)?{publication_id:articlePublications.get(currentPath)}:{}),...parameters });
 }
 export function analyticsPage(path: string) {
   if (!active || path === currentPath) return;
@@ -85,6 +90,7 @@ export function trackServiceEngagement(path: string) {
   const service = ({ '/ai-solutions': 'ai_solutions', '/salesforce': 'salesforce', '/custom-applications': 'custom_applications' } as Record<string, string>)[path];
   if (active && service && mark('service:' + path)) emit('service_engagement', { service, threshold_seconds: 10 });
 }
+export function trackArticleEngagement(path:string){if(active&&isRegisteredArticle(path)&&mark('article:'+path))emit('article_engagement',{threshold_seconds:30});}
 function persistArmed() { try { sessionStorage.setItem(armedKey, JSON.stringify([...armed].slice(-20))); } catch { /* Memory state remains available. */ } }
 export function armBooking(id: string) { if (active && /^[0-9a-f-]{36}$/i.test(id)) { trackConsultationStart(); armed.add(id); persistArmed(); } }
 export function trackConfirmedBooking(id: string, source: 'scout' | 'form') {

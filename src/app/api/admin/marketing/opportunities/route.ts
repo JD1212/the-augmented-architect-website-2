@@ -1,7 +1,7 @@
 import {ownerAuth,requireOwner} from '@/lib/marketing/auth';
 import {privateJson,privateBody,marketingFailure,sameOrigin} from '@/lib/marketing/http';
 import {MarketingError,uuidPattern} from '@/lib/marketing/config';
-import {seoDatabase} from '@/lib/marketing/seo/config';
+import {marketingDatabase} from '@/lib/marketing/private-database';
 import {loadBacklog,saveReview} from '@/lib/marketing/opportunities/repository';
 import {contentAssignment} from '@/lib/marketing/opportunities/handoff';
 import type {ReviewCommand} from '@/lib/marketing/opportunities/contracts';
@@ -24,6 +24,6 @@ export async function POST(request:Request){
     const keys=['opportunityId','requestId','expectedReviewId','expectedFindingId','action','note','deliverable'];
     if(Object.keys(body).some(k=>!keys.includes(k))||!['opportunityId','requestId','expectedFindingId'].every(k=>typeof body[k]==='string'&&uuidPattern.test(body[k] as string))||body.expectedReviewId!==null&&(typeof body.expectedReviewId!=='string'||!uuidPattern.test(body.expectedReviewId))||!['approve','defer','reject','reopen','archive','restore'].includes(String(body.action))||typeof body.note!=='string'||body.note.length>2000||!['article','landing_page','existing_page_update','technical_guide'].includes(String(body.deliverable)))throw new MarketingError(400,'A valid review action, revision, deliverable and optional note are required.');
     await requireOwner(owner.db);
-    return privateJson(await saveReview(seoDatabase(),owner.tenantId,owner.user.id,body as ReviewCommand));
+    return privateJson(await saveReview(marketingDatabase(),owner.tenantId,owner.user.id,body as ReviewCommand));
   }catch(error){return marketingFailure(error);}
 }

@@ -9,13 +9,13 @@ export function marketingFailure(error: unknown) {
 export function sameOrigin(request: Request, mutation = false) {
   if (request.headers.get('sec-fetch-site') === 'cross-site' || (mutation && request.headers.get('origin') !== new URL(request.url).origin)) throw new MarketingError(403, 'Please use the owner portal on this website.');
 }
-export async function privateBody(request: Request) {
+export async function privateBody(request: Request, maximumBytes = 4096) {
   sameOrigin(request, true);
   if (!request.headers.get('content-type')?.startsWith('application/json')) throw new MarketingError(415, 'JSON is required.');
   const reader = request.body?.getReader();
   if (!reader) throw new MarketingError(400, 'A request body is required.');
   const chunks: Uint8Array[] = []; let length = 0;
-  try { while (true) { const { value, done } = await reader.read(); if (done) break; length += value.length; if (length > 4096) { await reader.cancel(); throw new MarketingError(413, 'Request is too large.'); } chunks.push(value); } }
+  try { while (true) { const { value, done } = await reader.read(); if (done) break; length += value.length; if (length > maximumBytes) { await reader.cancel(); throw new MarketingError(413, 'Request is too large.'); } chunks.push(value); } }
   finally { reader.releaseLock(); }
   try { const value = JSON.parse(Buffer.concat(chunks).toString()); if (!value || typeof value !== 'object' || Array.isArray(value)) throw Error(); return value as Record<string, unknown>; } catch { throw new MarketingError(400, 'Invalid JSON.'); }
 }
