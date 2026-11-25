@@ -1,3 +1,5 @@
+import {ownerArticle} from './import-contract';
+import {importedArticle} from './importing';
 import 'server-only';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import type {Article,ArticleBlock} from '@/content/articles/types';
@@ -10,6 +12,7 @@ import {publicationPermission} from './service';
 import {contentDomain} from './config';
 const date=(s:string)=>/^\d{4}-\d{2}-\d{2}$/.test(s)&&Number.isFinite(Date.parse(s+'T00:00:00Z'))&&new Date(s+'T00:00:00Z').toISOString().slice(0,10)===s;
 export function draftArticle(revision:Revision,publishedDate?:string):Article{
+ if(ownerArticle(revision.input))return importedArticle(revision,publishedDate);
  const d=revision.draft.website;if(!d)throw new MarketingError(400,'No website draft exists.');
  const internal=(link:{label:string;url:string})=>({...link,url:link.url.startsWith(site.url+'/')?link.url.slice(site.url.length):link.url});
  const content:ArticleBlock[]=d.blocks.map(b=>{const annotations={...(b.links.length?{links:b.links.map(internal)}:{}),...(b.citationIds.length?{citationIds:b.citationIds}:{})};switch(b.type){case 'heading':return {type:'heading',text:b.text,level:b.level==='3'?3:2};case 'list':return {type:'list',text:b.text,items:b.items,...annotations};case 'diagram':return {type:'diagram',text:b.text,items:b.items,...annotations};case 'code':return {type:'code',text:b.text,language:b.language!,...annotations};case 'cta':return {type:'cta',text:b.text,link:internal(b.links[0])};case 'fact':{const fact=revision.input.facts.find(f=>f.id===b.factId);if(!fact)throw new MarketingError(400,'A verified fact is unavailable.');return {type:'paragraph',text:fact.display};}default:return {type:'paragraph',text:b.text,...annotations};}});

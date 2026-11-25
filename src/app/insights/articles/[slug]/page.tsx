@@ -1,3 +1,4 @@
+import {markdownHeadings} from '@/lib/markdown';
 import Link from 'next/link';
 import {ArticleMeasurement} from '@/components/analytics/article-measurement';
 import { notFound } from 'next/navigation';
@@ -47,8 +48,8 @@ export default async function ArticlePage({ params }: Props) {
           {preview && <p className="insights-published">Editorial preview · awaiting owner approval. Not published.</p>}
           {article.publishedDate && <p className="insights-published">{insights.publishedLabel} <time dateTime={article.publishedDate}>{formatPublishedDate(article.publishedDate)}</time></p>}
         </header>
-        <ArticleBody blocks={article.content} references={article.references} />
-      </article><aside className={styles.contents}><nav aria-label="On this page"><h2>In this guide</h2><ol>{article.content.map((block,index)=>block.type==='heading'&&block.level!==3?<li key={index}><a href={'#section-'+index}>{block.text}</a></li>:null)}</ol></nav></aside></div>
+        <ArticleBody blocks={article.content} references={article.references} title={article.title} />
+      </article><aside className={styles.contents}><nav aria-label="On this page"><h2>In this guide</h2><ol>{article.content.flatMap((block,index)=>block.type==='markdown'?markdownHeadings(block.text).filter(h=>h.level===2).map(h=><li key={h.id}><a href={'#'+h.id}>{h.text}</a></li>):block.type==='heading'&&block.level!==3?[<li key={index}><a href={'#section-'+index}>{block.text}</a></li>]:[])}</ol></nav></aside></div>
       <Link className="text-link insights-back-link" href="/insights">{libraryContent.back}</Link>
       {related.length > 0 && <section className="insights-articles" aria-labelledby="related-heading"><h2 id="related-heading">{insights.relatedHeading}</h2><ArticleList articles={related} /></section>}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }} />

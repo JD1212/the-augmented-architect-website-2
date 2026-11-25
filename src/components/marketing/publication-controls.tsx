@@ -7,7 +7,7 @@ import scoped from './content-studio.module.css';
 type State=Awaited<ReturnType<typeof contentState>>;
 export function PublicationControls({data,dirty,reload}:{data:State;dirty:boolean;reload:()=>Promise<void>}){
  const [date,setDate]=useState(''),[confirmed,setConfirmed]=useState(false),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[probe,setProbe]=useState<Record<string,unknown>|null>(null);const lock=useRef(false);
- const state=data.publication,head=data.head,pointer=state?.pointer,approved=Boolean(data.grounding.assignment&&head&&data.approvals.some(a=>a.parent_id===head.id&&a.payload.channel==='website'&&a.payload.revisionHash===head.hash));
+ const state=data.publication,head=data.head,pointer=state?.pointer,approved=Boolean((data.origin==='owner-authored'||data.grounding.assignment)&&head&&data.approvals.some(a=>a.parent_id===head.id&&a.payload.channel==='website'&&a.payload.revisionHash===head.hash));
  const pending=pointer?.payload.status==='verifying',live=pointer?.payload.active&&pointer.payload.status==='live',current=live&&pointer.payload.revisionHash===head?.hash;
  const destination=state?.environment==='production'?'Production website':'Protected Preview';
  async function run(action:'publish'|'unpublish',resume=false){

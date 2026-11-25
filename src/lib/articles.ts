@@ -1,3 +1,4 @@
+import {inspectMarkdown} from './markdown';
 import { articles } from '@/content/articles';
 import type { Article } from '@/content/articles/types';
 import { categoryIds, type ArticleCategory } from '@/content/insights';
@@ -27,6 +28,7 @@ export function validateArticles(collection: readonly Article[]): void {
     if(references.size!==(article.references??[]).length)throw new Error(`Duplicate article references: ${article.slug}`);
     for(const reference of references.values())if(!/^[a-zA-Z0-9_-]+$/.test(reference.id)||!/^https:\/\//.test(reference.url)||new URL(reference.url).username||new URL(reference.url).password)throw new Error(`Invalid article reference: ${article.slug}`);
     for (const block of article.content) {
+      if(block.type==='markdown')inspectMarkdown(block.text);
       if('citationIds' in block&&block.citationIds?.some(id=>!references.has(id)))throw new Error(`Unknown article citation: ${article.slug}`);
       const links=block.type==='cta'?[block.link]:('links' in block?block.links??[]:[]);
       if(links.some(l=>!l.label.trim()||!l.url.startsWith('/')&&!/^https:\/\//.test(l.url)||l.url.startsWith('//')||/^https:\/\//.test(l.url)&&(new URL(l.url).username||new URL(l.url).password)))throw new Error(`Unsafe article link: ${article.slug}`);

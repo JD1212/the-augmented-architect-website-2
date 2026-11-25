@@ -14,3 +14,9 @@
 @media(max-width:600px){.body{font-size:16px;}.body h2{font-size:26px;}.body pre{padding:16px;}.cta{padding:20px;}}
 
 .body h2,.body h3,.references li { scroll-margin-top:110px; }.body li:target { background:var(--tint-cyan); }
+
+.body img {max-width:100%;height:auto}.body table{display:block;overflow:auto;max-width:100%;border-collapse:collapse}.body td,.body th{padding:10px;border:var(--border-subtle)}
+
+.body .markdown > :not(:first-child) { margin-top:24px; }
+.body .markdown > h2:not(:first-child) { margin-top:44px; }
+.body .markdown > h3:not(:first-child) { margin-top:32px; }

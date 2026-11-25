@@ -13,6 +13,7 @@ export function publishingEnabled(env=process.env){return env.ARTICLE_PUBLISHING
 const link=z.object({label:z.string().min(1).max(160),url:z.string().max(1000)}).strict();
 const annotation={links:z.array(link).max(5).optional(),citationIds:z.array(z.string().max(100)).max(8).optional()};
 const block=z.discriminatedUnion('type',[
+ z.object({type:z.literal('markdown'),text:z.string().max(120000)}).strict(),
  z.object({type:z.literal('paragraph'),text:z.string().max(12000),...annotation}).strict(),
  z.object({type:z.literal('heading'),text:z.string().max(12000),level:z.union([z.literal(2),z.literal(3)]).optional()}).strict(),
  z.object({type:z.literal('list'),text:z.string().max(12000).optional(),items:z.array(z.string().max(2500)).max(20),ordered:z.boolean().optional(),...annotation}).strict(),

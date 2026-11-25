@@ -8,6 +8,7 @@ import {loadScoutModule as loadModule} from './helpers/scout-loader.mjs';
 const packages={'@augmented-architect/content-strategist':contentPackage,'@augmented-architect/seo-analyst':seoPackage,'@/content/articles':{articles:[]}};
 const {contentHash}=loadModule('src/lib/marketing/content/grounding.ts',packages),{stableId}=loadModule('src/lib/marketing/opportunities/identity.ts',packages),{opportunityPublications}=loadModule('src/lib/marketing/opportunities/publications.ts',packages),{workflowSnapshot}=loadModule('src/lib/marketing/workflow/model.ts',packages);
 import {createClient} from '@supabase/supabase-js';
+import {memoryDatabase} from './helpers/marketing-memory.mjs';
 import {randomBytes,randomUUID} from 'node:crypto';
 import {spawn} from 'node:child_process';
 import {createServer} from 'node:net';
@@ -19,6 +20,8 @@ assert.equal(process.env.CONTENT_AUTH_TEST,'1');assert.equal(process.env.SUPABAS
 const tenant='b329164a-f981-4acc-befc-2f0c70f8af10',opportunity='33333333-3333-4333-a333-333333333333',findingId='44444444-4444-4444-a444-444444444444';
 const db=createClient(process.env.SUPABASE_URL,process.env.SUPABASE_SECRET_KEY,{auth:{persistSession:false,autoRefreshToken:false}}),sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const port=await new Promise(resolve=>{const s=createServer();s.listen(0,'127.0.0.1',()=>{const p=s.address().port;s.close(()=>resolve(p));});}),origin='http://localhost:'+port,out=join(tmpdir(),'aa-content-studio',String(Date.now()));await mkdir(out,{recursive:true});
+const importDb=memoryDatabase(),importService=loadModule('src/lib/marketing/content/importing.ts',packages),importRepo=loadModule('src/lib/marketing/content/repository.ts',packages),contentService=loadModule('src/lib/marketing/content/service.ts',packages);
+let importId=null;
 let userId,server,browser,ws;const checks=[],errors=[],posts=[];const check=(v,label)=>{assert(v,label);checks.push(label);console.log('PASS '+label);};
 const fixture=JSON.parse(readFileSync('tests/fixtures/content-package.fixture.json','utf8'));fixture.input.assignment.business.website='https://theaugmentedarchitect.com';fixture.input.assignment.opportunityId=opportunity;fixture.input.assignment.findingId=findingId;fixture.input.context.categories=['ai-architecture'];fixture.input.context.preferredCategory='ai-architecture';fixture.draft.website.category='ai-architecture';fixture.draft.website.title='Fixture: Govern connected business application actions';fixture.draft.website.blocks.find(b=>b.type==='cta').links[0].url='https://theaugmentedarchitect.com/book';fixture.input.context.consultationUrls=['https://theaugmentedarchitect.com/book'];
 const opportunityFinding={priority:1,title:'Fixture: Practical agent governance guide',targetCustomer:'Business and technical leaders',searchIntent:'Evaluate reliable connected systems.',supportingEvidence:'Fixture primary-source notes, not a live analysis.',recommendedAction:'Prepare an owner-reviewed technical guide.',businessRelevance:'Explain useful business architecture.',confidence:'medium',limitations:['Browser fixture only.'],basis:'external_research',requiresOwnerReview:true,evidenceIds:['fixture'],sourceUrls:fixture.input.sources.map(s=>s.url)};
@@ -32,7 +35,7 @@ function workflowFixture(){
  artifacts.push(...state.approvals.map(a=>({...a,tenant_id:tenant,kind:'approval',payload:{...a.payload,workflow:'content-publication-approval/v1'}})));
  if(state.publication.pointer)artifacts.push({...state.publication.pointer,tenant_id:tenant,kind:'measurement',payload:{...state.publication.pointer.payload,workflow:'website-publication-pointer/v1',verifiedAt:'2026-11-24T00:00:00Z'}});
  opp.publicationStates=opportunityPublications(artifacts,opportunity);
- return workflowSnapshot({opportunities:[opp],evidence:{}},artifacts,state.runs,{environment:state.publication.environment,publishingEnabled:true,generationEnabled:state.capabilities.executionEnabled});
+ return workflowSnapshot({opportunities:[opp],evidence:{}},[...artifacts,...importDb.rows.marketing_artifacts],state.runs,{environment:state.publication.environment,publishingEnabled:true,generationEnabled:state.capabilities.executionEnabled});
 }
 try{
  const email='content-qa-'+randomUUID()+'@example.invalid',password=randomBytes(30).toString('base64url')+'aA1!';const u=await db.auth.admin.createUser({email,password,email_confirm:true});assert(!u.error);userId=u.data.user.id;const m=await db.from('marketing_memberships').insert({tenant_id:tenant,user_id:userId});assert(!m.error);
@@ -50,6 +53,9 @@ try{
   else if(url.pathname==='/api/admin/marketing/content'){
    if(event.request.method==='POST'){
     const b=JSON.parse(event.request.postData);posts.push(b);
+    if(b.operation==='import'){body=await importService.importArticle(importDb,tenant,userId,b.requestId,b.document,b.linkedOpportunityId);importId=body.documentId;}
+    else if(b.operation==='reviseImport'){body=await importService.reviseImportedArticle(importDb,tenant,userId,importRepo.revisionHead(importDb.rows.marketing_artifacts,importId),b.document);}
+    else
     if(b.operation==='reviewSource'){assert.equal(b.findingId,findingId);assert.equal(b.source.reviewConfirmed,true);assert(fixture.input.sources.some(s=>s.url===b.source.url));body={id:'source-review-fixture'};}
     else if(b.operation==='generate'){state.runs=[{id:b.requestId,state:'running',created_at:'2026-11-23T00:00:00Z',usage:{inputTokens:null,outputTokens:null,totalTokens:null,measuredCost:null},diagnostics:{stage:'model'}}];await sleep(600);revision(fixture.draft);state.runs[0]={...state.runs[0],state:'completed',usage:{inputTokens:200,outputTokens:160,totalTokens:360,measuredCost:null,receipts:[]},diagnostics:{stage:'completed',packageVersion:'0.1.0'}};body={executionId:b.requestId};}
     else if(b.operation==='revise'){revision(b.draft,b.revisionId);body={revisionId:state.head.id};}
@@ -65,7 +71,9 @@ try{
      else if(b.channel==='linkedin'&&!state.publications.some(p=>p.payload.channel==='website')){status=409;body={error:'Record the real website publication before preparing its LinkedIn link.'};}
      else body=b.channel==='website'?{filename:'fixture-article.ts',source:'// Fixture release source. Never committed or published.',requiresGitReview:true,registryInstruction:'Fixture: explicit Git review required.'}:{text:state.head.draft.linkedin.text+'\n\n'+state.publications[0].payload.url,manualOnly:true};
     }else if(b.operation==='record'){state.publications.push({id:randomUUID(),title:'Fixture owner-recorded '+b.channel+' publication',payload:{...b,revisionId:state.head.id,verification:'owner_attested'}});body={ok:true};}
-   }else body=state;
+   }else if(url.searchParams.get('imports')==='1')body={documents:importId?[{id:importId,title:'Beyond the Boundaries of Intelligence: Why Architecture Is the Key to AI Discovery'}]:[]};
+   else if(importId&&url.searchParams.get('opportunityId')===importId)body=await contentService.contentState(importDb,tenant,importId);
+   else body=state;
   }else if(url.pathname==='/api/admin/marketing/opportunities'){
    if(event.request.method==='POST'){const b=JSON.parse(event.request.postData);assert.equal(b.action,'approve');opp.status='approved_for_drafting';opp.reviewId=randomUUID();opp.reviews=[{id:opp.reviewId,action:'approve',status:opp.status,previousStatus:'pending',note:b.note,actorId:userId,createdAt:'2026-11-23T00:00:00Z',previousReviewId:null,findingId,deliverable:'technical_guide',requestId:b.requestId}];fixture.input.assignment.approvalId=opp.reviewId;grounding.assignment=fixture.input.assignment;state.opportunity.status=opp.status;body={id:opp.reviewId};}
    else body=url.searchParams.has('id')?{opportunity:opp,seoBrief,evidence:[],assignment:grounding.assignment}:{opportunities:[opp],total:1,page:1,pageSize:50,pages:1,topics:[opp.topic]};
@@ -122,5 +130,19 @@ try{
   }
  }
  for(const [legacy,section] of [['keywords','Discover sections'],['opportunities','Discover sections'],['analytics','Measurement sections'],['search','Measurement sections'],['conversions','Measurement sections']]){await send('Page.navigate',{url:origin+'/admin/marketing?view='+legacy+'&opportunity='+opportunity});await until(`!!document.querySelector('nav[aria-label="${section}"]')`);check(await ev(`new URLSearchParams(location.search).get('opportunity')==='${opportunity}'`),'Legacy '+legacy+' bookmark keeps the selected opportunity');}
+ if(process.env.RED_QUEEN_SOURCE){
+  const source=readFileSync(process.env.RED_QUEEN_SOURCE,'utf8'),title='Beyond the Boundaries of Intelligence: Why Architecture Is the Key to AI Discovery';
+  await send('Page.navigate',{url:origin+'/admin/marketing?view=create'});await until("[...document.querySelectorAll('summary')].some(s=>s.textContent==='Import Article')&&document.querySelectorAll('#content-opportunity option').length>1");await ev("[...document.querySelectorAll('summary')].find(s=>s.textContent==='Import Article').click()");await until("!!document.querySelector('textarea[aria-label=\"Markdown article\"]')");
+  await fill('textarea[aria-label="Markdown article"]',source);for(const [key,value]of Object.entries({title,seoTitle:title,seoDescription:'Are we accelerating human progress, or simply running faster to remain in the same place?',summary:'Are we accelerating human progress, or simply running faster to remain in the same place?',slug:'beyond-the-boundaries-of-intelligence'}))await fill('input[aria-label="Import '+key+'"]',value);
+  await click('Save imported draft');await until("document.body.textContent.includes('Owner-authored import')&&document.body.textContent.includes('AlphaTensor')");
+  const head=importRepo.revisionHead(importDb.rows.marketing_artifacts,importId);check(head.grounding.ownerArticle.markdown===source&&head.input.assignment.findingId===null,'Pasted Red Queen article remains byte-for-byte intact with no fake SEO opportunity');
+  check(await ev("![...document.querySelectorAll('button')].some(b=>b.textContent==='Generate website + LinkedIn draft'||b.textContent==='Generate a revised content package')"),'Owner import does not expose model generation controls');
+  check(await ev("parseFloat(getComputedStyle(document.querySelectorAll('.insights-article-body p')[1]).marginTop)>=20"),'Imported Markdown retains readable paragraph spacing');
+  check(await ev("!!document.querySelector('.insights-article-body em')&&!!document.querySelector('.insights-article-body strong')&&document.querySelectorAll('.insights-article-body ol').length>=2&&[...document.querySelectorAll('.insights-article-body a')].some(a=>a.href.includes('nature.com/articles/s41586-022-05172-4'))"),'Rendered import preserves emphasis, ordered lists, scientific references and actual links');
+  for(const width of [1440,390]){await send('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:width===390});check(await ev('document.documentElement.scrollWidth===innerWidth'),'Imported article fits '+width);await ev("document.querySelector('.insights-article-body').scrollIntoView({block:'start'})");await writeFile(out+'/red-queen-import-'+width+'.png',Buffer.from((await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false})).data,'base64'));}
+  await click('Edit this revision');await until("!!document.querySelector('input[aria-label=\"Import seoTitle\"]')");await fill('details[open] input[aria-label="Import seoTitle"]','Architecture and AI Discovery — Owner SEO Edit');await click('Save a new immutable revision');await until("document.body.textContent.includes('Architecture and AI Discovery — Owner SEO Edit')");
+  const updated=importRepo.revisionHead(importDb.rows.marketing_artifacts,importId);check(updated.id!==head.id&&updated.grounding.ownerArticle.markdown===source,'SEO edit creates a new immutable revision without altering article wording');
+  await ev("[...document.querySelectorAll('summary')].find(s=>s.textContent==='Import Article').click()");await until("!!document.querySelector('input[type=file]')");const dom=await send('DOM.getDocument'),fileNode=await send('DOM.querySelector',{nodeId:dom.root.nodeId,selector:'input[type=file]'});await send('DOM.setFileInputFiles',{nodeId:fileNode.nodeId,files:[process.env.RED_QUEEN_SOURCE]});await until(`document.querySelector('textarea[aria-label="Markdown article"]').value===${JSON.stringify(source)}`);check(posts.filter(p=>p.operation==='import').length===1,'UTF-8 file selection preserves the source and never automatically saves or publishes');
+ }
  const artifacts=await db.from('marketing_artifacts').select('id').eq('tenant_id',tenant).eq('actor_id',userId);check(!artifacts.error&&artifacts.data.length===0,'No real content artifacts, approvals or publication records were written');check(errors.length===0,'No browser runtime errors: '+JSON.stringify(errors));await writeFile(out+'/results.json',JSON.stringify({checks,mockedContentActions:posts.length,realModels:0,realResearch:0,realApprovals:0,realPublications:0,fixtureScreenshots:true},null,2));console.log(JSON.stringify({checks:checks.length,out}));
 }finally{ws?.close();browser?.kill('SIGTERM');server?.kill('SIGTERM');if(userId){const removed=await db.auth.admin.deleteUser(userId);assert(!removed.error,'Temporary QA user cleanup failed');console.log('Temporary QA login and membership removed. No real content decisions were made.');}}

@@ -1,11 +1,13 @@
 import Link from 'next/link';
+import {MarkdownBody} from './markdown-body';
 import type {ArticleBlock,ArticleReference} from '@/content/articles/types';
 import styles from './article-body.module.css';
 
-export function ArticleBody({blocks,references=[]}:{blocks:readonly ArticleBlock[];references?:readonly ArticleReference[]}){
+export function ArticleBody({blocks,references=[],title}:{blocks:readonly ArticleBlock[];references?:readonly ArticleReference[];title?:string}){
  function annotations(block:ArticleBlock){return <>{'links' in block&&block.links?.map(link=><span key={link.url}> <Link href={link.url} rel={link.url.startsWith('https:')?'noopener noreferrer':undefined}>{link.label}</Link></span>)}{'citationIds' in block&&block.citationIds?.map(id=>{const index=references.findIndex(r=>r.id===id);return index<0?null:<sup key={id}><a href={'#reference-'+id} aria-label={`Source ${index+1}: ${references[index].title}`}>[{index+1}]</a></sup>;})}</>;}
  return <div className={`insights-article-body ${styles.body}`}>{blocks.map((block,index)=>{
   switch(block.type){
+   case 'markdown':return <div key={index} className={styles.markdown}><MarkdownBody source={block.text} title={title}/></div>;
    case 'paragraph':return <p key={index}>{block.text}{annotations(block)}</p>;
    case 'heading':return block.level===3?<h3 id={'section-'+index} key={index}>{block.text}</h3>:<h2 id={'section-'+index} key={index}>{block.text}</h2>;
    case 'quote':return <blockquote key={index}><p>{block.text}{annotations(block)}</p></blockquote>;

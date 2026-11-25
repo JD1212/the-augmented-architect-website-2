@@ -2,6 +2,7 @@ import type { ArticleCategory } from '../insights';
 export type ArticleReference = { id: string; url: string; title: string };
 type Annotations = { links?: readonly {label:string;url:string}[]; citationIds?: readonly string[] };
 export type ArticleBlock =
+  | { type: 'markdown'; text: string }
   | ({ type: 'paragraph'; text: string } & Annotations)
   | { type: 'heading'; text: string; level?: 2|3 }
   | ({ type: 'list'; text?: string; items: readonly string[]; ordered?: boolean } & Annotations)

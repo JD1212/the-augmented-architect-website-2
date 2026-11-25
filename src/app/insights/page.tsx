@@ -1,3 +1,5 @@
+import {Suspense} from 'react';
+import {connection} from 'next/server';
 import Link from 'next/link';
 import {ArticleMeasurement} from '@/components/analytics/article-measurement';
 import {libraryContent, insights, categoryIds} from '@/content/insights';
@@ -8,7 +10,8 @@ import {Arrow} from '@/components/icon';
 import styles from './insights.module.css';
 
 export const metadata=createPageMetadata({title:libraryContent.title,description:libraryContent.seoDescription},'/insights');
-export default async function InsightsPage(){
+async function InsightsLibrary(){
+ await connection();
  const articles=await publishedArticles();
  return <main id="main" className={`container detail-page ${styles.page}`}>
   <ArticleMeasurement pages={articles.map(a=>({path:articleHref(a.slug),title:a.title,publicationId:a.publication?.id}))}/><header className={styles.heading}><p className="eyebrow">{libraryContent.eyebrow}</p><h1>{libraryContent.title}</h1><p>{libraryContent.introduction}</p></header>
@@ -20,3 +23,5 @@ export default async function InsightsPage(){
   <section className={styles.explore} aria-labelledby="insights-topics-heading"><h2 id="insights-topics-heading">{libraryContent.topics}</h2><div>{categoryIds.map(id=><section id={id} key={id}><h3>{insights.categories[id].title}</h3><p>{insights.categories[id].summary}</p><Link className="text-link" href={'/our-approach/'+id}>Our approach <Arrow/></Link></section>)}</div></section>
  </main>;
 }
+
+export default function InsightsPage(){return <Suspense fallback={<main className="container detail-page"><p>Loading Insights…</p></main>}><InsightsLibrary/></Suspense>;}
