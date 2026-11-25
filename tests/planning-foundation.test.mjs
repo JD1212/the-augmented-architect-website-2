@@ -1,3 +1,4 @@
+import * as phase3Content from '@augmented-architect/content-strategist';
 // Saved/redacted observations and mocked SDK/API only. No provider requests.
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -5,7 +6,7 @@ import {readFileSync} from 'node:fs';
 import * as pkg from '@augmented-architect/seo-analyst';
 import {loadScoutModule as load} from './helpers/scout-loader.mjs';
 const config=load('src/lib/marketing/config.ts'),tenant=config.marketingTenant,actor='a2eba199-7949-49c9-828e-9d755e2e345b';
-const overrides={'@augmented-architect/seo-analyst':pkg,'./planning-policy':{requirePlanningExecution:()=>{}},'@/lib/marketing/seo/planning-policy':{planningExecutionEnabled:()=>true,requirePlanningExecution:()=>{}},'../config':config,'./config':config};
+const overrides={'@augmented-architect/content-strategist':phase3Content,'@augmented-architect/seo-analyst':pkg,'./planning-policy':{requirePlanningExecution:()=>{}},'@/lib/marketing/seo/planning-policy':{planningExecutionEnabled:()=>true,requirePlanningExecution:()=>{}},'../config':config,'./config':config};
 const service=load('src/lib/marketing/intelligence/service.ts',overrides);
 const helper=load('src/lib/marketing/intelligence/planning-evidence.ts',{...overrides,'./service':service});
 const context=load('src/lib/marketing/seo/context.ts',overrides);

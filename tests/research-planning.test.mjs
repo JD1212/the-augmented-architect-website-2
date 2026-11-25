@@ -1,3 +1,4 @@
+import * as phase3Content from '@augmented-architect/content-strategist';
 // Deterministic, tenant-scoped fixtures only. No paid/model/database calls.
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -5,7 +6,7 @@ import * as pkg from '@augmented-architect/seo-analyst';
 import {loadScoutModule as load} from './helpers/scout-loader.mjs';
 import {memoryDatabase} from './helpers/marketing-memory.mjs';
 import {readFileSync} from 'node:fs';
-const config=load('src/lib/marketing/config.ts'),overrides={'@augmented-architect/seo-analyst':pkg,'./planning-policy':{requirePlanningExecution:()=>{}},'@/lib/marketing/seo/planning-policy':{planningExecutionEnabled:()=>true,requirePlanningExecution:()=>{}},'./config':config,'../config':config,'@/lib/marketing/config':config},tenant=config.marketingTenant,actor='a2eba199-7949-49c9-828e-9d755e2e345b';
+const config=load('src/lib/marketing/config.ts'),overrides={'@augmented-architect/content-strategist':phase3Content,'@augmented-architect/seo-analyst':pkg,'./planning-policy':{requirePlanningExecution:()=>{}},'@/lib/marketing/seo/planning-policy':{planningExecutionEnabled:()=>true,requirePlanningExecution:()=>{}},'./config':config,'../config':config,'@/lib/marketing/config':config},tenant=config.marketingTenant,actor='a2eba199-7949-49c9-828e-9d755e2e345b';
 const service=load('src/lib/marketing/intelligence/service.ts',overrides);
 const planning=load('src/lib/marketing/intelligence/planning.ts',{...overrides,'./service':service});
 const step={service:'salesforce',mode:'historical',seeds:['salesforce org cleanup'],reason:'Check commercial demand before recommending a page.',evidenceIds:[]};

@@ -1,5 +1,4 @@
 import 'server-only';
-import {randomUUID} from 'node:crypto';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {intelligenceSchema,intelligenceContextSchema,safeSource,type Intelligence,type KeywordResearchProvider,type CompetitiveResearchProvider,type Provenance} from '@augmented-architect/seo-analyst';
 import {marketingRows,loadBacklog} from '../opportunities/repository';
@@ -69,9 +68,42 @@ export async function linkResearch(db:SupabaseClient,tenant:string,actor:string,
   const id=stableId(tenant+':research-link:'+researchId+':'+opportunityId+':'+term),result=await db.from('marketing_artifacts').insert({id,tenant_id:tenant,kind:'measurement',title:'Linked keyword evidence',parent_id:opportunityId,actor_id:actor,payload:{domain,workflow:'intelligence-link/v1',researchId,term}});
   if(result.error&&result.error.code!=='23505')throw new MarketingError(503,'Research link could not be saved.');return {id,reused:Boolean(result.error)};
 }
-export function intelligenceContext(rows:Artifact[]):Intelligence|undefined {
-  const records=savedResearch(rows).filter(r=>r.scope===providerScope(marketingTenant,r.query)&&cacheFresh(r,new Date()));if(!records.length)return undefined;
-  const bundle:Intelligence={version:'opportunity-intelligence/v1',id:randomUUID(),collections:records.flatMap(r=>r.bundle.collections).slice(0,3),market:records.flatMap(r=>r.bundle.market).slice(0,10),competition:records.flatMap(r=>r.bundle.competition).slice(0,1).map(c=>({...c,results:c.results.slice(0,8),findings:c.findings.filter(f=>f.sourceUrls.every(u=>c.results.slice(0,8).some(r=>r.url===u)||c.provenance.sourceUrls.includes(u)))})),business:records.find(r=>r.bundle.business)?.bundle.business??null,limitations:['Saved research is bounded and may omit older or unrelated terms; at most eight observed competitor pages enter model context. Full source records remain available to the owner.','Keyword Planner volume is a provider estimate; SERP positions apply only to the recorded query, geography and collection time.']};
-  while(new TextEncoder().encode(JSON.stringify(bundle)).length>9000||!intelligenceContextSchema.safeParse(bundle).success){if(bundle.market.length)bundle.market.pop();else if(bundle.competition.length)bundle.competition.pop();else if(bundle.collections.length)bundle.collections.pop();else return undefined;}
-  return bundle;
+export type EvidenceEligibility={researchId:string;status:'eligible'|'excluded';reasons:string[];includedTerms:string[];includedCompetitionTerms:string[]};
+/** Selection is read-only: account access and freshness never authorize provider spending. */
+export function selectIntelligence(rows:Artifact[],tenant=marketingTenant,now=new Date()){
+  if(tenant!==marketingTenant||rows.some(r=>r.tenant_id!==tenant))throw new MarketingError(403,'Unauthorized intelligence evidence.');
+  const records=savedResearch(rows),eligibility:EvidenceEligibility[]=records.map(r=>{
+    const reasons:string[]=[];
+    const configured=isDataForSeo(r.query)?Boolean(process.env.DATAFORSEO_LOGIN?.trim()&&process.env.DATAFORSEO_PASSWORD?.trim()):researchConnections().find(c=>c.id==='google_ads')?.state!=='not_connected';
+    if(!configured)reasons.push('Provider credentials are unavailable in this environment; saved evidence remains readable but is not eligible for a new execution.');
+    else if(r.scope!==providerScope(tenant,r.query))reasons.push('Saved provider-account or market scope does not match this environment.');
+    if(!cacheFresh(r,now))reasons.push('Original receipt expired or keyword reporting month changed. No silent refresh or older substitute is permitted.');
+    const receipts=[...r.bundle.collections,...r.bundle.market.map(m=>m.provenance),...r.bundle.competition.map(c=>c.provenance)];
+    if(receipts.some(p=>Date.parse(p.collectedAt)>now.getTime()||!p.requestId||!p.sourceUrls.length||p.sourceUrls.some(u=>!safeSource(u))))reasons.push('Receipt identity, observation time or source provenance is invalid.');
+    if([...r.bundle.market,...r.bundle.competition].some(o=>o.target.country!==r.query.target?.country||o.target.language!==r.query.target?.language))reasons.push('Observation geography or language does not match the saved authorized query.');
+    if(!r.bundle.market.length&&!r.bundle.competition.some(c=>c.results.length))reasons.push('No keyword or organic result observations were saved.');
+    return {researchId:r.id,status:reasons.length?'excluded':'eligible',reasons,includedTerms:[],includedCompetitionTerms:[]} as EvidenceEligibility;
+  });
+  const eligible=records.filter(r=>eligibility.find(e=>e.researchId===r.id)?.status==='eligible');
+  const bundle:Intelligence={version:'opportunity-intelligence/v1',id:stableId(tenant+':selected-intelligence:'+eligible.map(r=>r.id).join(':')),collections:[],market:[],competition:[],business:null,limitations:['Search volume is a provider estimate, not site traffic or leads. Paid advertising competition is not organic SEO difficulty.','Only explicitly included observations enter this execution. Missing demand and competitive feasibility remain unknown.']};
+  const seen=new Set<string>();
+  for(const r of eligible){
+    const entry=eligibility.find(e=>e.researchId===r.id)!;
+    for(const m of r.bundle.market){
+      const key=JSON.stringify([m.term.toLowerCase(),m.target]);if(seen.has(key))continue;
+      const candidate={...bundle,market:[...bundle.market,m]};
+      if(new TextEncoder().encode(JSON.stringify(candidate)).length>9000||!intelligenceContextSchema.safeParse(candidate).success)continue;
+      bundle.market.push(m);seen.add(key);entry.includedTerms.push(m.term);
+    }
+    for(const c of r.bundle.competition){
+      if(!c.results.length||bundle.competition.some(v=>v.term.toLowerCase()===c.term.toLowerCase()))continue;
+      const candidate={...bundle,competition:[...bundle.competition,c]};
+      if(new TextEncoder().encode(JSON.stringify(candidate)).length>9000||!intelligenceContextSchema.safeParse(candidate).success)continue;
+      bundle.competition.push(c);entry.includedCompetitionTerms.push(c.term);
+    }
+    if(entry.includedTerms.length+entry.includedCompetitionTerms.length<r.bundle.market.length+r.bundle.competition.length)entry.reasons.push('Duplicate observations or context-budget limits omitted some records; only the listed terms are supplied.');
+  }
+  const context=bundle.market.length||bundle.competition.length?bundle:undefined;
+  return {version:'intelligence-selection/v1' as const,asOf:now.toISOString(),environment:process.env.VERCEL_ENV??'development',savedCount:records.length,eligibleCount:eligible.length,includedCount:eligibility.filter(e=>e.includedTerms.length||e.includedCompetitionTerms.length).length,records:eligibility,context};
 }
+export function intelligenceContext(rows:Artifact[]):Intelligence|undefined{return selectIntelligence(rows).context;}

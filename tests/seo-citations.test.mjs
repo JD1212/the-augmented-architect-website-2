@@ -1,3 +1,4 @@
+import * as phase3Content from '@augmented-architect/content-strategist';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -5,14 +6,14 @@ import OpenAI from 'openai';
 import {OpenAIProvider} from '@openai/agents';
 import * as pkg from '@augmented-architect/seo-analyst';
 import {loadScoutModule as load} from './helpers/scout-loader.mjs';
-const overrides={'@augmented-architect/seo-analyst':pkg};
+const overrides={'@augmented-architect/content-strategist':phase3Content,'@augmented-architect/seo-analyst':pkg};
 const {collectResearchSources}=load('src/lib/marketing/seo/research-evidence.ts',overrides);
 const {validationDiagnostic}=load('src/lib/marketing/seo/validation-diagnostics.ts',overrides);
 // Reconstructed provider-response shape, NOT the unavailable failed run's URLs/output.
 const urls=Array.from({length:20},(_,i)=>`https://publisher.example.com/reference-${i}`),cited=urls[19];
 function response(annotations=[cited]){return {id:'resp_fixture',model:'fixture-model',status:'completed',output_text:'A technical problem documented by the cited source: '+cited,usage:{input_tokens:100,output_tokens:50,total_tokens:150},output:[{type:'web_search_call',id:'search_fixture',status:'completed',action:{type:'search',query:'Fixture query',sources:urls.map(url=>({type:'url',url}))}},{type:'message',id:'msg_fixture',role:'assistant',status:'completed',content:[{type:'output_text',text:'Technical context',annotations:annotations.map(url=>({type:'url_citation',url,title:'Cited primary source',start_index:0,end_index:17}))}]}]};}
 const evidence=sources=>({id:'external-research',kind:'external_research',title:'Fixture evidence',retrievedAt:'2026-11-17T12:00:00Z',status:'connected',hasActualSearchData:false,content:'Fixture, not production research.',sources});
-const candidate={summary:'A research-led hypothesis, not measured search demand.',limitations:['No processed reporting data.'],opportunities:[{change:'new',existingOpportunityId:null,priority:1,title:'Focused architecture assessment',targetCustomer:'Administrators maintaining business automation',supportingEvidence:'Primary documentation supports the technical problem, not keyword volume.',evidenceIds:['external-research'],sourceUrls:[cited],searchIntent:'Commercial investigation',recommendedAction:'Draft a focused assessment outline for review.',businessRelevance:'Relevant to the host-authorized service.',confidence:'medium',limitations:['Demand and rankings are not measured.'],basis:'external_research',requiresOwnerReview:true}]};
+const candidate={summary:'A research-led hypothesis, not measured search demand.',limitations:['No processed reporting data.'],opportunities:[{change:'new',existingOpportunityId:null,searchAssessment:{customerProblem:'Review business software boundaries.',whyWorthPursuing:'Relevant to the business objective.',primaryKeyword:null,supportingKeywords:[],contentAction:'investigate',existingContentConsiderations:'Review existing coverage.',internalLinkUrls:[],missingObservations:['Keyword demand is unknown.']},priority:1,title:'Focused architecture assessment',targetCustomer:'Administrators maintaining business automation',supportingEvidence:'Primary documentation supports the technical problem, not keyword volume.',evidenceIds:['external-research'],sourceUrls:[cited],searchIntent:'Commercial investigation',recommendedAction:'Draft a focused assessment outline for review.',businessRelevance:'Relevant to the host-authorized service.',confidence:'medium',limitations:['Demand and rankings are not measured.'],basis:'external_research',requiresOwnerReview:true}]};
 test('actual redacted failure envelope cannot be assigned a historical validation rule',()=>{
  const f=JSON.parse(readFileSync('tests/fixtures/seo-failed-run.redacted.json','utf8'));assert.equal(f.inputTokens,22506);assert.equal(f.outputTokens,1904);assert.equal(f.phase,'validating');assert.equal(f.validationRuleRecorded,null);assert.equal(f.providerBodiesRetained,false);
  assert.equal(validationDiagnostic(new Error('The result did not pass evidence validation.')),null);

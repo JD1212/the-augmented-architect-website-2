@@ -12,7 +12,7 @@ import {findValidationError,validationDiagnostic} from './validation-diagnostics
 import type {ResearchCatalog} from './research-evidence';
 import {loadBacklog} from '../opportunities/repository';
 import {historicalContext} from '../opportunities/model';
-import {intelligenceRecords,intelligenceContext} from '../intelligence/service';
+import {intelligenceRecords,selectIntelligence} from '../intelligence/service';
 import {planningRecords,savedPlans,planningMemory} from '../intelligence/planning';
 
 type Owner=Awaited<ReturnType<typeof requireOwner>>;
@@ -43,12 +43,13 @@ export async function executeSeo(owner:Owner,requestId:string,days:7|28|90,signa
     const {ports,snapshots}=createSeoTools({tenantId:owner.tenantId,days,client,onResearchUsage:recordUsage,onResearchMapping:mapping=>{researchMapping=mapping;},authorize});
     const prior=await loadBacklog(owner.db,owner.tenantId);
     const researchRows=await intelligenceRecords(owner.db,owner.tenantId),planRows=await planningRecords(owner.db,owner.tenantId);
-    const intelligence=intelligenceContext(researchRows),approvedPlan=savedPlans(planRows).find(p=>p.decision==='approved');
-    const websiteRead=ports.websiteResearch;ports.websiteResearch=async signal=>{const doc=await websiteRead(signal);return {...doc,content:JSON.stringify({website:doc.content,memory:planningMemory(researchRows,planRows),approvedPlan:approvedPlan?.plan??null}).slice(0,16000)};};
+    const selection=selectIntelligence(researchRows,owner.tenantId),intelligence=selection.context,approvedPlan=savedPlans(planRows).find(p=>p.decision==='approved');
+    store.evidenceContext({...selection,context:undefined});
+    const websiteRead=ports.websiteResearch;ports.websiteResearch=async signal=>{const doc=await websiteRead(signal);return {...doc,content:JSON.stringify({website:doc.content,memory:planningMemory(researchRows,planRows),approvedPlan:approvedPlan?.plan??null,keywordEvidenceSelection:{...selection,context:undefined}}).slice(0,16000)};};
     const config={...seoBusinessConfig(c.model,days,approvedPlan?.objective),history:historicalContext(prior.opportunities),...(intelligence?{intelligence}:{})};
     const result=await runSeoAnalysis(config,ports,{modelProvider:new OpenAIProvider({openAIClient:client,useResponses:true}),signal:bounded,onProgress:p=>{lastStage=p.stage;return store.progress(requestId,p.stage,receipts);},onUsage:recordUsage});
     await authorize();
-    await store.complete(requestId,result,snapshots,owner.user.id);
+    await store.complete(requestId,result,snapshots,owner.user.id,{...selection,context:undefined,consumed:result.evidence.some(d=>d.id==='saved-intelligence'),citedByFindings:result.analysis.opportunities.filter(o=>o.evidenceIds.includes('saved-intelligence')).map(o=>o.priority)});
     return {executionId:requestId,reused:false};
   }catch(error){
     const message=safeExecutionFailure(error,bounded.aborted);

@@ -4,7 +4,7 @@ import type {SupabaseClient} from '@supabase/supabase-js';
 import {analysisSchema,type SeoResult,type UsageReceipt,type Progress} from '@augmented-architect/seo-analyst';
 import {MarketingError,marketingTenant} from '../config';
 import {seoRegistration,seoRegistrationScope,seoPolicy} from './config';
-import {usageSummary,type SeoPanelData,type SeoRun} from './contracts';
+import {usageSummary,type SeoPanelData,type SeoRun,type EvidenceUse} from './contracts';
 import type {ReportSnapshot} from './tools';
 import {loadBacklog} from '../opportunities/repository';
 import {reconcileFinding,materiallyChanged,measuredEvidenceChanged} from '../opportunities/identity';
@@ -26,6 +26,8 @@ export function leaseDecision(config:Record<string,unknown>,id:string,now=new Da
 export function createSeoStore(db:SupabaseClient,tenantId:string){
   assertExecutionScope(tenantId);
   let executionActor:string|undefined;
+  let executionEvidence:unknown;
+  function evidenceContext(selection:unknown){executionEvidence=selection;}
   let executionAssignment:{objective:string;mode:"research_plan"}|undefined;
   async function findAgent():Promise<AgentRow|null>{const r=await db.from('marketing_agents').select('id,tenant_id,name,version,enabled,config').eq('tenant_id',tenantId).eq('name',seoRegistration.name).order('created_at',{ascending:false}).limit(1).maybeSingle();if(r.error)fail();return r.data as AgentRow|null;}
   async function register():Promise<AgentRow>{
@@ -64,16 +66,16 @@ export function createSeoStore(db:SupabaseClient,tenantId:string){
     const r=await db.from('marketing_agents').update({config:next}).eq('id',agentId).eq('tenant_id',tenantId).eq('config',JSON.stringify(current.config));if(r.error)fail();
   }
   async function progress(id:string,stage:Progress['stage'],receipts:UsageReceipt[]){
-    const r=await db.from('marketing_executions').update({usage:usageSummary(receipts),diagnostics:{stage,...(executionAssignment?{assignment:executionAssignment}:{}),actorId:executionActor,packageVersion:seoRegistration.version}}).eq('id',id).eq('tenant_id',tenantId).eq('state','running');if(r.error)fail();
+    const r=await db.from('marketing_executions').update({usage:usageSummary(receipts),diagnostics:{stage,...(executionEvidence?{evidenceSelection:executionEvidence}:{}),...(executionAssignment?{assignment:executionAssignment}:{}),actorId:executionActor,packageVersion:seoRegistration.version}}).eq('id',id).eq('tenant_id',tenantId).eq('state','running');if(r.error)fail();
   }
-  async function complete(id:string,result:SeoResult,snapshots:ReportSnapshot[],actorId:string){
+  async function complete(id:string,result:SeoResult,snapshots:ReportSnapshot[],actorId:string,evidenceSelection?:unknown){
     // The existing tenant execution lease serializes reconciliation and persistence.
     // Read every accepted identity, including decisions omitted from bounded model context.
     const backlog=await loadBacklog(db,tenantId),working=backlog.opportunities;
     const reportIds=new Map<string,string>();
     for(const s of snapshots){const reportId=uuid(id+':'+s.source),r=await db.from('marketing_reports').upsert({id:reportId,tenant_id:tenantId,source:s.source,property_id:s.propertyId,start_date:s.range.start,end_date:s.range.end,extracted_at:s.retrievedAt,payload:s.data},{onConflict:'id'});if(r.error)fail();reportIds.set(s.evidenceId,reportId);}
     const bundleId=uuid(id+':evidence');
-    const bundle=await db.from('marketing_artifacts').upsert({id:bundleId,tenant_id:tenantId,kind:'measurement',title:'SEO research evidence bundle',execution_id:id,actor_id:actorId,payload:{documents:result.evidence,analysis:result.analysis,packageVersion:result.packageVersion,instructionsVersion:result.instructionsVersion,readOnly:true,requiresOwnerReview:true}},{onConflict:'id'});if(bundle.error)fail();
+    const bundle=await db.from('marketing_artifacts').upsert({id:bundleId,tenant_id:tenantId,kind:'measurement',title:'SEO research evidence bundle',execution_id:id,actor_id:actorId,payload:{...(evidenceSelection?{evidenceSelection}:{}),documents:result.evidence,analysis:result.analysis,packageVersion:result.packageVersion,instructionsVersion:result.instructionsVersion,readOnly:true,requiresOwnerReview:true}},{onConflict:'id'});if(bundle.error)fail();
     for(const o of result.analysis.opportunities){
       const matched=reconcileFinding(o,working);
       const previousBundle=matched.opportunity?.observations?.at(-1)?.evidenceArtifactId;
@@ -88,13 +90,13 @@ export function createSeoStore(db:SupabaseClient,tenantId:string){
       const links=[...reportIds].map(([evidenceId,reportId])=>({tenant_id:tenantId,artifact_id:recommendationId,report_id:reportId,observation:{kind:'report_context',evidenceId,status:result.evidence.find(e=>e.id===evidenceId)?.status,externalEvidenceArtifactId:bundleId,doesNotProveDemand:true}}));
       if(links.length){const e=await db.from('marketing_evidence').upsert(links,{onConflict:'tenant_id,artifact_id,report_id'});if(e.error)fail();}
     }
-    const done=await db.from('marketing_executions').update({state:'completed',finished_at:new Date().toISOString(),usage:usageSummary(result.usage),diagnostics:{stage:'completed',packageVersion:result.packageVersion,instructionsVersion:result.instructionsVersion,actorId,opportunities:result.analysis.opportunities.length}}).eq('id',id).eq('tenant_id',tenantId).eq('state','running').select('id').single();if(done.error)fail();
+    const done=await db.from('marketing_executions').update({state:'completed',finished_at:new Date().toISOString(),usage:usageSummary(result.usage),diagnostics:{stage:'completed',packageVersion:result.packageVersion,instructionsVersion:result.instructionsVersion,actorId,opportunities:result.analysis.opportunities.length,...(evidenceSelection?{evidenceSelection}:{})}}).eq('id',id).eq('tenant_id',tenantId).eq('state','running').select('id').single();if(done.error)fail();
   }
-  async function failed(id:string,receipts:UsageReceipt[],message:string,failure?:{kind:string;status:number|null;code?:string|null;param?:string|null;phase?:string;validation?:unknown}){const r=await db.from('marketing_executions').update({state:'failed',finished_at:new Date().toISOString(),usage:usageSummary(receipts),diagnostics:{stage:'failed',...(executionAssignment?{assignment:executionAssignment}:{}),actorId:executionActor,packageVersion:seoRegistration.version,error:message,failure}}).eq('id',id).eq('tenant_id',tenantId).eq('state','running');if(r.error)fail();}
+  async function failed(id:string,receipts:UsageReceipt[],message:string,failure?:{kind:string;status:number|null;code?:string|null;param?:string|null;phase?:string;validation?:unknown}){const r=await db.from('marketing_executions').update({state:'failed',finished_at:new Date().toISOString(),usage:usageSummary(receipts),diagnostics:{stage:'failed',...(executionEvidence?{evidenceSelection:executionEvidence}:{}),...(executionAssignment?{assignment:executionAssignment}:{}),actorId:executionActor,packageVersion:seoRegistration.version,error:message,failure}}).eq('id',id).eq('tenant_id',tenantId).eq('state','running');if(r.error)fail();}
   async function completePlan(id:string,receipts:UsageReceipt[],assignment:{objective:string;mode:'research_plan'}){
     const result=await db.from('marketing_executions').update({state:'completed',finished_at:new Date().toISOString(),usage:usageSummary(receipts),diagnostics:{stage:'completed',kind:'research_plan',assignment,actorId:executionActor,packageVersion:seoRegistration.version}}).eq('id',id).eq('tenant_id',tenantId).eq('state','running').select('id').single();if(result.error)fail();
   }
-  return {findAgent,register,claim,release,progress,complete,completePlan,failed};
+  return {findAgent,register,claim,release,progress,complete,completePlan,failed,evidenceContext};
 }
 export async function readSeoPanel(db:SupabaseClient,tenantId:string):Promise<SeoPanelData>{
   assertExecutionScope(tenantId);const store=createSeoStore(db,tenantId),agent=await store.findAgent();
@@ -105,5 +107,7 @@ export async function readSeoPanel(db:SupabaseClient,tenantId:string):Promise<Se
   const completed=runs.find(run=>run.state==='completed'&&!(r.data??[]).find(row=>row.id===run.id)?.diagnostics?.kind);if(!completed)return {...base,runs,analysis:null,evidence:[],analysisExecutionId:null};
   const bundle=await db.from('marketing_artifacts').select('payload').eq('tenant_id',tenantId).eq('execution_id',completed.id).eq('kind','measurement').maybeSingle();if(bundle.error)fail();
   const parsed=analysisSchema.safeParse(bundle.data?.payload?.analysis);
-  return {...base,runs,analysis:parsed.success?parsed.data:null,evidence:Array.isArray(bundle.data?.payload?.documents)?bundle.data.payload.documents:[],analysisExecutionId:completed.id};
+  const use=bundle.data?.payload?.evidenceSelection as EvidenceUse|undefined;
+  const evidenceUsage=use&&['savedCount','eligibleCount','includedCount'].every(k=>Number.isSafeInteger(use[k as keyof EvidenceUse]))&&typeof use.consumed==='boolean'&&Array.isArray(use.citedByFindings)?use:null;
+  return {...base,runs,evidenceUsage,analysis:parsed.success?parsed.data:null,evidence:Array.isArray(bundle.data?.payload?.documents)?bundle.data.payload.documents:[],analysisExecutionId:completed.id};
 }

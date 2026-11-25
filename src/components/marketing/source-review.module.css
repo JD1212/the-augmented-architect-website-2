@@ -1,0 +1,6 @@
+.form { display: grid; gap: 1rem; margin-top: 1rem; min-width: 0; }
+.form p { margin: 0; min-width: 0; }
+.form label { display: grid; gap: .45rem; min-width: 0; }
+.form input:not([type='checkbox']), .form textarea, .form select { width: 100%; max-width: 100%; min-width: 0; font: inherit; color: inherit; background: var(--app-bg); border: 1px solid var(--app-line); border-radius: .5rem; padding: .65rem; }
+.form input[type='checkbox'] { accent-color: var(--app-cyan); }
+.form label:has(input[type='checkbox']) { display: flex; align-items: flex-start; }

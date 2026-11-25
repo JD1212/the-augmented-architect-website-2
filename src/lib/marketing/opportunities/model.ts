@@ -1,3 +1,4 @@
+import {seoBriefSchema} from '@augmented-architect/content-strategist';
 import {analysisSchema,safeSource,type SeoConfig} from '@augmented-architect/seo-analyst';
 import type {Artifact,Backlog,Finding,Opportunity,Review,ReviewStatus} from './contracts';
 import {nextReviewStatus} from './contracts';
@@ -18,7 +19,7 @@ export function projectBacklog(artifacts:Artifact[],executions:Execution[]):Back
       const decision=decisions.find(a=>a.id===reviewSlot(root.tenant_id,root.id,reviewId));if(!decision)break;
       const p=decision.payload,action=p.action as Review['action'],next=nextReviewStatus(status,action,reviews.at(-1)?.previousStatus);
       if(!next||p.previousReviewId!==reviewId||p.status!==next||!decision.actor_id||!observations.some(o=>o.id===p.findingId))throw Error('Invalid opportunity review chain.');
-      reviews.push({id:decision.id,action,status:next,previousStatus:status,note:String(p.note??''),actorId:decision.actor_id,createdAt:decision.created_at,previousReviewId:reviewId,findingId:String(p.findingId),deliverable:p.deliverable as Review['deliverable'],requestId:String(p.requestId)});status=next;reviewId=decision.id;
+      reviews.push({...(p.seoBrief?{seoBrief:seoBriefSchema.parse(p.seoBrief)}:{}),id:decision.id,action,status:next,previousStatus:status,note:String(p.note??''),actorId:decision.actor_id,createdAt:decision.created_at,previousReviewId:reviewId,findingId:String(p.findingId),deliverable:p.deliverable as Review['deliverable'],requestId:String(p.requestId)});status=next;reviewId=decision.id;
     }
     const publicationStates=opportunityPublications(artifacts,root.id),approvedFinding=[...reviews].reverse().find(r=>r.action==='approve')?.findingId;
     const canComplete=status==='approved_for_drafting'&&approvedFinding===latest.id&&publicationStates.some(p=>p.environment==='production'&&p.live&&p.sourceFindingId===approvedFinding);

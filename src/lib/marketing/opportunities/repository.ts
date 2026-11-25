@@ -1,3 +1,5 @@
+import {searchBrief} from './seo-brief';
+import {intelligenceRecords} from '../intelligence/service';
 import 'server-only';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {MarketingError,marketingTenant} from '../config';
@@ -26,8 +28,9 @@ export async function saveReview(db:SupabaseClient,tenant:string,actorId:string,
   const id=reviewSlot(tenant,opportunity.id,opportunity.reviewId);
   // The primary key is a deterministic slot for the previous review revision.
   // Concurrent decisions compete for one INSERT; no UPDATE/upsert or last-writer-wins.
+  const seoBrief=command.action==='approve'&&opportunity.finding.searchAssessment?searchBrief(opportunity.finding,opportunity.findingId,backlog.evidence[opportunity.observations.at(-1)!.evidenceArtifactId]??[],await intelligenceRecords(db,tenant)):undefined;
   const workflow=['archive','restore','complete'].includes(command.action)?'seo-opportunity-review/v2':'seo-opportunity-review/v1';
-  const r=await db.from('marketing_artifacts').insert({id,tenant_id:tenant,kind:'approval',title:`SEO opportunity: ${status}`,parent_id:opportunity.id,actor_id:actorId,payload:{workflow,action:command.action,status,note:command.note,previousReviewId:opportunity.reviewId,findingId:opportunity.findingId,deliverable:command.deliverable,requestId:command.requestId,draftOnly:true,publishingAuthorized:false,spendingAuthorized:false}});
+  const r=await db.from('marketing_artifacts').insert({id,tenant_id:tenant,kind:'approval',title:`SEO opportunity: ${status}`,parent_id:opportunity.id,actor_id:actorId,payload:{...(seoBrief?{seoBrief,assignmentVersion:2}:{}),workflow,action:command.action,status,note:command.note,previousReviewId:opportunity.reviewId,findingId:opportunity.findingId,deliverable:command.deliverable,requestId:command.requestId,draftOnly:true,publishingAuthorized:false,spendingAuthorized:false}});
   if(r.error){if(r.error.code==='23505'){
     const latest=await loadBacklog(db,tenant),saved=latest.opportunities.find(o=>o.id===opportunity.id)?.reviews.find(v=>v.id===id);
     if(saved?.requestId===command.requestId&&saved.actorId===actorId&&saved.action===command.action&&saved.note===command.note&&saved.deliverable===command.deliverable&&saved.findingId===command.expectedFindingId)return {id,reused:true};

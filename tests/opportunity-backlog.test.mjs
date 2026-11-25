@@ -1,9 +1,10 @@
+import * as phase3Content from '@augmented-architect/content-strategist';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as pkg from '@augmented-architect/seo-analyst';
 import {loadScoutModule as load} from './helpers/scout-loader.mjs';
 import {memoryDatabase} from './helpers/marketing-memory.mjs';
-const overrides={'@augmented-architect/seo-analyst':pkg},config=load('src/lib/marketing/config.ts'),tenant=config.marketingTenant;
+const overrides={'@augmented-architect/content-strategist':phase3Content,'@augmented-architect/seo-analyst':pkg},config=load('src/lib/marketing/config.ts'),tenant=config.marketingTenant;
 const {historicalContext}=load('src/lib/marketing/opportunities/model.ts',overrides),{reconcileFinding,materiallyChanged}=load('src/lib/marketing/opportunities/identity.ts'),{saveReview,loadBacklog}=load('src/lib/marketing/opportunities/repository.ts',overrides),{contentAssignment}=load('src/lib/marketing/opportunities/handoff.ts',overrides);
 const ids={agent:'11111111-1111-4111-a111-111111111111',execution:'22222222-2222-4222-a222-222222222222',opportunity:'33333333-3333-4333-a333-333333333333',finding:'44444444-4444-4444-a444-444444444444',evidence:'55555555-5555-4555-a555-555555555555',owner:'a2eba199-7949-49c9-828e-9d755e2e345b',request:'66666666-6666-4666-a666-666666666666',nextRun:'77777777-7777-4777-a777-777777777777'};
 const finding=pkg.analysisSchema.shape.opportunities.element.parse({priority:1,title:'Map Salesforce automation and dependencies for one object',targetCustomer:'Salesforce administrators maintaining complex automation',searchIntent:'Discover what runs and trace dependencies for one object.',supportingEvidence:'Technical documentation describes discovery limits. Demand is not measured.',recommendedAction:'Draft an inventory guide for owner review.',businessRelevance:'Qualifies Salesforce architecture inquiries.',confidence:'medium',limitations:['No measured search demand.'],basis:'external_research',requiresOwnerReview:true,evidenceIds:['external'],sourceUrls:['https://architect.salesforce.com/']});

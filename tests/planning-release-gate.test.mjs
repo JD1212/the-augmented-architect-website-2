@@ -1,9 +1,10 @@
+import * as phase3Content from '@augmented-architect/content-strategist';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as pkg from '@augmented-architect/seo-analyst';
 import {loadScoutModule as load} from './helpers/scout-loader.mjs';
 const config=load('src/lib/marketing/config.ts');
-const overrides={'@augmented-architect/seo-analyst':pkg,'../config':config,'@/lib/marketing/config':config};
+const overrides={'@augmented-architect/content-strategist':phase3Content,'@augmented-architect/seo-analyst':pkg,'../config':config,'@/lib/marketing/config':config};
 const policy=load('src/lib/marketing/seo/planning-policy.ts',overrides);
 test('planning is strictly opt-in; missing, false and malformed flags remain off in every environment',()=>{
  for(const VERCEL_ENV of ['production','preview','development'])for(const value of [undefined,'false','TRUE','1',' true '])assert.equal(policy.planningExecutionEnabled({VERCEL_ENV,SEO_RESEARCH_PLANNING_ENABLED:value}),false);

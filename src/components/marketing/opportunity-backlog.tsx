@@ -4,6 +4,7 @@ import Link from 'next/link';
 import {workspaceLink} from '@/lib/marketing/workspace-navigation';
 import {useRouter,useSearchParams} from 'next/navigation';
 import type {OpportunityDetail,ReviewAction,ReviewCommand,Deliverable} from '@/lib/marketing/opportunities/contracts';
+import {SeoBriefSummary} from './seo-brief';
 import {reviewLabels} from '@/lib/marketing/opportunities/contracts';
 import type {OpportunityPage} from '@/lib/marketing/opportunities/query';
 import styles from './marketing.module.css';
@@ -34,6 +35,7 @@ function Detail({detail,done}:{detail:OpportunityDetail;done:()=>Promise<void>})
   const heading=useRef<HTMLHeadingElement>(null);
   useEffect(()=>{const narrow=window.matchMedia('(max-width:1100px)').matches;if(narrow)heading.current?.scrollIntoView({block:'start',behavior:'instant'});heading.current?.focus({preventScroll:true});},[o.id]);
   return <article className={styles.panel} aria-labelledby="opportunity-title"><div className={styles.panelHeading}><span className={styles.eyebrow}>PRIORITY {f.priority}</span><span className={styles.planned} aria-live="polite">{reviewLabels[o.status]}</span></div><h2 ref={heading} tabIndex={-1} id="opportunity-title">{f.title}</h2><p className={layout.description}>{f.supportingEvidence}</p><dl className={layout.facts}><div><dt>Target customer</dt><dd>{f.targetCustomer}</dd></div><div><dt>Search intent</dt><dd>{f.searchIntent}</dd></div><div><dt>Recommended action</dt><dd>{f.recommendedAction}</dd></div><div><dt>Business relevance</dt><dd>{f.businessRelevance}</dd></div><div><dt>Confidence & basis</dt><dd>{f.confidence} · {f.basis.replaceAll('_',' ')}</dd></div></dl>
+    {detail.seoBrief&&<SeoBriefSummary brief={detail.seoBrief}/>}
     <p className={styles.note}>{f.sourceUrls.length} supporting sources · {f.confidence} confidence. Read the evidence before deciding.</p><details className={styles.ownerDetails}><summary>Advanced Details · sources, limitations and evidence</summary><h3>Supporting sources</h3><ul className={styles.seoSources}>{f.sourceUrls.map(url=><li key={url}><a href={url} target="_blank" rel="noopener noreferrer">{evidence.flatMap(e=>e.sources).find(s=>s.url===url)?.title??new URL(url).hostname} ↗</a><small>{url}</small></li>)}</ul><h3>Limitations</h3><ul className={styles.notes}>{f.limitations.map(l=><li key={l}>{l}</li>)}</ul></details>
     {o.publicationStates?.length>0&&<section className={layout.review}><h3>Current website publication</h3>{o.publicationStates.map(p=><p key={p.environment}>{p.environment==='production'?'Production':p.environment.startsWith('preview:')?'Protected Preview':'Development'} · {p.status}{p.url&&<> · <a href={p.url}>View live article</a></>}</p>)}<p className={styles.note}>Preview destinations and withdrawn articles are excluded from live Production URLs. Full publication history remains in the content workspace.</p></section>}
     <ReviewControls key={o.id} detail={detail} done={done}/>

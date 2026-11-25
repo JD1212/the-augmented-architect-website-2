@@ -1,3 +1,4 @@
+import * as phase3Content from '@augmented-architect/content-strategist';
 // Deterministic fixtures only. No provider/model/network calls.
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -5,7 +6,7 @@ import {randomUUID} from 'node:crypto';
 import * as pkg from '@augmented-architect/seo-analyst';
 import {loadScoutModule as load} from './helpers/scout-loader.mjs';
 import {memoryDatabase} from './helpers/marketing-memory.mjs';
-const overrides={'@augmented-architect/seo-analyst':pkg},config=load('src/lib/marketing/config.ts'),tenant=config.marketingTenant,actor='a2eba199-7949-49c9-828e-9d755e2e345b';
+const overrides={'@augmented-architect/content-strategist':phase3Content,'@augmented-architect/seo-analyst':pkg},config=load('src/lib/marketing/config.ts'),tenant=config.marketingTenant,actor='a2eba199-7949-49c9-828e-9d755e2e345b';
 const data=load('src/lib/marketing/intelligence/dataforseo.ts',overrides),{dataForSeoKeywordProvider,dataForSeoProvider,dataForSeoTarget,dataForSeoApproval,firstResearchExperiment}=data;
 overrides['./dataforseo']=data;
 const {executeResearch,parseResearchCommand,intelligenceRecords,providerScope}=load('src/lib/marketing/intelligence/service.ts',overrides),{researchConnections}=load('src/lib/marketing/intelligence/providers.ts',overrides);

@@ -1,0 +1,685 @@
+{
+  "note": "Read-only replay of saved DataForSEO observations; no provider or live model requests. Account authorization is supplied by each test, never inferred from this fixture.",
+  "researchId": "0d20dd4e-f138-4ed3-aa75-cb97bd6a096a",
+  "createdAt": "2026-11-19 00:20:14.756634+00",
+  "query": {
+    "mode": "ideas",
+    "seeds": [
+      "Salesforce automation consulting",
+      "Salesforce Flow optimization",
+      "Salesforce Apex consultant",
+      "Salesforce org cleanup",
+      "Salesforce technical debt"
+    ],
+    "target": {
+      "country": "US",
+      "language": "en"
+    },
+    "service": "salesforce",
+    "provider": "dataforseo",
+    "requestId": "3616fb56-93d8-4565-a4d2-5a84ef457585",
+    "locationCode": 2840
+  },
+  "bundle": {
+    "id": "0d20dd4e-f138-4ed3-aa75-cb97bd6a096a",
+    "market": [
+      {
+        "term": "Salesforce automation consulting",
+        "target": {
+          "country": "US",
+          "language": "en"
+        },
+        "cluster": "salesforce",
+        "monthly": [],
+        "category": "market_intelligence",
+        "currency": "USD",
+        "variants": [],
+        "provenance": {
+          "provider": "dataforseo_keywords",
+          "expiresAt": "2026-11-26T00:20:14.548Z",
+          "requestId": "11190020-3202-0368-0000-465acef05922",
+          "apiVersion": "v3",
+          "sourceUrls": [
+            "https://docs.dataforseo.com/v3/keywords_data/google_ads/keywords_for_keywords/live/"
+          ],
+          "collectedAt": "2026-11-19T00:20:14.548Z",
+          "reportedCostUsd": 0.09
+        },
+        "searchIntent": "unknown",
+        "averageCpcMicros": null,
+        "lowTopOfPageBidMicros": null,
+        "advertisingCompetition": null,
+        "highTopOfPageBidMicros": null,
+        "estimatedMonthlySearches": null,
+        "advertisingCompetitionIndex": null
+      },
+      {
+        "term": "Salesforce Flow optimization",
+        "target": {
+          "country": "US",
+          "language": "en"
+        },
+        "cluster": "salesforce",
+        "monthly": [],
+        "category": "market_intelligence",
+        "currency": "USD",
+        "variants": [],
+        "provenance": {
+          "provider": "dataforseo_keywords",
+          "expiresAt": "2026-11-26T00:20:14.548Z",
+          "requestId": "11190020-3202-0368-0000-465acef05922",
+          "apiVersion": "v3",
+          "sourceUrls": [
+            "https://docs.dataforseo.com/v3/keywords_data/google_ads/keywords_for_keywords/live/"
+          ],
+          "collectedAt": "2026-11-19T00:20:14.548Z",
+          "reportedCostUsd": 0.09
+        },
+        "searchIntent": "unknown",
+        "averageCpcMicros": null,
+        "lowTopOfPageBidMicros": null,
+        "advertisingCompetition": null,
+        "highTopOfPageBidMicros": null,
+        "estimatedMonthlySearches": null,
+        "advertisingCompetitionIndex": null
+      },
+      {
+        "term": "Salesforce Apex consultant",
+        "target": {
+          "country": "US",
+          "language": "en"
+        },
+        "cluster": "salesforce",
+        "monthly": [],
+        "category": "market_intelligence",
+        "currency": "USD",
+        "variants": [],
+        "provenance": {
+          "provider": "dataforseo_keywords",
+          "expiresAt": "2026-11-26T00:20:14.548Z",
+          "requestId": "11190020-3202-0368-0000-465acef05922",
+          "apiVersion": "v3",
+          "sourceUrls": [
+            "https://docs.dataforseo.com/v3/keywords_data/google_ads/keywords_for_keywords/live/"
+          ],
+          "collectedAt": "2026-11-19T00:20:14.548Z",
+          "reportedCostUsd": 0.09
+        },
+        "searchIntent": "unknown",
+        "averageCpcMicros": null,
+        "lowTopOfPageBidMicros": null,
+        "advertisingCompetition": null,
+        "highTopOfPageBidMicros": null,
+        "estimatedMonthlySearches": null,
+        "advertisingCompetitionIndex": null
+      },
+      {
+        "term": "Salesforce org cleanup",
+        "target": {
+          "country": "US",
+          "language": "en"
+        },
+        "cluster": "salesforce",
+        "monthly": [
+          {
+            "year": 2026,
+            "month": 10,
+            "estimatedSearches": 0
+          },
+          {
+            "year": 2026,
+            "month": 9,
+            "estimatedSearches": 10
+          },
+          {
+            "year": 2026,
+            "month": 8,
+            "estimatedSearches": 0
+          },
+          {
+            "year": 2026,
+            "month": 7,
+            "estimatedSearches": 10
+          },
+          {
+            "year": 2026,
+            "month": 6,
+            "estimatedSearches": 10
+          },
+          {
+            "year": 2026,
+            "month": 5,
+            "estimatedSearches": 10
+          },
+          {
+            "year": 2026,
+            "month": 4,
+            "estimatedSearches": 10
+          },
+          {
+            "year": 2026,
+            "month": 3,
+            "estimatedSearches": 10
+          },
+          {
+            "year": 2026,
+            "month": 2,
+            "estimatedSearches": 10
+          },
+          {
+            "year": 2026,
+            "month": 1,
+            "estimatedSearches": 10
+          },
+          {
+            "year": 2025,
+            "month": 12,
+            "estimatedSearches": 10
+          },
+          {
+            "year": 2025,
+            "month": 11,
+            "estimatedSearches": 0
+          }
+        ],
+        "category": "market_intelligence",
+        "currency": "USD",
+        "variants": [],
+        "provenance": {
+          "provider": "dataforseo_keywords",
+          "expiresAt": "2026-11-26T00:20:14.548Z",
+          "requestId": "11190020-3202-0368-0000-465acef05922",
+          "apiVersion": "v3",
+          "sourceUrls": [
+            "https://docs.dataforseo.com/v3/keywords_data/google_ads/keywords_for_keywords/live/"
+          ],
+          "collectedAt": "2026-11-19T00:20:14.548Z",
+          "reportedCostUsd": 0.09
+        },
+        "searchIntent": "unknown",
+        "averageCpcMicros": null,
+        "lowTopOfPageBidMicros": null,
+        "advertisingCompetition": null,
+        "highTopOfPageBidMicros": null,
+        "estimatedMonthlySearches": 10,
+        "advertisingCompetitionIndex": null
+      },
+      {
+        "term": "Salesforce technical debt",
+        "target": {
+          "country": "US",
+          "language": "en"
+        },
+        "cluster": "salesforce",
+        "monthly": [
+          {
+            "year": 2026,
+            "month": 10,
+            "estimatedSearches": 10
+          },
+          {
+            "year": 2026,
+            "month": 9,
+            "estimatedSearches": 20
+          },
+          {
+            "year": 2026,
+            "month": 8,
+            "estimatedSearches": 10
+          },
+          {
+            "year": 2026,
+            "month": 7,
+            "estimatedSearches": 10
+          },
+          {
+            "year": 2026,
+            "month": 6,
+            "estimatedSearches": 10
+          },
+          {
+            "year": 2026,
+            "month": 5,
+            "estimatedSearches": 20
+          },
+          {
+            "year": 2026,
+            "month": 4,
+            "estimatedSearches": 10
+          },
+          {
+            "year": 2026,
+            "month": 3,
+            "estimatedSearches": 10
+          },
+          {
+            "year": 2026,
+            "month": 2,
+            "estimatedSearches": 10
+          },
+          {
+            "year": 2026,
+            "month": 1,
+            "estimatedSearches": 10
+          },
+          {
+            "year": 2025,
+            "month": 12,
+            "estimatedSearches": 10
+          },
+          {
+            "year": 2025,
+            "month": 11,
+            "estimatedSearches": 10
+          }
+        ],
+        "category": "market_intelligence",
+        "currency": "USD",
+        "variants": [],
+        "provenance": {
+          "provider": "dataforseo_keywords",
+          "expiresAt": "2026-11-26T00:20:14.548Z",
+          "requestId": "11190020-3202-0368-0000-465acef05922",
+          "apiVersion": "v3",
+          "sourceUrls": [
+            "https://docs.dataforseo.com/v3/keywords_data/google_ads/keywords_for_keywords/live/"
+          ],
+          "collectedAt": "2026-11-19T00:20:14.548Z",
+          "reportedCostUsd": 0.09
+        },
+        "searchIntent": "unknown",
+        "averageCpcMicros": null,
+        "lowTopOfPageBidMicros": null,
+        "advertisingCompetition": "LOW",
+        "highTopOfPageBidMicros": null,
+        "estimatedMonthlySearches": 10,
+        "advertisingCompetitionIndex": 2
+      },
+      {
+        "term": "salesforce org cleanup",
+        "target": {
+          "country": "US",
+          "language": "en"
+        },
+        "cluster": "salesforce",
+        "monthly": [
+          {
+            "year": 2026,
+            "month": 10,
+            "estimatedSearches": 0
+          },
+          {
+            "year": 2026,
+            "month": 9,
+            "estimatedSearches": 10
+          },
+          {
+            "year": 2026,
+            "month": 8,
+            "estimatedSearches": 0
+          },
+          {
+            "year": 2026,
+            "month": 7,
+            "estimatedSearches": 10
+          },
+          {
+            "year": 2026,
+            "month": 6,
+            "estimatedSearches": 10
+          },
+          {
+            "year": 2026,
+            "month": 5,
+            "estimatedSearches": 10
+          },
+          {
+            "year": 2026,
+            "month": 4,
+            "estimatedSearches": 10
+          },
+          {
+            "year": 2026,
+            "month": 3,
+            "estimatedSearches": 10
+          },
+          {
+            "year": 2026,
+            "month": 2,
+            "estimatedSearches": 10
+          },
+          {
+            "year": 2026,
+            "month": 1,
+            "estimatedSearches": 10
+          },
+          {
+            "year": 2025,
+            "month": 12,
+            "estimatedSearches": 10
+          },
+          {
+            "year": 2025,
+            "month": 11,
+            "estimatedSearches": 0
+          }
+        ],
+        "category": "market_intelligence",
+        "currency": "USD",
+        "variants": [],
+        "provenance": {
+          "provider": "dataforseo_keywords",
+          "expiresAt": "2026-11-26T00:20:14.548Z",
+          "requestId": "11190020-3202-0368-0000-465acef05922",
+          "apiVersion": "v3",
+          "sourceUrls": [
+            "https://docs.dataforseo.com/v3/keywords_data/google_ads/keywords_for_keywords/live/"
+          ],
+          "collectedAt": "2026-11-19T00:20:14.548Z",
+          "reportedCostUsd": 0.09
+        },
+        "searchIntent": "unknown",
+        "averageCpcMicros": null,
+        "lowTopOfPageBidMicros": null,
+        "advertisingCompetition": null,
+        "highTopOfPageBidMicros": null,
+        "estimatedMonthlySearches": 10,
+        "advertisingCompetitionIndex": null
+      },
+      {
+        "term": "salesforce technical debt",
+        "target": {
+          "country": "US",
+          "language": "en"
+        },
+        "cluster": "salesforce",
+        "monthly": [
+          {
+            "year": 2026,
+            "month": 10,
+            "estimatedSearches": 10
+          },
+          {
+            "year": 2026,
+            "month": 9,
+            "estimatedSearches": 20
+          },
+          {
+            "year": 2026,
+            "month": 8,
+            "estimatedSearches": 10
+          },
+          {
+            "year": 2026,
+            "month": 7,
+            "estimatedSearches": 10
+          },
+          {
+            "year": 2026,
+            "month": 6,
+            "estimatedSearches": 10
+          },
+          {
+            "year": 2026,
+            "month": 5,
+            "estimatedSearches": 20
+          },
+          {
+            "year": 2026,
+            "month": 4,
+            "estimatedSearches": 10
+          },
+          {
+            "year": 2026,
+            "month": 3,
+            "estimatedSearches": 10
+          },
+          {
+            "year": 2026,
+            "month": 2,
+            "estimatedSearches": 10
+          },
+          {
+            "year": 2026,
+            "month": 1,
+            "estimatedSearches": 10
+          },
+          {
+            "year": 2025,
+            "month": 12,
+            "estimatedSearches": 10
+          },
+          {
+            "year": 2025,
+            "month": 11,
+            "estimatedSearches": 10
+          }
+        ],
+        "category": "market_intelligence",
+        "currency": "USD",
+        "variants": [],
+        "provenance": {
+          "provider": "dataforseo_keywords",
+          "expiresAt": "2026-11-26T00:20:14.548Z",
+          "requestId": "11190020-3202-0368-0000-465acef05922",
+          "apiVersion": "v3",
+          "sourceUrls": [
+            "https://docs.dataforseo.com/v3/keywords_data/google_ads/keywords_for_keywords/live/"
+          ],
+          "collectedAt": "2026-11-19T00:20:14.548Z",
+          "reportedCostUsd": 0.09
+        },
+        "searchIntent": "unknown",
+        "averageCpcMicros": null,
+        "lowTopOfPageBidMicros": null,
+        "advertisingCompetition": "LOW",
+        "highTopOfPageBidMicros": null,
+        "estimatedMonthlySearches": 10,
+        "advertisingCompetitionIndex": 2
+      },
+      {
+        "term": "technical debt salesforce",
+        "target": {
+          "country": "US",
+          "language": "en"
+        },
+        "cluster": "salesforce",
+        "monthly": [
+          {
+            "year": 2026,
+            "month": 10,
+            "estimatedSearches": 10
+          },
+          {
+            "year": 2026,
+            "month": 9,
+            "estimatedSearches": 10
+          },
+          {
+            "year": 2026,
+            "month": 8,
+            "estimatedSearches": 10
+          },
+          {
+            "year": 2026,
+            "month": 7,
+            "estimatedSearches": 10
+          },
+          {
+            "year": 2026,
+            "month": 6,
+            "estimatedSearches": 10
+          },
+          {
+            "year": 2026,
+            "month": 5,
+            "estimatedSearches": 10
+          },
+          {
+            "year": 2026,
+            "month": 4,
+            "estimatedSearches": 10
+          },
+          {
+            "year": 2026,
+            "month": 3,
+            "estimatedSearches": 20
+          },
+          {
+            "year": 2026,
+            "month": 2,
+            "estimatedSearches": 0
+          },
+          {
+            "year": 2026,
+            "month": 1,
+            "estimatedSearches": 10
+          },
+          {
+            "year": 2025,
+            "month": 12,
+            "estimatedSearches": 10
+          },
+          {
+            "year": 2025,
+            "month": 11,
+            "estimatedSearches": 10
+          }
+        ],
+        "category": "market_intelligence",
+        "currency": "USD",
+        "variants": [],
+        "provenance": {
+          "provider": "dataforseo_keywords",
+          "expiresAt": "2026-11-26T00:20:14.548Z",
+          "requestId": "11190020-3202-0368-0000-465acef05922",
+          "apiVersion": "v3",
+          "sourceUrls": [
+            "https://docs.dataforseo.com/v3/keywords_data/google_ads/keywords_for_keywords/live/"
+          ],
+          "collectedAt": "2026-11-19T00:20:14.548Z",
+          "reportedCostUsd": 0.09
+        },
+        "searchIntent": "unknown",
+        "averageCpcMicros": null,
+        "lowTopOfPageBidMicros": null,
+        "advertisingCompetition": "LOW",
+        "highTopOfPageBidMicros": null,
+        "estimatedMonthlySearches": 10,
+        "advertisingCompetitionIndex": 0
+      },
+      {
+        "term": "salesforce automation consulting",
+        "target": {
+          "country": "US",
+          "language": "en"
+        },
+        "cluster": "salesforce",
+        "monthly": [],
+        "category": "market_intelligence",
+        "currency": "USD",
+        "variants": [],
+        "provenance": {
+          "provider": "dataforseo_keywords",
+          "expiresAt": "2026-11-26T00:20:14.548Z",
+          "requestId": "11190020-3202-0368-0000-465acef05922",
+          "apiVersion": "v3",
+          "sourceUrls": [
+            "https://docs.dataforseo.com/v3/keywords_data/google_ads/keywords_for_keywords/live/"
+          ],
+          "collectedAt": "2026-11-19T00:20:14.548Z",
+          "reportedCostUsd": 0.09
+        },
+        "searchIntent": "unknown",
+        "averageCpcMicros": null,
+        "lowTopOfPageBidMicros": null,
+        "advertisingCompetition": null,
+        "highTopOfPageBidMicros": null,
+        "estimatedMonthlySearches": null,
+        "advertisingCompetitionIndex": null
+      },
+      {
+        "term": "salesforce flow optimization",
+        "target": {
+          "country": "US",
+          "language": "en"
+        },
+        "cluster": "salesforce",
+        "monthly": [],
+        "category": "market_intelligence",
+        "currency": "USD",
+        "variants": [],
+        "provenance": {
+          "provider": "dataforseo_keywords",
+          "expiresAt": "2026-11-26T00:20:14.548Z",
+          "requestId": "11190020-3202-0368-0000-465acef05922",
+          "apiVersion": "v3",
+          "sourceUrls": [
+            "https://docs.dataforseo.com/v3/keywords_data/google_ads/keywords_for_keywords/live/"
+          ],
+          "collectedAt": "2026-11-19T00:20:14.548Z",
+          "reportedCostUsd": 0.09
+        },
+        "searchIntent": "unknown",
+        "averageCpcMicros": null,
+        "lowTopOfPageBidMicros": null,
+        "advertisingCompetition": null,
+        "highTopOfPageBidMicros": null,
+        "estimatedMonthlySearches": null,
+        "advertisingCompetitionIndex": null
+      },
+      {
+        "term": "salesforce apex consultant",
+        "target": {
+          "country": "US",
+          "language": "en"
+        },
+        "cluster": "salesforce",
+        "monthly": [],
+        "category": "market_intelligence",
+        "currency": "USD",
+        "variants": [],
+        "provenance": {
+          "provider": "dataforseo_keywords",
+          "expiresAt": "2026-11-26T00:20:14.548Z",
+          "requestId": "11190020-3202-0368-0000-465acef05922",
+          "apiVersion": "v3",
+          "sourceUrls": [
+            "https://docs.dataforseo.com/v3/keywords_data/google_ads/keywords_for_keywords/live/"
+          ],
+          "collectedAt": "2026-11-19T00:20:14.548Z",
+          "reportedCostUsd": 0.09
+        },
+        "searchIntent": "unknown",
+        "averageCpcMicros": null,
+        "lowTopOfPageBidMicros": null,
+        "advertisingCompetition": null,
+        "highTopOfPageBidMicros": null,
+        "estimatedMonthlySearches": null,
+        "advertisingCompetitionIndex": null
+      }
+    ],
+    "version": "opportunity-intelligence/v1",
+    "business": null,
+    "collections": [
+      {
+        "provider": "dataforseo_keywords",
+        "expiresAt": "2026-11-26T00:20:14.548Z",
+        "requestId": "11190020-3202-0368-0000-465acef05922",
+        "apiVersion": "v3",
+        "sourceUrls": [
+          "https://docs.dataforseo.com/v3/keywords_data/google_ads/keywords_for_keywords/live/"
+        ],
+        "collectedAt": "2026-11-19T00:20:14.548Z",
+        "reportedCostUsd": 0.09
+      }
+    ],
+    "competition": [],
+    "limitations": [
+      "Provider search volume is an estimate, not this business’s measured demand or conversions.",
+      "Advertising competition and bid metrics do not measure organic difficulty.",
+      "Only bounded provider results are collected; page content, traffic and backlinks are not inferred.",
+      "Discovery retains the first fifty relevance-ordered ideas, not all provider results. Spelling-corrected metrics apply to the returned term, with the original term retained as a variant."
+    ]
+  }
+}

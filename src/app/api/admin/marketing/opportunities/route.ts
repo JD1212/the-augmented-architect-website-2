@@ -1,3 +1,4 @@
+import {searchBrief} from '@/lib/marketing/opportunities/seo-brief';
 import {ownerAuth,requireOwner} from '@/lib/marketing/auth';
 import {privateJson,privateBody,marketingFailure,sameOrigin} from '@/lib/marketing/http';
 import {MarketingError,uuidPattern} from '@/lib/marketing/config';
@@ -15,7 +16,8 @@ export async function GET(request:Request){
     if(!uuidPattern.test(id))throw new MarketingError(400,'A valid opportunity ID is required.');
     const opportunity=backlog.opportunities.find(o=>o.id===id);if(!opportunity)throw new MarketingError(404,'Opportunity not found in this workspace.');
     const evidence=backlog.evidence[opportunity.observations.at(-1)!.evidenceArtifactId]??[];
-    return privateJson({opportunity,evidence,assignment:contentAssignment(opportunity,backlog),intelligence:opportunityIntelligence(id,await intelligenceRecords(owner.db,owner.tenantId))});
+    const research=await intelligenceRecords(owner.db,owner.tenantId);
+    return privateJson({opportunity,evidence,seoBrief:searchBrief(opportunity.finding,opportunity.findingId,evidence,research),assignment:contentAssignment(opportunity,backlog),intelligence:opportunityIntelligence(id,research)});
   }catch(error){return marketingFailure(error);}
 }
 export async function POST(request:Request){

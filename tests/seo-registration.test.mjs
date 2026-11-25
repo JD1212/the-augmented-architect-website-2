@@ -1,3 +1,4 @@
+import * as phase3Content from '@augmented-architect/content-strategist';
 // In-memory database only: no real registrations, models, providers or credentials.
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -5,7 +6,7 @@ import * as pkg from '@augmented-architect/seo-analyst';
 import {loadScoutModule as load} from './helpers/scout-loader.mjs';
 import {memoryDatabase} from './helpers/marketing-memory.mjs';
 const config=load('src/lib/marketing/config.ts'),tenant=config.marketingTenant,actor='a2eba199-7949-49c9-828e-9d755e2e345b';
-const packageOverride={'@augmented-architect/seo-analyst':pkg};
+const packageOverride={'@augmented-architect/content-strategist':phase3Content,'@augmented-architect/seo-analyst':pkg};
 const {seoRegistrationIdentity}=load('src/lib/marketing/seo/config.ts',packageOverride);
 const productionIdentity=seoRegistrationIdentity({VERCEL_ENV:'production'}),previewIdentity=seoRegistrationIdentity({VERCEL_ENV:'preview',VERCEL_GIT_COMMIT_REF:'feature/seo-analyst-v1'});
 const policy={minimumIntervalMs:600000,maximumDailyRuns:6,leaseMs:300000};

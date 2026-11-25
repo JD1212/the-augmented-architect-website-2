@@ -1,10 +1,11 @@
+import * as phase3Content from '@augmented-architect/content-strategist';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import * as pkg from '@augmented-architect/seo-analyst';
 import {loadScoutModule as load} from './helpers/scout-loader.mjs';
 import {memoryDatabase} from './helpers/marketing-memory.mjs';
-const overrides={'@augmented-architect/seo-analyst':pkg},config=load('src/lib/marketing/config.ts'),tenant=config.marketingTenant,actor='a2eba199-7949-49c9-828e-9d755e2e345b';
+const overrides={'@augmented-architect/content-strategist':phase3Content,'@augmented-architect/seo-analyst':pkg},config=load('src/lib/marketing/config.ts'),tenant=config.marketingTenant,actor='a2eba199-7949-49c9-828e-9d755e2e345b';
 const {googleAdsProvider,dataForSeoProvider,researchConnections}=load('src/lib/marketing/intelligence/providers.ts',overrides);
 const {executeResearch,intelligenceRecords,savedResearch,parseResearchCommand,linkResearch,intelligenceContext,providerScope}=load('src/lib/marketing/intelligence/service.ts',overrides);
 const time=new Date('2026-11-18T04:00:30Z'),provenance={provider:'google_ads',apiVersion:'fixture-v26',collectedAt:time.toISOString(),expiresAt:'2026-11-25T04:00:30Z',requestId:'fixture-request-id',sourceUrls:['https://developers.google.com/google-ads/api/docs/keyword-planning/overview']};
