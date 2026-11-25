@@ -6,7 +6,7 @@ import styles from './marketing.module.css';
 import scoped from './content-studio.module.css';
 type State=Awaited<ReturnType<typeof contentState>>;
 export function PublicationControls({data,dirty,reload}:{data:State;dirty:boolean;reload:()=>Promise<void>}){
- const [date,setDate]=useState(''),[confirmed,setConfirmed]=useState(false),[busy,setBusy]=useState(false),[message,setMessage]=useState('');const lock=useRef(false);
+ const [date,setDate]=useState(''),[confirmed,setConfirmed]=useState(false),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[probe,setProbe]=useState<Record<string,unknown>|null>(null);const lock=useRef(false);
  const state=data.publication,head=data.head,pointer=state?.pointer,approved=Boolean(data.grounding.assignment&&head&&data.approvals.some(a=>a.parent_id===head.id&&a.payload.channel==='website'&&a.payload.revisionHash===head.hash));
  const pending=pointer?.payload.status==='verifying',live=pointer?.payload.active&&pointer.payload.status==='live',current=live&&pointer.payload.revisionHash===head?.hash;
  const destination=state?.environment==='production'?'Production website':'Protected Preview';
@@ -31,6 +31,7 @@ export function PublicationControls({data,dirty,reload}:{data:State;dirty:boolea
  <div className={scoped.controls}>{pending?<button className={styles.primary} disabled={!state?.enabled||busy||!confirmed} onClick={()=>void run('publish',true)}>Verify publication</button>:<><button className={styles.primary} disabled={!state?.enabled||!approved||dirty||busy||!confirmed||current||!pointer?.payload.firstPublicationDate&&!date} onClick={()=>void run('publish')}>{busy?'Publishing & verifying…':live?'Publish approved update':'Publish website article'}</button><button className={styles.secondary} disabled={!state?.enabled||!live||busy||!confirmed} onClick={()=>void run('unpublish')}>Unpublish website article</button></>}
  {pointer?.payload.active&&<a className={styles.textLink} href={articleHref(pointer.payload.slug)}>View article →</a>}</div>
  {message&&<p role="status">{message}</p>}
+ {state?.environment.startsWith('preview:')&&<details><summary>Verification diagnostics</summary><button className={styles.secondary} disabled={busy} onClick={()=>{setBusy(true);void fetch('/api/admin/marketing/content?opportunityId='+data.opportunity.id+'&diagnostics=1',{cache:'no-store'}).then(async r=>{const result=await r.json();if(!r.ok)throw Error(result.error||'Read-only check failed.');setProbe(result.verificationProbe);}).catch(e=>setMessage(e.message)).finally(()=>setBusy(false));}}>Check verification setup (read only)</button>{probe&&<pre>{JSON.stringify(probe,null,2)}</pre>}<p>This checks Preview configuration and access to robots.txt. It does not publish, retry or change database records.</p></details>}
  <p className={styles.note}>No JSON download or Git commit is needed for an article. LinkedIn approval and posting remain separate and manual.</p>
  <details><summary>Publication history</summary>{!state?.history.length?<p>No publishing attempts yet.</p>:state.history.map(item=><div className={scoped.history} key={item.id}><p>{item.title} · {String(item.payload.status)} · {new Date(item.created_at).toLocaleString()}</p><details><summary>Revision and verification details</summary><pre>{JSON.stringify(item.payload,null,2)}</pre></details></div>)}</details></section>;
 }

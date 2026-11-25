@@ -40,7 +40,7 @@ Verification fetches only a server-configured origin, never a visitor-supplied U
 
 A successful transaction saves the HTTP receipt, exact revision/hash and approval, source provenance, chosen editorial date, actual verification timestamp, and environment. Failure restores the previous pointer and invalidates caches; no new Live event is recorded. If a function stops while Verifying, the owner can resume verification using the same request ID. A completed failed attempt is retained; another explicit Publish action gets a new request ID.
 
-Updates require a newly approved exact revision, preserve slug and original date, and record actual modification time. Unpublish requires a separate confirmed action. The article must return 404/410 and disappear from listing/sitemap before withdrawal is verified. A withdrawal marker suppresses any file-backed fallback. History and citations remain preserved privately.
+Updates require a newly approved exact revision, preserve slug and original date, and record actual modification time. Unpublish requires a separate confirmed action. The article must return 404/410, or the documented Next.js streamed 200 not-found response (no rendered article, a robots noindex meta tag, and the Next.js 404 marker), and disappear from listing/sitemap before withdrawal is verified. A withdrawal marker suppresses any file-backed fallback. History and citations remain preserved privately.
 
 Cache tags include environment; article/list/sitemap caches are expired explicitly. Withdrawal uses immediate expiration, not stale-while-revalidate. Existing static public pages and global navigation design remain unchanged.
 
@@ -65,3 +65,11 @@ The test snapshot is generated from this saved revision. It does not regenerate 
 - `tests/insights.browser.mjs`: responsive article rendering and mocked Scout CTA. No real appointments or emails.
 
 Production authorization is separate from website revision approval. Do not merge main, enable a Production flag, or publish Production content during Preview validation. Supabase migrations are additive in the existing shared website database; all test publication records must have a Preview scope. Preserve existing registrations, history, Scout, booking, DNS and unrelated local work.
+
+## Failed first Preview test: retained evidence and diagnostics
+
+Request `6deb31d3-6722-4423-87f6-f941a83d9784` failed verification between 2026-11-25T01:20:30.115953Z and 01:20:30.260159Z. There was no previous pointer, the candidate was restored inactive, and no Live publication event exists. The exact failed check was not retained by that deployment; its generic error cannot establish whether configuration, protection, transport or content failed. Do not report the original root cause as confirmed without another observation. The candidate was eligible for serving during the approximately 145 ms verification window; no evidence establishes that a visitor retrieved it.
+
+The follow-up migration `20261125150841_website_publication_streamed_withdrawal.sql` preserves sanitized verification diagnostics in future failed operations and handles strict streamed withdrawals. No existing attempt is rewritten, and no RLS policy, public grant or Production publication state changes. Future diagnostics identify stage, rule, failed checks, HTTP statuses and Vercel request IDs, never bodies or credentials.
+
+The owner-only **Verification diagnostics → Check verification setup (read only)** control is available only on this Preview branch. It checks the trusted deployment origin and requests only `/robots.txt`, comparing the previous environment-token path with the current short-lived OIDC SDK path. It neither publishes nor retries, approves, or writes database records. Use it before separately authorizing another publication test. Global metadata streaming and public-site design remain unchanged.

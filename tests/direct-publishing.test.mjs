@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';import {loadScoutModule as load} from './helpers/scout-loader.mjs';import {memoryDatabase} from './helpers/marketing-memory.mjs';import * as content from '@augmented-architect/content-strategist';import * as seo from '@augmented-architect/seo-analyst';
 const tenant='b329164a-f981-4acc-befc-2f0c70f8af10',ownerId='a2eba199-7949-49c9-828e-9d755e2e345b',opportunity='33333333-3333-4333-a333-333333333333',revisionId='44444444-4444-4444-a444-444444444444',approvalId='55555555-5555-4555-a555-555555555555',requestId='66666666-6666-4666-a666-666666666666';
-const base={'@augmented-architect/content-strategist':content,'@augmented-architect/seo-analyst':seo,'@/content/articles':{articles:[]}},contract=load('src/lib/marketing/content/publication-contract.ts',base),site=load('src/content/site.ts').site;
+const base={'@vercel/oidc':{getVercelOidcToken:async()=> 'fixture-token'},'@augmented-architect/content-strategist':content,'@augmented-architect/seo-analyst':seo,'@/content/articles':{articles:[]}},contract=load('src/lib/marketing/content/publication-contract.ts',base),site=load('src/content/site.ts').site;
 const publicFixture={slug:'approved-guide',title:'An approved guide',category:'ai-architecture',summary:'A useful guide.',seoDescription:'A practical guide.',status:'published',publishedDate:'2026-11-24',content:[{type:'paragraph',text:'Approved text.'}],references:[{id:'nist',url:'https://www.nist.gov/',title:'NIST'}],publication:{id:approvalId,revisionId,revisionHash:'a'.repeat(64),sourceOpportunityId:opportunity},privateInput:'never-public'};
 function withEnv(values){const old={};for(const[k,v]of Object.entries(values)){old[k]=process.env[k];process.env[k]=v;}return()=>{for(const[k,v]of Object.entries(old)){if(v===undefined)delete process.env[k];else process.env[k]=v;}};}
 test('public projection drops private identifiers and inputs; block injection and unknown citations fail closed',()=>{
@@ -56,4 +56,31 @@ test('an approved update retains its public URL and initial date; a new slug is 
 
 test('client publication controls import only the pure path helper, never the file-backed draft registry',()=>{
  const source=readFileSync('src/components/marketing/publication-controls.tsx','utf8');assert(source.includes("from '@/lib/article-path'"));assert(!source.includes("from '@/lib/articles'"));const helper=readFileSync('src/lib/article-path.ts','utf8');assert(!/\bimport\b/.test(helper));
+});
+
+test('documented Next.js streamed 404 requires noindex, a not-found marker and absence of any article',async()=>{
+ const restore=withEnv({VERCEL_ENV:'preview',VERCEL_URL:'the-augmented-architect-website-2-fixture-team.vercel.app',VERCEL_GIT_COMMIT_REF:'feature/content-strategist'});try{
+ const api=load('src/lib/marketing/content/direct-publishing.ts',{...base,'@/lib/published-articles':{publicationTag:()=> 'test'},'next/cache':{revalidatePath:()=>{},revalidateTag:()=>{}}});const path='/insights/articles/approved-guide',command={slug:'approved-guide',action:'unpublish'},safe='<meta name="robots" content="noindex"><p>Not found</p><!-- NEXT_HTTP_ERROR_FALLBACK;404 -->';
+ const request=body=>async url=>new Response(new URL(url).pathname===path?body:'',{status:200});const receipt=await api.verifyPublication(command,request(safe));assert.equal(receipt.streamedNotFound,true);assert.equal(receipt.withdrawalVerified,true);assert.equal(receipt.pageStatus,200);
+ for(const body of [safe.replace('noindex','index'),safe.replace('NEXT_HTTP_ERROR_FALLBACK;404','generic error'),safe+'<article>Stale published content</article>'])await assert.rejects(api.verifyPublication(command,request(body)),e=>e.diagnostic.failedChecks.includes('articleWithdrawn'));
+ }finally{restore();}
+});
+
+test('each failed HTTP/content check has a precise sanitized diagnostic; configuration rejects invalid origins before network',async()=>{
+ const restore=withEnv({VERCEL_ENV:'preview',VERCEL_URL:'the-augmented-architect-website-2-fixture-team.vercel.app',VERCEL_GIT_COMMIT_REF:'feature/content-strategist',VERCEL_OIDC_TOKEN:'NEVER_STORE_TOKEN'});try{
+ const api=load('src/lib/marketing/content/direct-publishing.ts',{...base,'@/lib/published-articles':{publicationTag:()=> 'test'},'next/cache':{revalidatePath:()=>{},revalidateTag:()=>{}}});const command={slug:'approved-guide',action:'publish',publicHash:'a'.repeat(64),article:publicFixture};
+ await assert.rejects(api.verifyPublication(command,async()=>new Response('PRIVATE_RESPONSE_BODY',{status:403,headers:{'x-vercel-id':'fixture-correlation'}})),e=>{assert.equal(e.diagnostic.phase,'response');assert(e.diagnostic.failedChecks.includes('articleHttp'));assert.equal(e.diagnostic.receipt.pageStatus,403);assert.equal(e.diagnostic.requestIds.article,'fixture-correlation');assert(!JSON.stringify(e.diagnostic).includes('NEVER_STORE_TOKEN'));assert(!JSON.stringify(e.diagnostic).includes('PRIVATE_RESPONSE_BODY'));return true;});
+ process.env.VERCEL_URL='attacker.invalid';let calls=0;await assert.rejects(api.verifyPublication(command,async()=>{calls++;return new Response('');}),e=>e.diagnostic.rule==='VERIFICATION_ORIGIN_INVALID');assert.equal(calls,0);
+ }finally{restore();}
+});
+
+
+test('owner-only Preview probe checks only robots, never publishes, and reports no credentials or response bodies',async()=>{
+ const restore=withEnv({VERCEL_ENV:'preview',VERCEL_URL:'the-augmented-architect-website-2-fixture.vercel.app',VERCEL_GIT_COMMIT_REF:'feature/content-strategist',VERCEL_OIDC_TOKEN:'NEVER_STORE_TOKEN'});try{
+ const api=load('src/lib/marketing/content/publication-diagnostics.ts',base),calls=[];
+ const result=await api.publicationReadOnlyProbe(async(url,init)=>{calls.push({url,init});return new Response('PRIVATE_BODY',{status:calls.length===1?401:200,headers:{'x-vercel-id':'safe-request-id'}});});
+ assert.equal(calls.length,2);assert(calls.every(c=>c.url.endsWith('/robots.txt')&&c.init.redirect==='manual'&&c.init.cache==='no-store'));assert.equal(result.legacyRobots.status,401);assert.equal(result.sdkRobots.status,200);assert.equal(result.publicationAttempted,false);assert.equal(result.databaseWrites,0);assert(!JSON.stringify(result).includes('NEVER_STORE_TOKEN'));assert(!JSON.stringify(result).includes('PRIVATE_BODY'));
+ process.env.VERCEL_ENV='production';await assert.rejects(api.publicationReadOnlyProbe(),/PREVIEW_DIAGNOSTIC_ONLY/);assert.equal(calls.length,2);
+ const route=readFileSync('src/app/api/admin/marketing/content/route.ts','utf8');assert(route.indexOf('requireOwner(await ownerAuth())')<route.indexOf('await publicationReadOnlyProbe()'));
+ }finally{restore();}
 });
