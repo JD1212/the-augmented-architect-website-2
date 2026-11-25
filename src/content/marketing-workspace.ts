@@ -1,15 +1,17 @@
-export const workspaceViews = [
-  ['overview','Overview','Your business, in focus.'],
-  ['analytics','Marketing Analytics','Understand your audience.'],
-  ['search','Search Intelligence','Turn visibility into opportunity.'],
-  ['keywords','Keyword Intelligence','Establish demand. Understand competition.'],
-  ['conversions','Conversions','From interest to intent.'],
-  ['agents','AI Agents','Meet your intelligence team.'],
-  ['opportunities','Opportunity Backlog','Turn research into approved work.'],
+export const primaryWorkspaceViews = [
+  ['overview','Overview','Your next decisions, in focus.'],
+  ['discover','Discover','Find the work worth doing.'],
+  ['create','Create','Turn approved research into useful content.'],
+  ['publish','Publish','Review the revision. Choose the destination.'],
+  ['measure','Measure','Understand what happened next.'],
+] as const;
+export const secondaryWorkspaceViews = [
+  ['agents','Agents','Your independent intelligence team.'],
   ['activity','Activity','An accountable record.'],
   ['integrations','Integrations','Connected. Read-only. Secure.'],
   ['settings','Settings','Your private workspace.'],
 ] as const;
+export const workspaceViews = [...primaryWorkspaceViews,...secondaryWorkspaceViews] as const;
 export type WorkspaceView = typeof workspaceViews[number][0];
 export const marketingAgents = [
   {id:'seo-analyst',name:'SEO Analyst',specialty:'Search intelligence',tone:'cyan',description:'Find meaningful search opportunities, investigate query performance, and recommend focused improvements.',tools:['Search Console reporting','GA4 landing-page reporting'],context:'Approved website content, search evidence, and prior recommendations.',output:'Prioritized opportunities with supporting queries, pages, and evidence.'},
