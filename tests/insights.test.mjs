@@ -142,3 +142,19 @@ test('an unapproved registry draft cannot be read through the public article rou
 test('sitemap waits for the request boundary before returning the published read model',async()=>{
  let connected=false;const load=loadWithArticles([],async()=>{connected=true;});const entries=await load('src/app/sitemap.ts').default();assert.equal(connected,true);assert(entries.some(e=>e.url.endsWith('/insights')));
 });
+
+test('shared article renderer supplies one business-first consultation CTA without changing article blocks',()=>{
+ const {renderToStaticMarkup}=nativeRequire('react-dom/server'),{ArticleBody}=loadWithArticles()('src/components/insights/article-body.tsx');
+ const examples=[
+  [{type:'paragraph',text:'An approved agent-generated article.'}],
+  [{type:'markdown',text:'Original text.\n\n[unused]: /book'}],
+  [{type:'markdown',text:'An image is not a booking CTA: ![illustration](/book)'}],
+  [{type:'markdown',text:'# Owner article\n\nOriginal **words** and [references](https://example.com).'}],
+  [{type:'cta',text:'Existing approved consultation invitation.',link:{url:'/book',label:'Book a Consultation'}}],
+  [{type:'cta',text:'Existing absolute consultation invitation.',link:{url:'https://theaugmentedarchitect.com/book',label:'Book a Consultation'}}],
+  [{type:'markdown',text:'Original invitation: [Book a Consultation](/book).'}],
+  [{type:'markdown',text:'Original invitation: [Book a Consultation][booking].\n\n[booking]: /book'}],
+ ];
+ for(const blocks of examples){const before=JSON.stringify(blocks),html=renderToStaticMarkup(ArticleBody({blocks}));assert.equal((html.match(/<a\b[^>]*href="(?:https:\/\/theaugmentedarchitect.com)?\/book"/g)??[]).length,1);assert.equal(JSON.stringify(blocks),before);if(blocks[0].type==='paragraph')assert(html.includes('Bring us the business problem'));}
+ const html=renderToStaticMarkup(ArticleBody({blocks:[{type:'cta',text:'Explore services.',link:{url:'/salesforce',label:'Salesforce'}}]}));assert(html.includes('href="/salesforce"'));assert(html.includes('href="/book"'));
+});

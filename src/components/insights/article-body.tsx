@@ -2,6 +2,9 @@ import Link from 'next/link';
 import {MarkdownBody} from './markdown-body';
 import type {ArticleBlock,ArticleReference} from '@/content/articles/types';
 import styles from './article-body.module.css';
+import {hasArticleConsultation} from '@/lib/article-consultation';
+import {site} from '@/content/site';
+import {experience} from '@/content/experience';
 
 export function ArticleBody({blocks,references=[],title}:{blocks:readonly ArticleBlock[];references?:readonly ArticleReference[];title?:string}){
  function annotations(block:ArticleBlock){return <>{'links' in block&&block.links?.map(link=><span key={link.url}> <Link href={link.url} rel={link.url.startsWith('https:')?'noopener noreferrer':undefined}>{link.label}</Link></span>)}{'citationIds' in block&&block.citationIds?.map(id=>{const index=references.findIndex(r=>r.id===id);return index<0?null:<sup key={id}><a href={'#reference-'+id} aria-label={`Source ${index+1}: ${references[index].title}`}>[{index+1}]</a></sup>;})}</>;}
@@ -16,5 +19,5 @@ export function ArticleBody({blocks,references=[],title}:{blocks:readonly Articl
    case 'diagram':return <figure key={index}><figcaption>{block.text}{annotations(block)}</figcaption><ol className={styles.diagram}>{block.items.map((item,i)=><li key={i}>{item}</li>)}</ol></figure>;
    case 'cta':return <aside key={index} className={styles.cta}><p>{block.text}</p><Link className="button" href={block.link.url}>{block.link.label}</Link></aside>;
   }
- })}{references.length>0&&<section className={styles.references} aria-label="Sources"><h2>Sources</h2><ol>{references.map((reference,i)=><li id={'reference-'+reference.id} key={reference.id}><a href={reference.url} target="_blank" rel="noopener noreferrer">[{i+1}] {reference.title}</a></li>)}</ol></section>}</div>;
+ })}{references.length>0&&<section className={styles.references} aria-label="Sources"><h2>Sources</h2><ol>{references.map((reference,i)=><li id={'reference-'+reference.id} key={reference.id}><a href={reference.url} target="_blank" rel="noopener noreferrer">[{i+1}] {reference.title}</a></li>)}</ol></section>}{!hasArticleConsultation(blocks)&&<aside className={styles.cta} aria-label="Discuss your business needs"><p>{experience.consultation.description}</p><Link className="button" href={site.consultation.href}>{site.consultation.label}</Link></aside>}</div>;
 }

@@ -13,14 +13,15 @@ type Node={type:string;url?:string;identifier?:string;children?:Node[]};
 /** Parse, never execute. Raw HTML and unresolved references are errors, never silently discarded. */
 export function inspectMarkdown(markdown:string){
  if(!markdown.trim()||new TextEncoder().encode(markdown).length>importLimit||markdown.includes('\0'))throw Error('Use a nonempty Markdown article no larger than 120 KB.');
- const tree=unified().use(remarkParse).use(remarkGfm).parse(markdown) as Node,definitions=new Map<string,string>(),references:string[]=[],links=new Set<string>();let nodes=0;
+ const tree=unified().use(remarkParse).use(remarkGfm).parse(markdown) as Node,definitions=new Map<string,string>(),references:string[]=[],links=new Set<string>(),renderedLinks:{url?:string;identifier?:string}[]=[];let nodes=0;
  const walk=(n:Node,depth=0)=>{if(++nodes>12000||depth>40)throw Error('The Markdown document is too complex.');if(n.type==='html')throw Error('Executable or raw HTML is not accepted. Use Markdown formatting instead.');
  if(n.type==='definition'&&n.identifier){if(definitions.has(n.identifier))throw Error('Duplicate reference definition: '+n.identifier);definitions.set(n.identifier,n.url!);}
  if(n.type==='linkReference'||n.type==='imageReference')references.push(n.identifier!);
+ if(n.type==='link'||n.type==='linkReference')renderedLinks.push(n);
  if(n.url){if(!safeMarkdownUrl(n.url))throw Error('An article link is unsafe or unsupported. Use HTTPS, a site-relative path, or a section anchor.');links.add(n.url);}
  for(const child of n.children??[])walk(child,depth+1);};walk(tree);
  for(const ref of references)if(!definitions.has(ref))throw Error('An article reference has no definition: '+ref);
- return {links:[...links],externalLinks:[...links].filter(u=>u.startsWith('https://')),nodes};
+ return {links:[...links],renderedLinks:renderedLinks.map(n=>n.url??definitions.get(n.identifier!)!),externalLinks:[...links].filter(u=>u.startsWith('https://')),nodes};
 }
 function nodeText(n:Node):string{return (n as Node&{value?:string}).value??(n.children??[]).map(nodeText).join('');}
 function headings(tree:Node){
