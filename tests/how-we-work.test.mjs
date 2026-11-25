@@ -17,9 +17,9 @@ test('engagement journey has stable unique destinations and practical outcomes',
   assert.match(content.journey.stages.at(-1).activities.join(' '), /separately agree any ongoing support/);
 });
 
-test('new navigation, service links and sitemap share real canonical destinations', () => {
+test('new navigation, service links and sitemap share real canonical destinations', async () => {
   assert.equal(site.navigation.filter(n => n.href === '/how-we-work').length, 1);
-  const entries = loadScoutModule('src/app/sitemap.ts', { '@/content/articles': { articles: [] } }).default();
+  const entries = await loadScoutModule('src/app/sitemap.ts', { '@/content/articles': { articles: [] }, '@/lib/published-articles':{publishedArticles:async()=>[]} }).default();
   assert.equal(entries.filter(e => e.url === `${site.url}/how-we-work`).length, 1);
   assert.deepEqual(content.services.links.map(l => l.href), ['/ai-solutions', '/salesforce', '/custom-applications']);
   for (const link of [content.architecture.link, content.engineering.link]) assert(entries.some(e => e.url === site.url + link.href));

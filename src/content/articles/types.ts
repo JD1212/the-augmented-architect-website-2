@@ -14,8 +14,8 @@ export type Article = {
   slug: string; title: string; format?: 'Technical guide' | 'Article'; category: ArticleCategory; summary: string; seoDescription: string;
   seoTitle?: string; status: 'draft' | 'published';
   /** Optional, explicitly supplied ISO date: YYYY-MM-DD. Never inferred. */
-  publishedDate?: string;
+  publishedDate?: string; modifiedDate?: string;
   content: readonly ArticleBlock[];
   references?: readonly ArticleReference[];
-  publication?: {id:string;revisionId:string;revisionHash?:string;sourceOpportunityId?:string};
+  publication?: {id:string;version?:string;revisionId?:string;revisionHash?:string;sourceOpportunityId?:string};
 };

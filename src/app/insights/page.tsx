@@ -1,15 +1,17 @@
 import Link from 'next/link';
+import {ArticleMeasurement} from '@/components/analytics/article-measurement';
 import {libraryContent, insights, categoryIds} from '@/content/insights';
-import {getVisibleArticles, articleHref, formatPublishedDate} from '@/lib/articles';
+import {articleHref, formatPublishedDate} from '@/lib/articles';
+import {publishedArticles} from '@/lib/published-articles';
 import {createPageMetadata} from '@/lib/metadata';
 import {Arrow} from '@/components/icon';
 import styles from './insights.module.css';
 
 export const metadata=createPageMetadata({title:libraryContent.title,description:libraryContent.seoDescription},'/insights');
-export default function InsightsPage(){
- const articles=getVisibleArticles();
+export default async function InsightsPage(){
+ const articles=await publishedArticles();
  return <main id="main" className={`container detail-page ${styles.page}`}>
-  <header className={styles.heading}><p className="eyebrow">{libraryContent.eyebrow}</p><h1>{libraryContent.title}</h1><p>{libraryContent.introduction}</p></header>
+  <ArticleMeasurement pages={articles.map(a=>({path:articleHref(a.slug),title:a.title,publicationId:a.publication?.id}))}/><header className={styles.heading}><p className="eyebrow">{libraryContent.eyebrow}</p><h1>{libraryContent.title}</h1><p>{libraryContent.introduction}</p></header>
   <nav className={styles.topics} aria-label="Insights topics">{categoryIds.map(id=><a key={id} href={'#'+id}>{insights.categories[id].title}</a>)}</nav>
   <section aria-labelledby="insights-library-heading"><h2 id="insights-library-heading" className={styles.sectionTitle}>{libraryContent.articles}</h2>
    {!articles.length&&<p className="insights-empty-state">{libraryContent.empty}</p>}

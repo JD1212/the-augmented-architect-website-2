@@ -10,6 +10,8 @@ import {intelligenceRecords} from '../intelligence/service';
 import {usageSummary} from '../seo/contracts';
 import {contentConfiguration,contentDatabase,contentCapabilities,contentDomain} from './config';
 import {groundedOpportunity,contentInput} from './grounding';
+import {publicationEnvironment} from './publication-contract';
+import {publicationState} from './publication-state';
 import {contentFailure} from './diagnostics';
 import {observedOpenAIFetch} from './provider-observation';
 import {contentRows,revisionHead,revisions,saveRevision,claimContentExecution,releaseContentExecution,approvedRevision,type Revision} from './repository';
@@ -21,7 +23,7 @@ export async function contentState(db:SupabaseClient,tenant:string,opportunityId
  const grounding=groundedOpportunity(opportunity,backlog,research),head=revisionHead(visible,opportunityId);
  const related=revisions(visible,opportunityId),ids=new Set(related.map(r=>r.id));
  const capabilities={...contentCapabilities(),approvalConsumed:Boolean(process.env.CONTENT_STRATEGIST_APPROVAL_ID)&&rows.some(r=>r.payload.workflow==='content-execution-reservation/v1'&&r.payload.approvalId===process.env.CONTENT_STRATEGIST_APPROVAL_ID)};
- return {opportunity:{id:opportunity.id,title:opportunity.finding.title,status:opportunity.status,findingId:opportunity.findingId},grounding,head,revisions:related,capabilities,approvals:rows.filter(r=>r.payload.workflow==='content-publication-approval/v1'&&r.parent_id&&ids.has(r.parent_id)),feedback:rows.filter(r=>r.payload.workflow==='content-feedback/v1'&&r.parent_id&&ids.has(r.parent_id)),publications:rows.filter(r=>r.kind==='published_change'&&r.parent_id===opportunityId),runs:runs.filter(r=>(r.diagnostics as {opportunityId?:string})?.opportunityId===opportunityId&&(r.diagnostics as {agentKind?:string})?.agentKind==='content-strategist').slice(-10).reverse(),automaticPublishingEnabled:false};
+ return {publication:await publicationState(db,tenant,opportunityId),opportunity:{id:opportunity.id,title:opportunity.finding.title,status:opportunity.status,findingId:opportunity.findingId},grounding,head,revisions:related,capabilities,approvals:rows.filter(r=>r.payload.workflow==='content-publication-approval/v1'&&r.parent_id&&ids.has(r.parent_id)),feedback:rows.filter(r=>r.payload.workflow==='content-feedback/v1'&&r.parent_id&&ids.has(r.parent_id)),publications:rows.filter(r=>r.kind==='published_change'&&r.parent_id===opportunityId&&(!r.payload.environment||r.payload.environment===publicationEnvironment())),runs:runs.filter(r=>(r.diagnostics as {opportunityId?:string})?.opportunityId===opportunityId&&(r.diagnostics as {agentKind?:string})?.agentKind==='content-strategist').slice(-10).reverse(),automaticPublishingEnabled:false};
 }
 export async function findRevision(db:SupabaseClient,tenant:string,id:string,opportunityId:string){const state=await contentState(db,tenant,opportunityId);const revision=state.revisions.find(r=>r.id===id);if(!revision)throw new MarketingError(404,'Completed draft revision not found.');return {state,revision};}
 export function validateEditedDraft(draft:unknown,revision:Revision):ContentDraft{try{return validateDraft(draft,revision.input);}catch(error){const rule=error instanceof Error&&/^[A-Z_]+/.test(error.message)?error.message.match(/^[A-Z_]+/)![0]:'INVALID_CONTENT_PACKAGE';throw new MarketingError(400,'Draft validation failed: '+rule+'. Review the content and citation map before saving.');}}

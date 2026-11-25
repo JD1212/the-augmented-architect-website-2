@@ -5,9 +5,9 @@ import { schedulingFixture } from './helpers/scheduling-fixture.mjs';
 
 const cache = new Map();
 const { site } = loadScoutModule('src/content/site.ts', {}, cache);
-test('sitemap and robots use the canonical public origin', () => {
+test('sitemap and robots use the canonical public origin', async () => {
   assert.equal(site.url, 'https://theaugmentedarchitect.com');
-  const sitemap = loadScoutModule('src/app/sitemap.ts', { '@/content/articles': { articles: [] } }, cache).default();
+  const sitemap = await loadScoutModule('src/app/sitemap.ts', { '@/content/articles': { articles: [] }, '@/lib/published-articles':{publishedArticles:async()=>[]} }, cache).default();
   assert(sitemap.length > 0);
   assert(sitemap.every(entry => new URL(entry.url).origin === site.url));
   const robots = loadScoutModule('src/app/robots.ts', {}, cache).default();

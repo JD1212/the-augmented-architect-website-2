@@ -1,5 +1,7 @@
 # Insights: first article and repeatable release
 
+The current direct-publishing implementation is documented in [Direct owner-approved publishing](direct-article-publishing.md). The export/Git steps below are retained as historical fallback documentation, not the primary owner workflow.
+
 ## Current editorial review (not publication)
 
 - Opportunity: `8750658d-3896-41a4-a386-cd6dc4bb7c8e`.

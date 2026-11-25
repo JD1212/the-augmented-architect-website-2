@@ -15,5 +15,6 @@ export function articleStructuredData(article: Article, origin: string, publishe
     mainEntityOfPage: { '@type': 'WebPage', '@id': url },
     publisher: { '@type': 'Organization', name: publisherName },
     ...(article.publishedDate ? { datePublished: article.publishedDate } : {}),
+    ...(article.modifiedDate ? {dateModified:article.modifiedDate} : {}),
   };
 }

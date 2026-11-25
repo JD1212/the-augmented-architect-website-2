@@ -18,11 +18,11 @@ test('permanent editorial pages have meaningful unique anchors and no publishing
   assert.deepEqual(approachPages['ai-architecture'].sections.flatMap(s => s.visual ? [s.visual] : []), ['layers', 'conversation']);
 });
 
-test('navigation and sitemap advertise the permanent pages without legacy URLs or invented posts', () => {
+test('navigation and sitemap advertise the permanent pages without legacy URLs or invented posts', async () => {
   const { site } = loadScoutModule('src/content/site.ts', {}, cache);
   assert(site.navigation.some(n => n.label === 'Our Approach' && n.href === '/our-approach'));
   assert(site.navigation.some(n => n.label === 'About' && n.href === '/about'));
-  const entries = loadScoutModule('src/app/sitemap.ts', { '@/content/articles': { articles: [] } }, cache).default();
+  const entries = await loadScoutModule('src/app/sitemap.ts', { '@/content/articles': { articles: [] }, '@/lib/published-articles':{publishedArticles:async()=>[]} }, cache).default();
   for (const id of approachIds) assert(entries.some(e => e.url.endsWith(approachHref(id))));
   assert(entries.some(e => e.url.endsWith('/about')));
   assert(entries.some(e => e.url.endsWith('/insights')));

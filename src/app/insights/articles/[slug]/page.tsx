@@ -1,8 +1,10 @@
 import Link from 'next/link';
+import {ArticleMeasurement} from '@/components/analytics/article-measurement';
 import { notFound } from 'next/navigation';
 import { insights, libraryContent } from '@/content/insights';
 import { site } from '@/content/site';
-import { articleHref, formatPublishedDate, getArticleBySlug, getVisibleArticles, getRelatedArticles } from '@/lib/articles';
+import { articleHref, formatPublishedDate, getVisibleArticles } from '@/lib/articles';
+import {publishedArticles,publishedArticle} from '@/lib/published-articles';
 import { createPageMetadata } from '@/lib/metadata';
 import { articleStructuredData } from '@/lib/article-seo';
 import { ArticleBody } from '@/components/insights/article-body';
@@ -20,7 +22,7 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
-  const article = getArticleBySlug(slug);
+  const article = await publishedArticle(slug);
   if (!article) notFound();
   const metadata = createPageMetadata({ title: article.seoTitle ?? article.title, description: article.seoDescription }, articleHref(article.slug), {
     type: 'article', section: insights.categories[article.category].title,
@@ -31,16 +33,16 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function ArticlePage({ params }: Props) {
   const { slug } = await params;
-  const article = getArticleBySlug(slug);
+  const article = await publishedArticle(slug);
   if (!article) notFound();
   const category = insights.categories[article.category];
   const preview = article.status === 'draft';
-  const related = getRelatedArticles(article);
+  const related = (await publishedArticles()).filter(a=>a.slug!==article.slug&&a.category===article.category).slice(0,3);
   const jsonLd = articleStructuredData(article, site.url, site.name);
   return (
     <main id="main" className="detail-page container insights-page">
-      <nav className="insights-breadcrumb" aria-label={insights.breadcrumbLabel}><ol><li><Link href="/insights">{libraryContent.title}</Link></li><li><Link href={"/insights#"+article.category}>{category.title}</Link></li></ol></nav>
-      <div className={styles.articleLayout}><article className="insights-article">
+      <ArticleMeasurement pages={[{path:articleHref(article.slug),title:article.title,publicationId:article.publication?.id}]}/><nav className="insights-breadcrumb" aria-label={insights.breadcrumbLabel}><ol><li><Link href="/insights">{libraryContent.title}</Link></li><li><Link href={"/insights#"+article.category}>{category.title}</Link></li></ol></nav>
+      <div className={styles.articleLayout}><article className="insights-article" data-publication-version={article.publication?.version}>
         <header className="insights-page-heading"><p className="eyebrow">{category.title} · {article.format ?? "Article"}</p><h1>{article.title}</h1><p className="detail-description">{article.summary}</p>
           {preview && <p className="insights-published">Editorial preview · awaiting owner approval. Not published.</p>}
           {article.publishedDate && <p className="insights-published">{insights.publishedLabel} <time dateTime={article.publishedDate}>{formatPublishedDate(article.publishedDate)}</time></p>}

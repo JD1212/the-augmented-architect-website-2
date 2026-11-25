@@ -42,11 +42,8 @@ export function getPublishedArticles(category?: ArticleCategory): readonly Artic
   return articles.filter(article => article.status === 'published' && (!category || article.category === category));
 }
 
-// Review drafts are public only inside this protected feature-branch Preview.
-export function getVisibleArticles(): readonly Article[] {
-  return process.env.VERCEL_ENV === 'preview' && process.env.VERCEL_GIT_COMMIT_REF === 'feature/content-strategist'
-    ? articles : getPublishedArticles();
-}
+// Draft review lives in the authenticated editor. File helpers never expose drafts.
+export function getVisibleArticles(): readonly Article[] { return getPublishedArticles(); }
 
 export function getArticleBySlug(slug: string): Article | undefined {
   return getVisibleArticles().find(article => article.slug === slug);
@@ -56,9 +53,7 @@ export function getRelatedArticles(article: Article): readonly Article[] {
   return getPublishedArticles(article.category).filter(candidate => candidate.slug !== article.slug).slice(0, 3);
 }
 
-export function articleHref(slug: string): string {
-  return `/insights/articles/${slug}`;
-}
+export {articleHref} from './article-path';
 
 export function formatPublishedDate(date: string): string {
   return new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' }).format(new Date(`${date}T00:00:00Z`));

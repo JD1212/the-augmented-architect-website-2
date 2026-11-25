@@ -1,0 +1,36 @@
+'use client';
+import {useRef,useState} from 'react';
+import type {contentState} from '@/lib/marketing/content/service';
+import {articleHref} from '@/lib/article-path';
+import styles from './marketing.module.css';
+import scoped from './content-studio.module.css';
+type State=Awaited<ReturnType<typeof contentState>>;
+export function PublicationControls({data,dirty,reload}:{data:State;dirty:boolean;reload:()=>Promise<void>}){
+ const [date,setDate]=useState(''),[confirmed,setConfirmed]=useState(false),[busy,setBusy]=useState(false),[message,setMessage]=useState('');const lock=useRef(false);
+ const state=data.publication,head=data.head,pointer=state?.pointer,approved=Boolean(data.grounding.assignment&&head&&data.approvals.some(a=>a.parent_id===head.id&&a.payload.channel==='website'&&a.payload.revisionHash===head.hash));
+ const pending=pointer?.payload.status==='verifying',live=pointer?.payload.active&&pointer.payload.status==='live',current=live&&pointer.payload.revisionHash===head?.hash;
+ const destination=state?.environment==='production'?'Production website':'Protected Preview';
+ async function run(action:'publish'|'unpublish',resume=false){
+  if(lock.current||!head||!state)return;lock.current=true;setBusy(true);setMessage('');
+  const history=state.history.find(h=>h.id===pointer?.payload.requestId),actualAction=resume?history?.payload.action:action;
+  try{
+   const body={operation:actualAction,opportunityId:data.opportunity.id,requestId:resume?pointer?.payload.requestId:crypto.randomUUID(),revisionId:resume||action==='unpublish'?pointer?.payload.revisionId:head.id,revisionHash:resume||action==='unpublish'?pointer?.payload.revisionHash:head.hash,publicationDate:pointer?.payload.firstPublicationDate||date,expectedVersion:pointer?.payload.version??0,publishConfirmed:true};
+   const r=await fetch('/api/admin/marketing/content',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}),result=await r.json();if(!r.ok)throw Error(result.error||'Publication could not be completed.');
+   setMessage(result.status==='live'?'Article verified and available in '+destination+'.':result.status==='unpublished'?'Article withdrawal verified.':'Publication status: '+result.status);setConfirmed(false);
+  }catch(error){setMessage(error instanceof Error?error.message:'Publication could not be completed.');}
+  finally{await reload();lock.current=false;setBusy(false);}
+ }
+ return <section className={styles.panel} data-publication-controls><p className={styles.eyebrow}>WEBSITE PUBLICATION</p><h3>Publish the revision you approved</h3>
+ <p>Destination: <strong>{destination}</strong>. {state?.environment!=='production'&&'This does not publish to the public Production website.'}</p>
+ <p role="status">Status: <strong>{pending?'Publishing · verification pending':live?'Live in '+destination:pointer?.payload.status==='unpublished'?'Unpublished':'Not published'}</strong></p>
+ {!state?.enabled&&<p>Direct publishing is disabled in this environment.</p>}
+ {!approved&&<p>Review and approve the exact website revision above before publishing. Approval alone does not publish it.</p>}
+ {current&&<p>The current approved revision is already live here. Save and approve a new revision to update the article.</p>}
+ {pointer?.payload.firstPublicationDate?<p>Publication date: <time>{pointer.payload.firstPublicationDate}</time>. Updates keep the original date and URL.</p>:<><label htmlFor="direct-publication-date">Publication date</label><input id="direct-publication-date" type="date" value={date} onChange={e=>setDate(e.target.value)}/></>}
+ <label><input id="direct-publication-confirm" type="checkbox" checked={confirmed} onChange={e=>setConfirmed(e.target.checked)}/>I explicitly authorize this publication or withdrawal in {destination}.</label>
+ <div className={scoped.controls}>{pending?<button className={styles.primary} disabled={!state?.enabled||busy||!confirmed} onClick={()=>void run('publish',true)}>Verify publication</button>:<><button className={styles.primary} disabled={!state?.enabled||!approved||dirty||busy||!confirmed||current||!pointer?.payload.firstPublicationDate&&!date} onClick={()=>void run('publish')}>{busy?'Publishing & verifying…':live?'Publish approved update':'Publish website article'}</button><button className={styles.secondary} disabled={!state?.enabled||!live||busy||!confirmed} onClick={()=>void run('unpublish')}>Unpublish website article</button></>}
+ {pointer?.payload.active&&<a className={styles.textLink} href={articleHref(pointer.payload.slug)}>View article →</a>}</div>
+ {message&&<p role="status">{message}</p>}
+ <p className={styles.note}>No JSON download or Git commit is needed for an article. LinkedIn approval and posting remain separate and manual.</p>
+ <details><summary>Publication history</summary>{!state?.history.length?<p>No publishing attempts yet.</p>:state.history.map(item=><div className={scoped.history} key={item.id}><p>{item.title} · {String(item.payload.status)} · {new Date(item.created_at).toLocaleString()}</p><details><summary>Revision and verification details</summary><pre>{JSON.stringify(item.payload,null,2)}</pre></details></div>)}</details></section>;
+}

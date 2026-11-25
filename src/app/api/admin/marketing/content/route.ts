@@ -4,6 +4,7 @@ import {MarketingError,uuidPattern} from '@/lib/marketing/config';
 import {contentState,generateContent,findRevision,editedRevision} from '@/lib/marketing/content/service';
 import {contentDatabase,requireContentExecution} from '@/lib/marketing/content/config';
 import {savePublicationApproval,contentFeedback} from '@/lib/marketing/content/repository';
+import {changePublication} from '@/lib/marketing/content/direct-publishing';
 import {preparePublication,recordPublication} from '@/lib/marketing/content/publishing';
 export const maxDuration=180;
 const uuid=(x:unknown):x is string=>typeof x==='string'&&uuidPattern.test(x);
@@ -11,8 +12,9 @@ export async function GET(request:Request){try{sameOrigin(request);const owner=a
 export async function POST(request:Request){
  try{
   const owner=await requireOwner(await ownerAuth()),body=await privateBody(request,65536),op=body.operation;
-  const fields:Record<string,string[]>={generate:['requestId','expectedRevisionId'],revise:['revisionId','draft'],feedback:['revisionId','note'],approve:['revisionId','revisionHash','channel','reviewConfirmed'],prepare:['revisionId','revisionHash','channel','publicationDate'],record:['revisionId','revisionHash','channel','publicationDate','url','releaseCommit','confirmed']};
+  const fields:Record<string,string[]>={publish:['requestId','revisionId','revisionHash','publicationDate','expectedVersion','publishConfirmed'],unpublish:['requestId','revisionId','revisionHash','publicationDate','expectedVersion','publishConfirmed'],generate:['requestId','expectedRevisionId'],revise:['revisionId','draft'],feedback:['revisionId','note'],approve:['revisionId','revisionHash','channel','reviewConfirmed'],prepare:['revisionId','revisionHash','channel','publicationDate'],record:['revisionId','revisionHash','channel','publicationDate','url','releaseCommit','confirmed']};
   if(typeof op!=='string'||!Object.hasOwn(fields,op)||Object.keys(body).some(k=>!['operation','opportunityId',...fields[op]].includes(k))||!uuid(body.opportunityId))throw new MarketingError(400,'Choose an authorized content operation.');
+  if(op==='publish'||op==='unpublish'){if(body.publishConfirmed!==true||!uuid(body.requestId)||!uuid(body.revisionId)||typeof body.revisionHash!=='string'||!/^[a-f0-9]{64}$/.test(body.revisionHash)||typeof body.publicationDate!=='string'||!Number.isSafeInteger(body.expectedVersion)||Number(body.expectedVersion)<0)throw new MarketingError(400,'Confirm the exact publication action, revision and current version.');return privateJson(await changePublication(owner,{action:op,requestId:body.requestId,revisionId:body.revisionId,revisionHash:body.revisionHash,publicationDate:body.publicationDate,expectedVersion:Number(body.expectedVersion),opportunityId:body.opportunityId}));}
   if(op==='generate'){requireContentExecution();if(!uuid(body.requestId)||body.expectedRevisionId!==null&&!uuid(body.expectedRevisionId))throw new MarketingError(400,'Provide the request and expected revision.');return privateJson(await generateContent(owner,body.requestId,body.opportunityId,body.expectedRevisionId as string|null,request.signal));}
   if(!uuid(body.revisionId))throw new MarketingError(400,'Choose a completed revision.');
   const {revision,state}=await findRevision(owner.db,owner.tenantId,body.revisionId,body.opportunityId);

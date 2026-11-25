@@ -11,6 +11,7 @@ const serverDisabled = () => false;
 const noSubscription = () => () => {};
 const storedChoice = () => { try { return localStorage.getItem(consentKey) ?? ''; } catch { return ''; } };
 function subscribeChoice(update: () => void) { window.addEventListener('storage', update); window.addEventListener('aa:analytics-choice', update); return () => { window.removeEventListener('storage', update); window.removeEventListener('aa:analytics-choice', update); }; }
+function subscribeArticles(update:()=>void){window.addEventListener('aa:article-registry-ready',update);return()=>window.removeEventListener('aa:article-registry-ready',update);}
 function subscribeReady(update: () => void) { window.addEventListener('aa:analytics-ready', update); return () => window.removeEventListener('aa:analytics-ready', update); }
 
 export function PrivacyPreferences() {
@@ -21,6 +22,7 @@ export function AnalyticsConsent({ enabled, articlePages=[] }: { enabled: boolea
 }
 function Consent({ enabled,articlePages }: { enabled: boolean;articlePages:readonly ArticleAnalyticsPage[] }) {
   const path = usePathname();
+  const registered=useSyncExternalStore(subscribeArticles,()=>isRegisteredArticle(path),serverDisabled);
   const raw = useSyncExternalStore(subscribeChoice, storedChoice, serverSnapshot);
   const [visitChoice, setVisitChoice] = useState<ConsentChoice | null>(null), [settingsOpen, setSettingsOpen] = useState(false);
   const choice = visitChoice ?? readConsent(raw);
@@ -40,10 +42,10 @@ function Consent({ enabled,articlePages }: { enabled: boolean;articlePages:reado
     window.addEventListener('aa:privacy-preferences', preferences); window.addEventListener('storage', storage);
     return () => { window.removeEventListener('aa:privacy-preferences', preferences); window.removeEventListener('storage', storage); };
   }, []);
-  useEffect(()=>{registerArticleAnalytics(articlePages);},[articlePages]);
+  useEffect(()=>{if(articlePages.length)registerArticleAnalytics(articlePages);},[articlePages]);
   useEffect(() => {
     if (enabled && choice === 'granted') { startAnalytics(id, path, choice); analyticsPage(path); }
-  }, [enabled, choice, id, path]);
+  }, [enabled, choice, id, path, registered]);
   useEffect(() => {
     if (!load || !isRegisteredArticle(path)&&!['/ai-solutions', '/salesforce', '/custom-applications'].includes(path)) return;
     let timer: ReturnType<typeof setTimeout> | undefined;
