@@ -22,10 +22,10 @@ test('concurrent decisions use one revision slot; retries cannot duplicate or ov
  const db=fixture(),a=command('defer'),b=command('reject',{requestId:ids.nextRun});const results=await Promise.allSettled([saveReview(db,tenant,ids.owner,a),saveReview(db,tenant,ids.owner,b)]);assert.equal(results.filter(r=>r.status==='fulfilled').length,1);assert.equal(results.find(r=>r.status==='rejected').reason.status,409);const o=(await loadBacklog(db,tenant)).opportunities[0];const winning=o.reviews[0].action==='defer'?a:b;
  assert.equal((await saveReview(db,tenant,ids.owner,winning)).reused,true);assert.equal(o.reviews.length,1);await assert.rejects(saveReview(db,tenant,ids.owner,{...winning,note:'Changed command'}),e=>e.status===409);
 });
-test('reject/defer require an explicit reopen; completed cannot be reopened; stale revisions fail',async()=>{
+test('reject/defer require an explicit reopen; completed can explicitly reopen; stale revisions fail',async()=>{
  for(const action of ['reject','defer']){const db=fixture();await saveReview(db,tenant,ids.owner,command(action));let o=(await loadBacklog(db,tenant)).opportunities[0];assert.equal(contentAssignment(o,await loadBacklog(db,tenant)),null);await assert.rejects(saveReview(db,tenant,ids.owner,command('approve',{requestId:ids.nextRun,expectedReviewId:o.reviewId})),e=>e.status===409);
  await saveReview(db,tenant,ids.owner,command('reopen',{requestId:ids.nextRun,expectedReviewId:o.reviewId}));o=(await loadBacklog(db,tenant)).opportunities[0];assert.equal(o.status,'pending');assert.equal(o.reviews.length,2);await assert.rejects(saveReview(db,tenant,ids.owner,command()),e=>e.status===409);}
- const {nextReviewStatus}=load('src/lib/marketing/opportunities/contracts.ts');assert.equal(nextReviewStatus('completed','reopen'),null);assert.equal(nextReviewStatus('pending','reopen'),null);
+ const {nextReviewStatus}=load('src/lib/marketing/opportunities/contracts.ts');assert.equal(nextReviewStatus('completed','reopen'),'pending');assert.equal(nextReviewStatus('pending','reopen'),null);
 });
 test('equivalent topics with different titles reuse identities while genuinely new angles remain distinct',async()=>{
  const existing=(await loadBacklog(fixture(),tenant)).opportunities;
@@ -83,4 +83,36 @@ test('compact backlog queries are paginated, filterable and clustered with stabl
  assert.equal(opportunityPage(records,new URLSearchParams({topic:original.topic.id,priority:'1',evidence:'external_research',sort:'topic',page:'2'})).opportunities.length,10);
  assert.throws(()=>opportunityPage(records,new URLSearchParams({pageSize:'10000'})),e=>e.status===400);assert.throws(()=>opportunityPage(records,new URLSearchParams({tenant:'other'})),e=>e.status===400);
  assert.equal(records[0].topic.id,records[24].topic.id);
+});
+
+function publicationFixture(db,environment='preview:1111111111111111'){
+ const revision='88888888-8888-4888-a888-888888888888';
+ db.rows.marketing_artifacts.push({id:revision,tenant_id:tenant,kind:'content_draft',parent_id:ids.opportunity,payload:{input:{assignment:{findingId:ids.finding}}}});
+ const pointer={id:'pointer-'+environment,tenant_id:tenant,kind:'measurement',parent_id:ids.opportunity,payload:{workflow:'website-publication-pointer/v1',environment,status:'live',active:true,verifiedAt:'2026-11-25T15:21:58Z',slug:'approved-guide',revisionId:revision}};
+ db.rows.marketing_artifacts.push(pointer,{id:'event-'+environment,tenant_id:tenant,kind:'published_change',parent_id:ids.opportunity,payload:{workflow:'content-publication/v2',environment,status:'live',url:'https://theaugmentedarchitect.com/insights/articles/approved-guide'}});return pointer;
+}
+test('Preview history remains visible without claiming a Production URL in the backlog or agent memory',async()=>{
+ const db=fixture();publicationFixture(db);const before=JSON.stringify(db.rows),o=(await loadBacklog(db,tenant)).opportunities[0];
+ assert.deepEqual(o.publishedUrls,[]);assert.equal(o.publicationStates[0].live,true);assert.equal(o.publicationStates[0].environment,'preview:1111111111111111');assert.equal(o.publicationStates[0].url,null);assert.equal(o.canComplete,false);assert.deepEqual(historicalContext([o]).opportunities[0].publishedUrls,[]);assert.equal(JSON.stringify(db.rows),before);
+});
+test('withdrawal or pending verification suppresses historical live URLs without deleting publication history',async()=>{
+ const db=fixture(),p=publicationFixture(db,'production');let o=(await loadBacklog(db,tenant)).opportunities[0];assert.equal(o.publishedUrls.length,1);
+ p.payload.status='unpublished';p.payload.active=false;o=(await loadBacklog(db,tenant)).opportunities[0];assert.deepEqual(o.publishedUrls,[]);assert(db.rows.marketing_artifacts.some(a=>a.kind==='published_change'));
+ p.payload.status='verifying';p.payload.active=true;assert.deepEqual((await loadBacklog(db,tenant)).opportunities[0].publishedUrls,[]);
+ delete p.payload.environment;p.payload.status='live';assert.deepEqual((await loadBacklog(db,tenant)).opportunities[0].publishedUrls,[]);
+});
+test('an approved finding cannot be approved twice; completion requires verified Production and can explicitly reopen',async()=>{
+ const db=fixture();await saveReview(db,tenant,ids.owner,command());let o=(await loadBacklog(db,tenant)).opportunities[0];
+ await assert.rejects(saveReview(db,tenant,ids.owner,command('approve',{requestId:ids.nextRun,expectedReviewId:o.reviewId})),/already approved/);
+ publicationFixture(db);await assert.rejects(saveReview(db,tenant,ids.owner,command('complete',{requestId:ids.nextRun,expectedReviewId:o.reviewId})),/verified live Production/);
+ publicationFixture(db,'production');o=(await loadBacklog(db,tenant)).opportunities[0];assert.equal(o.canComplete,true);
+ const complete=command('complete',{requestId:ids.nextRun,expectedReviewId:o.reviewId});await saveReview(db,tenant,ids.owner,complete);assert.equal((await saveReview(db,tenant,ids.owner,complete)).reused,true);
+ o=(await loadBacklog(db,tenant)).opportunities[0];assert.equal(o.status,'completed');assert.equal(o.reviews.length,2);
+ await saveReview(db,tenant,ids.owner,command('reopen',{requestId:'99999999-9999-4999-a999-999999999999',expectedReviewId:o.reviewId}));o=(await loadBacklog(db,tenant)).opportunities[0];assert.equal(o.status,'pending');assert.equal(o.reviews.length,3);assert.equal(contentAssignment(o,await loadBacklog(db,tenant)),null);
+});
+test('newer findings need their own approval and cannot inherit completion eligibility from an older publication',async()=>{
+ const db=fixture();await saveReview(db,tenant,ids.owner,command());publicationFixture(db,'production');
+ const old=structuredClone(db.rows.marketing_artifacts[1]);db.rows.marketing_artifacts.push({...old,id:ids.nextRun,created_at:'2026-11-26T00:00:00Z',payload:{...old.payload,recommendedAction:'New evidence needs a revised guide'}});
+ const o=(await loadBacklog(db,tenant)).opportunities[0];assert.equal(o.canComplete,false);
+ await saveReview(db,tenant,ids.owner,command('approve',{requestId:'99999999-9999-4999-a999-999999999999',expectedReviewId:o.reviewId,expectedFindingId:ids.nextRun}));assert.equal((await loadBacklog(db,tenant)).opportunities[0].canComplete,false);
 });

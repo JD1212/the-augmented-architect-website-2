@@ -10,6 +10,7 @@ export type SourceResult = { status: 'connected' | 'empty' | 'not_configured' | 
 export type MarketingDashboard = { range: DateRange; ga4: SourceResult; search: SourceResult };
 
 export type WorkspaceActivity = {
+  agentSummaries?:Record<string,ReturnType<typeof import('./execution-status').summarizeAgent>>;
   reports: {id:string;source:string;start_date:string;end_date:string;extracted_at:string}[];
   executions: {id:string;state:string;created_at:string;finished_at:string|null}[];
   artifacts: {id:string;kind:string;title:string;created_at:string}[];

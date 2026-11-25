@@ -59,7 +59,7 @@ test('robots preserves public crawling and discourages API and future admin craw
 });
 
 test('sitemap contains only unique, canonical public pages and real published articles', async () => {
-  const sitemap = await loadScoutModule('src/app/sitemap.ts', { '@/content/articles': { articles: [] }, '@/lib/published-articles':{publishedArticles:async()=>[]} }, cache).default();
+  const sitemap = await loadScoutModule('src/app/sitemap.ts', { 'next/server':{connection:async()=>{}}, '@/content/articles': { articles: [] }, '@/lib/published-articles':{publishedArticles:async()=>[]} }, cache).default();
   assert.equal(new Set(sitemap.map(item => item.url)).size, sitemap.length);
   assert(sitemap.every(item => new URL(item.url).origin === site.url));
   for (const path of ['/ai-solutions', '/salesforce', '/custom-applications', '/our-approach/philosophy', '/our-approach/ai-architecture', '/our-approach/salesforce']) assert(sitemap.some(item => item.url === site.url + path));

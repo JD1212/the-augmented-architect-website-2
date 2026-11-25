@@ -20,11 +20,13 @@ export async function saveReview(db:SupabaseClient,tenant:string,actorId:string,
   const reused=opportunity.reviews.find(r=>r.requestId===command.requestId);
   if(reused){if(reused.actorId!==actorId||reused.action!==command.action||reused.note!==command.note||reused.deliverable!==command.deliverable||reused.findingId!==command.expectedFindingId||reused.previousReviewId!==command.expectedReviewId)throw new MarketingError(409,'This request ID was already used for a different decision.');return {id:reused.id,reused:true};}
   if(opportunity.reviewId!==command.expectedReviewId||opportunity.findingId!==command.expectedFindingId)throw new MarketingError(409,'This opportunity changed. Refresh before recording a decision.');
+  if(command.action==='approve'&&opportunity.status==='approved_for_drafting'&&opportunity.reviews.filter(r=>r.action==='approve').at(-1)?.findingId===command.expectedFindingId)throw new MarketingError(409,'This finding is already approved for drafting.');
+  if(command.action==='complete'&&!opportunity.canComplete)throw new MarketingError(409,'Completion requires a verified live Production publication of the approved current finding.');
   const status=nextReviewStatus(opportunity.status,command.action,opportunity.reviews.at(-1)?.previousStatus);if(!status)throw new MarketingError(409,'This review transition is not available.');
   const id=reviewSlot(tenant,opportunity.id,opportunity.reviewId);
   // The primary key is a deterministic slot for the previous review revision.
   // Concurrent decisions compete for one INSERT; no UPDATE/upsert or last-writer-wins.
-  const workflow=['archive','restore'].includes(command.action)?'seo-opportunity-review/v2':'seo-opportunity-review/v1';
+  const workflow=['archive','restore','complete'].includes(command.action)?'seo-opportunity-review/v2':'seo-opportunity-review/v1';
   const r=await db.from('marketing_artifacts').insert({id,tenant_id:tenant,kind:'approval',title:`SEO opportunity: ${status}`,parent_id:opportunity.id,actor_id:actorId,payload:{workflow,action:command.action,status,note:command.note,previousReviewId:opportunity.reviewId,findingId:opportunity.findingId,deliverable:command.deliverable,requestId:command.requestId,draftOnly:true,publishingAuthorized:false,spendingAuthorized:false}});
   if(r.error){if(r.error.code==='23505'){
     const latest=await loadBacklog(db,tenant),saved=latest.opportunities.find(o=>o.id===opportunity.id)?.reviews.find(v=>v.id===id);

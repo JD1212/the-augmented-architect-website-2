@@ -1,11 +1,11 @@
 import {analysisSchema,safeSource,type SeoConfig} from '@augmented-architect/seo-analyst';
 import type {Artifact,Backlog,Finding,Opportunity,Review,ReviewStatus} from './contracts';
 import {nextReviewStatus} from './contracts';
+import {opportunityPublications} from './publications';
 import {reviewSlot,topicCluster} from './identity';
 type Execution={id:string;agent_id:string;state:string};
 export function projectBacklog(artifacts:Artifact[],executions:Execution[]):Backlog {
   const completed=new Map(executions.filter(e=>e.state==='completed').map(e=>[e.id,e])),evidence:Backlog['evidence']={};
-  const published=artifacts.filter(a=>a.kind==='published_change');
   for(const a of artifacts)if(a.kind==='measurement'&&a.execution_id&&completed.has(a.execution_id)&&Array.isArray(a.payload.documents))evidence[a.id]=a.payload.documents as Backlog['evidence'][string];
   const finding=(a:Artifact):Finding=>{const p=analysisSchema.shape.opportunities.element.safeParse(Object.fromEntries(Object.keys(analysisSchema.shape.opportunities.element.shape).filter(k=>k in a.payload).map(k=>[k,a.payload[k]])));if(!p.success||p.data.sourceUrls.some(url=>!safeSource(url)))throw Error('Stored opportunity is invalid; continuity cannot omit it.');return p.data;};
   const opportunities:Opportunity[]=artifacts.filter(a=>a.kind==='opportunity'&&a.execution_id&&completed.has(a.execution_id)).map(root=>{
@@ -20,8 +20,10 @@ export function projectBacklog(artifacts:Artifact[],executions:Execution[]):Back
       if(!next||p.previousReviewId!==reviewId||p.status!==next||!decision.actor_id||!observations.some(o=>o.id===p.findingId))throw Error('Invalid opportunity review chain.');
       reviews.push({id:decision.id,action,status:next,previousStatus:status,note:String(p.note??''),actorId:decision.actor_id,createdAt:decision.created_at,previousReviewId:reviewId,findingId:String(p.findingId),deliverable:p.deliverable as Review['deliverable'],requestId:String(p.requestId)});status=next;reviewId=decision.id;
     }
+    const publicationStates=opportunityPublications(artifacts,root.id),approvedFinding=[...reviews].reverse().find(r=>r.action==='approve')?.findingId;
+    const canComplete=status==='approved_for_drafting'&&approvedFinding===latest.id&&publicationStates.some(p=>p.environment==='production'&&p.live&&p.sourceFindingId===approvedFinding);
     const linked=artifacts.filter(a=>a.parent_id===root.id&&['content_draft','published_change','outcome'].includes(a.kind));
-    return {id:root.id,tenantId:root.tenant_id,sourceAgentId:completed.get(root.execution_id!)!.agent_id,executionId:root.execution_id!,createdAt:root.created_at,updatedAt:[latest.createdAt,...reviews.map(r=>r.createdAt)].sort().at(-1)!,status,findingId:latest.id,finding:latest.finding,reviews,reviewId,topic:topicCluster(root.tenant_id,first.finding),evidenceLevel:['actual_search_data','mixed'].includes(latest.finding.basis)?'observed_search':'external_research',observations,publishedUrls:published.filter(p=>p.parent_id===root.id).flatMap(p=>typeof p.payload.url==='string'&&p.payload.url.startsWith('https://')?[p.payload.url]:[]),linkedDeliverables:linked.filter(a=>a.kind!=='outcome').map(a=>({id:a.id,kind:a.kind,title:a.title})),outcomes:linked.filter(a=>a.kind==='outcome').map(a=>({id:a.id,title:a.title,payload:a.payload}))};
+    return {id:root.id,tenantId:root.tenant_id,sourceAgentId:completed.get(root.execution_id!)!.agent_id,executionId:root.execution_id!,createdAt:root.created_at,updatedAt:[latest.createdAt,...reviews.map(r=>r.createdAt)].sort().at(-1)!,status,findingId:latest.id,finding:latest.finding,reviews,reviewId,topic:topicCluster(root.tenant_id,first.finding),evidenceLevel:['actual_search_data','mixed'].includes(latest.finding.basis)?'observed_search':'external_research',observations,publicationStates,canComplete,publishedUrls:publicationStates.flatMap(p=>p.url?[p.url]:[]),linkedDeliverables:linked.filter(a=>a.kind!=='outcome').map(a=>({id:a.id,kind:a.kind,title:a.title})),outcomes:linked.filter(a=>a.kind==='outcome').map(a=>({id:a.id,title:a.title,payload:a.payload}))};
   });
   return {opportunities:opportunities.sort((a,b)=>a.finding.priority-b.finding.priority||b.updatedAt.localeCompare(a.updatedAt)),evidence};
 }

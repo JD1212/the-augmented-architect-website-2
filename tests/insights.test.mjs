@@ -12,7 +12,7 @@ const nativeRequire = createRequire(new URL('../package.json', import.meta.url))
 
 // Exercise the actual TypeScript modules with isolated, in-memory article data.
 // No fixtures are written into the publishing registry and no runner is installed.
-function loadWithArticles(articles = []) {
+function loadWithArticles(articles = [], connection = async()=>{}) {
   const cache = new Map([[path.join(root, 'src/content/articles/index.ts'), { articles }]]);
   function load(filename) {
     let resolved = filename;
@@ -25,7 +25,7 @@ function loadWithArticles(articles = []) {
     }).outputText;
     const loaded = { exports: {} };
     cache.set(resolved, loaded.exports);
-    const require = specifier => specifier === '@/lib/published-articles' ? {publishedArticles:async()=>articles.filter(a=>a.status==='published'),publishedArticle:async slug=>articles.find(a=>a.status==='published'&&a.slug===slug)} : specifier.endsWith('.module.css') ? new Proxy({}, { get: (_target, key) => String(key) }) : specifier.startsWith('@/') ? load(path.join(root, 'src', specifier.slice(2))) : specifier.startsWith('.') ? load(path.resolve(path.dirname(resolved), specifier)) : nativeRequire(specifier);
+    const require = specifier => specifier === 'next/server' ? {connection} : specifier === '@/lib/published-articles' ? {publishedArticles:async()=>articles.filter(a=>a.status==='published'),publishedArticle:async slug=>articles.find(a=>a.status==='published'&&a.slug===slug)} : specifier.endsWith('.module.css') ? new Proxy({}, { get: (_target, key) => String(key) }) : specifier.startsWith('@/') ? load(path.join(root, 'src', specifier.slice(2))) : specifier.startsWith('.') ? load(path.resolve(path.dirname(resolved), specifier)) : nativeRequire(specifier);
     vm.runInThisContext(`(function(require,module,exports){${output}\n})`, { filename: resolved })(require, loaded, loaded.exports);
     cache.set(resolved, loaded.exports);
     return loaded.exports;
@@ -137,3 +137,8 @@ test('citations, list introductions, source anchors and safe code render with wo
 });
 
 test('an unapproved registry draft cannot be read through the public article route, even in Preview',async()=>{const route=loadWithArticles([{...philosophy,status:'draft'}])('src/app/insights/articles/[slug]/page.tsx');await assert.rejects(route.generateMetadata({params:Promise.resolve({slug:philosophy.slug})}));});
+
+
+test('sitemap waits for the request boundary before returning the published read model',async()=>{
+ let connected=false;const load=loadWithArticles([],async()=>{connected=true;});const entries=await load('src/app/sitemap.ts').default();assert.equal(connected,true);assert(entries.some(e=>e.url.endsWith('/insights')));
+});

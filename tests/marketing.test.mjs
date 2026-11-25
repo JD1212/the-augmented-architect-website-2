@@ -192,14 +192,14 @@ test('metric formatting distinguishes unavailable results, true zero and meaning
  assert.match(comparison(3,1,'Sessions'),/More data/);assert.equal(comparison(120,100,'Sessions'),'+20.0% vs previous period');
 });
 test('activity API denies unauthenticated access before any private database query',async()=>{
- const route=load('src/app/api/admin/marketing/activity/route.ts',{'./config':config,'@/lib/marketing/config':config,'@/lib/marketing/auth':{ownerAuth:async()=>({}),requireOwner:async()=>{throw new config.MarketingError(401,'Please sign in.');}}});
+ const route=load('src/app/api/admin/marketing/activity/route.ts',{'@/lib/marketing/seo/config':{seoRegistration:{name:'SEO Analyst [test]'}},'@/lib/marketing/content/config':{contentAgentName:()=> 'Content Strategist [test]',contentCapabilities:()=>({executionEnabled:false})},'./config':config,'@/lib/marketing/config':config,'@/lib/marketing/auth':{ownerAuth:async()=>({}),requireOwner:async()=>{throw new config.MarketingError(401,'Please sign in.');}}});
  const response=await route.GET(new Request('https://site.invalid/api/admin/marketing/activity'));assert.equal(response.status,401);assert.match(response.headers.get('cache-control'),/no-store/);
 });
 test('activity uses explicit tenant filters and returns metadata only',async()=>{
  const reads=[];const db={from(table){const q={select(columns){reads.push({table,columns});return q;},eq(k,v){assert.equal(k,'tenant_id');assert.equal(v,config.marketingTenant);return q;},order(){return q;},limit(){return Promise.resolve({data:[],error:null});}};return q;}};
- const route=load('src/app/api/admin/marketing/activity/route.ts',{'./config':config,'@/lib/marketing/config':config,'@/lib/marketing/auth':{ownerAuth:async()=>db,requireOwner:async()=>({db,tenantId:config.marketingTenant})}});
- const response=await route.GET(new Request('https://site.invalid/api/admin/marketing/activity'));assert.equal(response.status,200);assert.deepEqual(await response.json(),{reports:[],executions:[],artifacts:[]});
- assert.equal(reads.length,3);assert(reads.every(r=>!/(payload|diagnostics|config|usage)/.test(r.columns)));
+ const route=load('src/app/api/admin/marketing/activity/route.ts',{'@/lib/marketing/seo/config':{seoRegistration:{name:'SEO Analyst [test]'}},'@/lib/marketing/content/config':{contentAgentName:()=> 'Content Strategist [test]',contentCapabilities:()=>({executionEnabled:false})},'./config':config,'@/lib/marketing/config':config,'@/lib/marketing/auth':{ownerAuth:async()=>db,requireOwner:async()=>({db,tenantId:config.marketingTenant})}});
+ const response=await route.GET(new Request('https://site.invalid/api/admin/marketing/activity'));assert.equal(response.status,200);const body=await response.json();assert.deepEqual(body.reports,[]);assert.deepEqual(body.executions,[]);assert.deepEqual(body.artifacts,[]);assert.equal(body.agentSummaries['content-strategist'].registered,false);
+ assert.equal(reads.length,4);assert(reads.every(r=>!/(payload|diagnostics|config|usage)/.test(r.columns)));
 });
 
 test('chart spacing preserves real date gaps and centers a single observation',()=>{
