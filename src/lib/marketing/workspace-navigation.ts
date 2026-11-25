@@ -8,7 +8,7 @@ export function workspaceLocation(raw:string|null,section:string|null){
  const aliases:Record<string,{view:string;section:string}>={opportunities:{view:'discover',section:'opportunities'},keywords:{view:'discover',section:'keywords'},analytics:{view:'measure',section:'traffic'},search:{view:'measure',section:'search'},conversions:{view:'measure',section:'conversions'}};
  const alias=raw?aliases[raw]:undefined,view=alias?.view??raw??'overview';
  const selected=alias?.section??section;
- const tab=view==='discover'&&['opportunities','keywords','analyst'].includes(selected??'')?selected!:view==='measure'&&['traffic','search','conversions'].includes(selected??'')?selected!:view==='discover'?'opportunities':view==='measure'?'traffic':'';
- const panel=view==='discover'?({opportunities:'opportunities',keywords:'keywords',analyst:'analyst'}[tab]):view==='measure'?({traffic:'analytics',search:'search',conversions:'conversions'}[tab]):view;
+ const tab=view==='discover'&&['opportunities','keywords','analyst'].includes(selected??'')?selected!:view==='measure'&&['articles','traffic','search','conversions'].includes(selected??'')?selected!:view==='discover'?'opportunities':view==='measure'?'articles':'';
+ const panel=view==='discover'?({opportunities:'opportunities',keywords:'keywords',analyst:'analyst'}[tab]):view==='measure'?({articles:'articles',traffic:'analytics',search:'search',conversions:'conversions'}[tab]):view;
  return {view,section:tab,panel};
 }

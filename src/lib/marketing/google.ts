@@ -6,9 +6,10 @@ import { federationConfig, reportingScopes } from './federation';
 
 let auth: ReturnType<typeof ExternalAccountClient.fromJSON>;
 export function googleReportingConfigured() { try { federationConfig(); return true; } catch { return false; } }
-export async function reportingRequest(url: string, body: object): Promise<unknown> {
+export async function reportingRequest(url: string, body: object, method:'POST'|'GET'='POST'): Promise<unknown> {
   // Destinations are fixed in provider adapters, never accepted from a visitor or agent.
   if (!/^https:\/\/(analyticsdata|searchconsole)\.googleapis\.com\//.test(url)) throw new MarketingError(500, 'Unsupported reporting provider.');
+  if(method==='GET'&&!/^https:\/\/analyticsdata\.googleapis\.com\/v1beta\/properties\/\d+\/metadata$/.test(url))throw new MarketingError(500,'Unsupported reporting metadata.');
   const configuration = federationConfig();
   try {
     auth ??= ExternalAccountClient.fromJSON({
@@ -25,7 +26,7 @@ export async function reportingRequest(url: string, body: object): Promise<unkno
       },
     });
     if (!auth) throw Error('Keyless client unavailable');
-    const result = await auth.request({ url, method: 'POST', data: body, timeout: 15000, retry: false });
+    const result = await auth.request({ url, method, ...(method==='POST'?{data:body}:{}), timeout: 15000, retry: false });
     return result.data;
   } catch (error) {
     // Provider errors can contain credentials, query values or private response bodies.

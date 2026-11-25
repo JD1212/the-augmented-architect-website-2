@@ -1,12 +1,12 @@
 // In-memory PostgREST-shaped fixture. No credentials, network or provider calls.
 export function memoryDatabase(initial={}){
  const rows={marketing_agents:[],marketing_executions:[],marketing_artifacts:[],marketing_reports:[],marketing_evidence:[],...structuredClone(initial)};let clock=0,agentSequence=0;
- return {rows,from(table){let action='select',payload,filters=[],bounds=null,orders=[];const q={
-  select(){return q;},eq(k,v){filters.push([k,v]);return q;},order(k,options={}){orders.push([k,options.ascending!==false]);return q;},range(a,b){bounds=[a,b];return q;},limit(n){bounds=[0,n-1];return q;},insert(p){action='insert';payload=p;return q;},upsert(p){action='upsert';payload=p;return q;},update(p){action='update';payload=p;return q;},
+ return {rows,from(table){let action='select',payload,filters=[],inFilters=[],bounds=null,orders=[];const q={
+  select(){return q;},eq(k,v){filters.push([k,v]);return q;},in(k,v){inFilters.push([k,v]);return q;},order(k,options={}){orders.push([k,options.ascending!==false]);return q;},range(a,b){bounds=[a,b];return q;},limit(n){bounds=[0,n-1];return q;},insert(p){action='insert';payload=p;return q;},upsert(p){action='upsert';payload=p;return q;},update(p){action='update';payload=p;return q;},
   async maybeSingle(){const r=await execute();return {...r,data:r.data[0]??null};},async single(){const r=await execute();return {...r,data:r.data[0]??null,error:r.error??(r.data.length!==1?{code:'fixture_single'}:null)};},then(resolve,reject){return execute().then(resolve,reject);},
  };
  async function execute(){await Promise.resolve();
-  const matches=row=>filters.every(([k,v])=>k==='config'?JSON.stringify(row[k])===JSON.stringify(JSON.parse(v)):k.startsWith('payload->>')?row.payload?.[k.slice(10)]===v:row[k]===v);
+  const matches=row=>filters.every(([k,v])=>k==='config'?JSON.stringify(row[k])===JSON.stringify(JSON.parse(v)):k.startsWith('payload->>')?row.payload?.[k.slice(10)]!=null&&String(row.payload[k.slice(10)])===String(v):row[k]===v)&&inFilters.every(([k,v])=>v.includes(row[k]));
   let found=rows[table].filter(matches);
   if(action==='insert'||action==='upsert'){
    const list=Array.isArray(payload)?payload:[payload],saved=[];
