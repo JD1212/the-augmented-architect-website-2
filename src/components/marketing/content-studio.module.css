@@ -7,6 +7,9 @@
 .preview { --article-text:#d1dce9; --article-heading:#eef4fc; --article-link:#8fe0f0; --article-code:#102239; max-width:850px; margin-top:24px; }
 .preview h3 { color:#eef4fc; }.preview > p { color:#bdcada; margin-top:16px; }.preview :global(.button) { font-size:14px; }
 .editor { display:grid; gap:14px; }.editor section { padding-top:20px; border-top:1px solid #63758c44; }
+.editorDialog { width:min(960px,calc(100vw - 32px)); max-height:calc(100dvh - 48px); margin:auto; padding:clamp(20px,4vw,36px); overflow:auto; border:1px solid var(--app-line); border-radius:12px; background:var(--app-surface); color:var(--app-ink); }
+.editorDialog::backdrop { background:#030912bb; }
+.dialogHeader { display:flex; align-items:center; justify-content:space-between; gap:16px; }
 .grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; }.grid > * { min-width:0; }
 .studio pre { overflow:auto; max-height:420px; background:#0a1423; padding:18px; border:1px solid #63758c44; border-radius:8px; white-space:pre-wrap; overflow-wrap:anywhere; font:12px/1.8 var(--font-code); }
 .studio details { margin-top:18px; }.studio summary { cursor:pointer; color:#c4e7ef; min-height:44px; padding-block:9px; }

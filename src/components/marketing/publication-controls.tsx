@@ -22,6 +22,8 @@ export function PublicationControls({data,dirty,reload}:{data:State;dirty:boolea
  }
  return <section className={styles.panel} data-publication-controls><p className={styles.eyebrow}>WEBSITE PUBLICATION</p><h3>Publish the revision you approved</h3>
  <p>Destination: <strong>{destination}</strong>. {state?.environment!=='production'&&'This does not publish to the public Production website.'}</p>
+ <p>Website approval: <strong>{approved?'Exact revision approved':'Approval required'}</strong> · revision {head?.hash.slice(0,12)}</p>
+ <p>Next: {dirty?'Return to Create and save or review the current revision.':!approved?'Review this revision, then approve it for the website.':current?'This approved revision is already live in this destination.':!state?.enabled?'Publishing is disabled in this environment.':pending?'Confirm and verify the pending publication.':'Choose a publication date and explicitly confirm publishing below.'}</p>
  <p role="status">Status: <strong>{pending?'Publishing · verification pending':live?'Live in '+destination:pointer?.payload.status==='unpublished'?'Unpublished':'Not published'}</strong></p>
  {!state?.enabled&&<p>Direct publishing is disabled in this environment.</p>}
  {!approved&&<p>Review and approve the exact website revision above before publishing. Approval alone does not publish it.</p>}
