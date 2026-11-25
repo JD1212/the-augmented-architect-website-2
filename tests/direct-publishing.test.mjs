@@ -84,3 +84,16 @@ test('owner-only Preview probe checks only robots, never publishes, and reports 
  const route=readFileSync('src/app/api/admin/marketing/content/route.ts','utf8');assert(route.indexOf('requireOwner(await ownerAuth())')<route.indexOf('await publicationReadOnlyProbe()'));
  }finally{restore();}
 });
+
+test('observed Preview regression: absent environment token redirects legacy requests but SDK authentication verifies all publication routes',async()=>{
+ const restore=withEnv({VERCEL_ENV:'preview',VERCEL_URL:'the-augmented-architect-website-2-fixture.vercel.app',VERCEL_GIT_COMMIT_REF:'feature/content-strategist'}),oldToken=process.env.VERCEL_OIDC_TOKEN;delete process.env.VERCEL_OIDC_TOKEN;
+ try{
+ const path='/insights/articles/approved-guide',hash='a'.repeat(64),canonical=site.url+path,calls=[];
+ const request=async(url,init)=>{calls.push({url,init});if(!init.headers['x-vercel-trusted-oidc-idp-token'])return new Response('',{status:302,headers:{location:'https://vercel.com/login'}});assert.equal(init.headers['x-vercel-trusted-oidc-idp-token'],'fixture-token');const p=new URL(url).pathname;return new Response(p===path?'<link rel="canonical" href="'+canonical+'"><article data-publication-version="'+hash+'"><h1>An approved guide</h1></article>':p==='/insights'?'<a href="'+path+'">Read</a>':p==='/sitemap.xml'?canonical:'User-agent: *',{status:200});};
+ const diagnostics=load('src/lib/marketing/content/publication-diagnostics.ts',base),probe=await diagnostics.publicationReadOnlyProbe(request);assert.equal(probe.configuration.oidcTokenPresent,false);assert.equal(probe.configuration.legacyOriginMatched,true);assert.equal(probe.legacyRobots.status,302);assert.equal(probe.sdkRobots.status,200);
+ const api=load('src/lib/marketing/content/direct-publishing.ts',{...base,'@/lib/published-articles':{publicationTag:()=> 'test'},'next/cache':{revalidatePath:()=>{},revalidateTag:()=>{}}});const receipt=await api.verifyPublication({slug:'approved-guide',action:'publish',publicHash:hash,article:publicFixture},request);
+ assert.equal(receipt.pageStatus,200);assert.equal(receipt.versionMatched,true);assert.equal(receipt.canonicalMatched,true);assert.equal(calls.length,5);assert(calls.slice(2).every(c=>c.init.redirect==='manual'&&c.init.headers['x-vercel-trusted-oidc-idp-token']==='fixture-token'));
+ // A protection redirect is never accepted as a successful publication.
+ await assert.rejects(api.verifyPublication({slug:'approved-guide',action:'publish',publicHash:hash,article:publicFixture},async()=>new Response('',{status:302})),e=>e.diagnostic.rule==='VERIFICATION_CHECK_FAILED'&&e.diagnostic.failedChecks.includes('articleHttp'));
+ }finally{if(oldToken===undefined)delete process.env.VERCEL_OIDC_TOKEN;else process.env.VERCEL_OIDC_TOKEN=oldToken;restore();}
+});
