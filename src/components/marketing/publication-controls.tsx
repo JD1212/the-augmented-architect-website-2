@@ -20,7 +20,7 @@ export function PublicationControls({data,dirty,reload}:{data:State;dirty:boolea
   }catch(error){setMessage(error instanceof Error?error.message:'Publication could not be completed.');}
   finally{await reload();lock.current=false;setBusy(false);}
  }
- return <section className={styles.panel} data-publication-controls><p className={styles.eyebrow}>WEBSITE PUBLICATION</p><h3>Publish the revision you approved</h3>
+ return <section className={styles.panel} data-publication-controls><p className={styles.eyebrow}>WEBSITE PUBLICATION</p><h3>{live?'Published':'Publish the revision you approved'}</h3>{live&&pointer&&<p><a className={styles.textLink} href={state?.environment==='production'?'https://theaugmentedarchitect.com'+articleHref(pointer.payload.slug):articleHref(pointer.payload.slug)} target="_blank" rel="noopener noreferrer">{state?.environment==='production'?'https://theaugmentedarchitect.com'+articleHref(pointer.payload.slug):articleHref(pointer.payload.slug)} ↗</a></p>}
  <p>Destination: <strong>{destination}</strong>. {state?.environment!=='production'&&'This does not publish to the public Production website.'}</p>
  <p>Website approval: <strong>{approved?'Exact revision approved':'Approval required'}</strong> · revision {head?.hash.slice(0,12)}</p>
  <p>Next: {dirty?'Return to Create and save or review the current revision.':!approved?'Review this revision, then approve it for the website.':current?'This approved revision is already live in this destination.':!state?.enabled?'Publishing is disabled in this environment.':pending?'Confirm and verify the pending publication.':'Choose a publication date and explicitly confirm publishing below.'}</p>
@@ -34,6 +34,6 @@ export function PublicationControls({data,dirty,reload}:{data:State;dirty:boolea
  {pointer?.payload.active&&<a className={styles.textLink} href={articleHref(pointer.payload.slug)}>View article →</a>}</div>
  {message&&<p role="status">{message}</p>}
  {state?.environment.startsWith('preview:')&&<details><summary>Advanced Details · verification diagnostics</summary><button className={styles.secondary} disabled={busy} onClick={()=>{setBusy(true);void fetch('/api/admin/marketing/content?opportunityId='+data.opportunity.id+'&diagnostics=1',{cache:'no-store'}).then(async r=>{const result=await r.json();if(!r.ok)throw Error(result.error||'Read-only check failed.');setProbe(result.verificationProbe);}).catch(e=>setMessage(e.message)).finally(()=>setBusy(false));}}>Check verification setup (read only)</button>{probe&&<pre>{JSON.stringify(probe,null,2)}</pre>}<p>This checks Preview configuration and access to robots.txt. It does not publish, retry or change database records.</p></details>}
- <p className={styles.note}>No JSON download or Git commit is needed for an article. LinkedIn approval and posting remain separate and manual.</p>
+ <p className={styles.note}>LinkedIn approval and manual posting are separate.</p>
  <details><summary>Advanced Details · publication history</summary>{!state?.history.length?<p>No publishing attempts yet.</p>:state.history.map(item=><div className={scoped.history} key={item.id}><p>{item.title} · {String(item.payload.status)} · {new Date(item.created_at).toLocaleString()}</p><details><summary>Revision and verification details</summary><pre>{JSON.stringify(item.payload,null,2)}</pre></details></div>)}</details></section>;
 }

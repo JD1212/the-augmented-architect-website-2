@@ -5,14 +5,14 @@ import {ownerAuth,requireOwner} from '@/lib/marketing/auth';
 import {privateJson,privateBody,marketingFailure,sameOrigin} from '@/lib/marketing/http';
 import {MarketingError,uuidPattern} from '@/lib/marketing/config';
 import {contentState,generateContent,findRevision,editedRevision} from '@/lib/marketing/content/service';
-import {contentDatabase,requireContentExecution} from '@/lib/marketing/content/config';
+import {contentDatabase,requireContentExecution,contentCapabilities} from '@/lib/marketing/content/config';
 import {savePublicationApproval,contentFeedback} from '@/lib/marketing/content/repository';
 import {publicationReadOnlyProbe} from '@/lib/marketing/content/publication-diagnostics';
 import {changePublication} from '@/lib/marketing/content/direct-publishing';
 import {preparePublication,recordPublication} from '@/lib/marketing/content/publishing';
 export const maxDuration=180;
 const uuid=(x:unknown):x is string=>typeof x==='string'&&uuidPattern.test(x);
-export async function GET(request:Request){try{sameOrigin(request);const owner=await requireOwner(await ownerAuth()),id=new URL(request.url).searchParams.get('opportunityId');if(new URL(request.url).searchParams.get('imports')==='1'){const rows=await contentRows(owner.db,owner.tenantId);return privateJson({documents:rows.filter(r=>r.payload.workflow==='owner-article/v1').map(r=>({id:r.id,title:r.title,createdAt:r.created_at}))});}if(!uuid(id))throw new MarketingError(400,'Choose an opportunity.');const state=await contentState(owner.db,owner.tenantId,id);return privateJson(new URL(request.url).searchParams.get('diagnostics')==='1'?{...state,verificationProbe:await publicationReadOnlyProbe()}:state);}catch(e){return marketingFailure(e);}}
+export async function GET(request:Request){try{sameOrigin(request);const owner=await requireOwner(await ownerAuth()),id=new URL(request.url).searchParams.get('opportunityId');if(new URL(request.url).searchParams.get('imports')==='1'){const rows=await contentRows(owner.db,owner.tenantId);return privateJson({writeConfigured:contentCapabilities().writeConfigured,documents:rows.filter(r=>r.payload.workflow==='owner-article/v1').map(r=>({id:r.id,title:r.title,createdAt:r.created_at}))});}if(!uuid(id))throw new MarketingError(400,'Choose an opportunity.');const state=await contentState(owner.db,owner.tenantId,id);return privateJson(new URL(request.url).searchParams.get('diagnostics')==='1'?{...state,verificationProbe:await publicationReadOnlyProbe()}:state);}catch(e){return marketingFailure(e);}}
 export async function POST(request:Request){
  try{
   const owner=await requireOwner(await ownerAuth()),body=await privateBody(request,524288),op=body.operation;

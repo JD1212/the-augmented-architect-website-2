@@ -15,3 +15,5 @@ export type WorkspaceActivity = {
   executions: {id:string;state:string;created_at:string;finished_at:string|null}[];
   artifacts: {id:string;kind:string;title:string;created_at:string}[];
 };
+
+export type ActivityRecord={id:string;source?:string;start_date?:string;end_date?:string;extracted_at?:string;state?:string;started_at?:string|null;created_at?:string;finished_at?:string|null;title?:string;kind?:string};

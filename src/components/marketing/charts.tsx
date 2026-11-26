@@ -18,7 +18,7 @@ export function TrendChart({title,table,metric,source}:{title:string;table?:Repo
   const positions=seriesPositions(rows.map(r=>r.label));
   const max=Math.max(...rows.map(r=>r.values[column]),1),x=(i:number)=>38+positions[i]*644,y=(v:number)=>190-v/max*152;
   const points=rows.map((r,i)=>`${x(i)},${y(r.values[column])}`).join(' '),chosen=active===null?null:rows[active];
-  return <section className={styles.panel}><div className={styles.panelHeading}><div><p className={styles.micro}>{source}</p><h3>{title}</h3></div><span className={styles.chartLegend}>{metric}</span></div>{rows.length?<><div className={styles.chartFrame}>
+  return <section className={styles.panel} data-chart-tone={metric==='Clicks'?'violet':metric==='Impressions'?'blue':metric==='Bookings'?'amber':'cyan'}><div className={styles.panelHeading}><div><p className={styles.micro}>{source}</p><h3>{title}</h3></div><span className={styles.chartLegend}>{metric}</span></div>{rows.length?<><div className={styles.chartFrame}>
     <svg className={styles.trend} viewBox="0 0 720 230" role="img" aria-label={`${metric} trend. Focus the chart explorer or view exact daily data below.`}>
       <defs><linearGradient id={id} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="currentColor" stopOpacity=".22"/><stop offset="100%" stopColor="currentColor" stopOpacity="0"/></linearGradient></defs>
       {[0,.5,1].map(f=><g key={f}><line x1="38" x2="682" y1={y(max*f)} y2={y(max*f)}/><text x="0" y={y(max*f)+4}>{formatted(max*f,metric)}</text></g>)}
