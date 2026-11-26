@@ -20,9 +20,10 @@ import {requirePlanningExecution} from './planning-policy';
 
 type PlanningPhase='context'|'evidence'|'model'|'validation'|'pricing'|'persistence'|'completion';
 export function planningFailureDiagnostic(error:unknown,phase:PlanningPhase){
- const provider=error as {name?:unknown;status?:unknown;code?:unknown;param?:unknown;issues?:{path?:unknown}[]};
+ const provider=error as {name?:unknown;status?:unknown;code?:unknown;param?:unknown;issues?:{path?:unknown;code?:unknown;origin?:unknown}[]};
  const issuePath=provider?.name==='ZodError'&&Array.isArray(provider.issues)&&Array.isArray(provider.issues[0]?.path)?provider.issues[0].path.join('.'):null;
- const validation=validationDiagnostic(error)??(issuePath&&/^[a-zA-Z0-9_.\[\]]{1,200}$/.test(issuePath)&&!/(sk-|sb_secret_|password|authorization|api_key)/i.test(issuePath)?{rule:'SCHEMA_VALIDATION_FAILED',path:issuePath,opportunityIndex:null,references:null,research:null}:null);
+ const issue=provider?.issues?.[0],referenceIssue=issuePath&&/(?:^|\.)evidenceIds(?:\.|$)|evidenceChecks\.\d+\.evidenceId/.test(issuePath)?issue?.code==='too_small'&&issue?.origin==='array'?'missing_reference':issue?.code==='invalid_value'?'unknown_reference':'invalid_reference':null;
+ const validation=validationDiagnostic(error)??(issuePath&&/^[a-zA-Z0-9_.\[\]]{1,200}$/.test(issuePath)&&!/(sk-|sb_secret_|password|authorization|api_key)/i.test(issuePath)?{rule:'SCHEMA_VALIDATION_FAILED',path:issuePath,...(referenceIssue?{referenceIssue}:{}),opportunityIndex:null,references:null,research:null}:null);
  const codes=['invalid_json_schema','model_not_found','insufficient_quota','invalid_api_key','rate_limit_exceeded','context_length_exceeded','invalid_request_error','permission_denied'];
  const params=['model','text.format.schema','max_output_tokens','input','tools','reasoning.effort'];
  const kinds=['APIError','BadRequestError','AuthenticationError','PermissionDeniedError','RateLimitError','APIConnectionTimeoutError','MaxTurnsExceededError','ZodError','RangeError'];
@@ -49,8 +50,8 @@ export async function prepareSeoResearchPlan(owner:Awaited<ReturnType<typeof req
   await authorize();phase='pricing';const plan=priceResearchPlan(result.plan,rows,owner.tenantId);phase='persistence';const id=await saveResearchPlan(db,owner.tenantId,owner.user.id,requestId,objective,plan,result.evidence,result.usage);
   phase='completion';await store.completePlan(requestId,result.usage,assignment);return {planId:id,executionId:requestId,reused:false};
  }catch(error){
-  const message=bounded.aborted?'Research planning was cancelled or reached its time limit. No paid research was started.':'Research planning failed validation, model access, or persistence. No paid research was started. Review execution history before retrying.';
   const failure=planningFailureDiagnostic(error,phase);
+  const message=bounded.aborted?'Research planning was cancelled or reached its time limit. No paid research was started.':`Research planning failed during ${failure.phase} (${failure.code??failure.kind}${failure.param?' at '+failure.param:''}). No paid research was started. Review execution history before retrying.`;
   const usage=usageSummary(receipts);
   console.error('SEO planning failed',{executionId:requestId,...failure,usage:{inputTokens:usage.inputTokens,outputTokens:usage.outputTokens,totalTokens:usage.totalTokens,measuredCost:null}});
   await store.failed(requestId,receipts,message,failure);

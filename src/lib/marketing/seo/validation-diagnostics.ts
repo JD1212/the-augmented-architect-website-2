@@ -20,7 +20,8 @@ function reference(value:string){
 const identifier=(value:string)=>/^[a-zA-Z0-9_-]{1,100}$/.test(value)&&!/^(sk-|sb_secret_)/.test(value)?value:'sha256:'+hash(value);
 export function validationDiagnostic(error:unknown,mapping?:ResearchCatalog['mapping']) {
   const e=findValidationError(error);if(!e)return null; // Never infer a historical rule from a generic message.
-  const data={rule:e.code,path:/^[a-zA-Z0-9_.\[\]]{1,200}$/.test(e.path)?e.path:'unknown',opportunityIndex:e.opportunityIndex,
+  const planning=e.planningReferences;
+  const data={...(planning&&Object.values(planning).every(n=>Number.isSafeInteger(n)&&n>=0&&n<=10000)?{planningReferences:{suppliedCount:planning.suppliedCount,returnedCount:planning.returnedCount,unknownCount:planning.unknownCount}}:{}),rule:e.code,path:/^[a-zA-Z0-9_.\[\]]{1,200}$/.test(e.path)?e.path:'unknown',opportunityIndex:e.opportunityIndex,
     references:e.references?{
       evidence:e.references.evidence.map(d=>({id:identifier(d.id),kind:d.kind,status:d.status,hasActualSearchData:d.hasActualSearchData,urls:d.urls.slice(0,15).map(reference)})),
       proposed:e.references.proposed.map(o=>({priority:o.priority,evidenceIds:o.evidenceIds.map(identifier),sourceUrls:o.sourceUrls.map(reference),basis:['external_research','actual_search_data','mixed'].includes(o.basis??'')?o.basis:'unknown'})),

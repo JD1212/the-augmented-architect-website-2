@@ -1,11 +1,12 @@
 {
   "name": "@augmented-architect/seo-analyst",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "repository": "https://github.com/JD1212/augarch-seo-analyst",
-  "sourceCommit": "484c7c5e2954debea731b81d7c751d88db945f46",
-  "sourceBranch": "feature/seo-evidence-handoff",
+  "sourceCommit": "2818602d2e778308eb74e64a0ee8ad8d686ef74a",
+  "sourceBranch": "fix/planning-evidence-contract",
   "sourceIncludesUncommittedChanges": false,
-  "sourceTreeSha256": "e24df2313bd73882d4c54a913ae50c5bbd5119e77c49e65a90370e529ed92a18",
-  "artifact": "augmented-architect-seo-analyst-0.5.1.tgz",
-  "integrity": "sha512-+bbDQbZwdzRF79hldfzfZVUBqRpiR6qFo1X2TQGScOvXmTmKRgSlHwuCR8tNQWd7f1q74H030G4IjAEKbrPe0Q=="
+  "sourceTreeSha256": "4988724264f47a1f2ec9a05a04d52da03f7a3cc3c60879303b940c1b958a9e73",
+  "sourceTreeHashMethod": "sha256-git-archive-tar",
+  "artifact": "augmented-architect-seo-analyst-0.5.2.tgz",
+  "integrity": "sha512-z9XWyt87nsZ1kS4rUg3GdwHVbsRl0+tlGRE3rsExUU9GYIQDtvzNvC/sxn6oW6ml7jbNdYNltDWzaRwvgPI30g=="
 }

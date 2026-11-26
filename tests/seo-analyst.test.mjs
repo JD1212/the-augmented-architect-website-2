@@ -10,8 +10,8 @@ const packageOverride={'@augmented-architect/content-strategist':phase3Content,'
 const seoConfig={seoRegistration:{name:'SEO Analyst',version:agentPackage.packageVersion,enabled:true},seoPolicy:{minimumIntervalMs:600000,maximumDailyRuns:6,leaseMs:300000},seoConfiguration:()=>({tenantId:tenant,ga4Property:'564904776',searchProperty:'sc-domain:theaugmentedarchitect.com',model:'fixture'})};
 const store=load('src/lib/marketing/seo/store.ts',{...packageOverride,'../config':config,'./config':seoConfig});
 test('SEO package is external, pinned and provenance-bearing; no Next or business IDs in reusable source',()=>{
- const p=JSON.parse(readFileSync('package.json','utf8'));assert.equal(p.dependencies['@augmented-architect/seo-analyst'],'file:vendor/augmented-architect-seo-analyst-0.5.1.tgz');
- assert(!agentPackage.seoInstructions.includes('564904776'));assert(!agentPackage.seoInstructions.includes(tenant));assert.equal(agentPackage.packageVersion,'0.5.1');
+ const p=JSON.parse(readFileSync('package.json','utf8'));assert.equal(p.dependencies['@augmented-architect/seo-analyst'],'file:vendor/augmented-architect-seo-analyst-0.5.2.tgz');
+ assert(!agentPackage.seoInstructions.includes('564904776'));assert(!agentPackage.seoInstructions.includes(tenant));assert.equal(agentPackage.packageVersion,'0.5.2');
  const provenance=JSON.parse(readFileSync('vendor/seo-analyst.provenance.json','utf8')),lock=JSON.parse(readFileSync('package-lock.json','utf8')).packages['node_modules/@augmented-architect/seo-analyst'];
  const integrity='sha512-'+createHash('sha512').update(readFileSync('vendor/'+provenance.artifact)).digest('base64');
  assert.match(provenance.sourceCommit,/^[a-f0-9]{40}$/);assert.equal(provenance.version,agentPackage.packageVersion);assert.equal(lock.version,provenance.version);assert.equal(integrity,provenance.integrity);assert.equal(integrity,lock.integrity);

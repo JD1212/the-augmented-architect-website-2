@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@augmented-architect/content-strategist": "file:vendor/augmented-architect-content-strategist-0.1.3.tgz",
-    "@augmented-architect/seo-analyst": "file:vendor/augmented-architect-seo-analyst-0.5.1.tgz",
+    "@augmented-architect/seo-analyst": "file:vendor/augmented-architect-seo-analyst-0.5.2.tgz",
     "@openai/agents": "0.22.0",
     "@supabase/ssr": "0.12.7",
     "@supabase/supabase-js": "2.119.0",
