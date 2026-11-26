@@ -11,7 +11,7 @@ function publish(db,head,environment=options.environment,status='live'){db.rows.
 test('legacy bookmarks resolve to stage tabs; stage links retain selected opportunity without granting authority',()=>{
  for(const [old,view,section] of [['opportunities','discover','opportunities'],['keywords','discover','keywords'],['analytics','measure','traffic'],['search','measure','search'],['conversions','measure','conversions']])assert.deepEqual(workspaceLocation(old,null),{view,section,panel:old});
  for(const stage of ['discover','create','publish','measure']){const q=new URLSearchParams(workspaceLink(stage,id.op));assert.equal(q.get('opportunity'),id.op);assert.equal(q.get('view'),stage);assert.equal(q.get('operation'),null);}
- assert.equal(workspaceLocation('discover','invalid').section,'opportunities');assert.equal(workspaceLocation('agents',null).view,'agents');
+ assert.deepEqual(workspaceLocation('discover','plans'),{view:'discover',section:'plans',panel:'plans'});assert.equal(workspaceLocation('discover','invalid').section,'opportunities');assert.equal(workspaceLocation('agents',null).view,'agents');
 });
 test('workflow counts and progression derive from current approvals and immutable revisions; projection never mutates records',async()=>{
  const db=fixture();let s=await snapshot(db);assert.equal(s.counts.needsReview,1);assert.equal(s.items[0].stage,'discover');assert.equal(s.items[0].next.label,'Review opportunity');

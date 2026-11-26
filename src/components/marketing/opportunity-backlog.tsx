@@ -3,7 +3,7 @@ import {useCallback,useEffect,useRef,useState} from 'react';
 import Link from 'next/link';
 import {workspaceLink} from '@/lib/marketing/workspace-navigation';
 import {useRouter,useSearchParams} from 'next/navigation';
-import type {OpportunityDetail,ReviewAction,ReviewCommand,Deliverable} from '@/lib/marketing/opportunities/contracts';
+import type {Opportunity,OpportunityDetail,ReviewAction,ReviewCommand,Deliverable} from '@/lib/marketing/opportunities/contracts';
 import {FocusPanel} from './workspace-ui';
 import {SeoBriefSummary} from './seo-brief';
 import {reviewLabels} from '@/lib/marketing/opportunities/contracts';
@@ -49,7 +49,7 @@ function Detail({detail,done,onDirtyChange}:{onDirtyChange?:(dirty:boolean)=>voi
     <details className={styles.chartDetails}><summary>Advanced Details · identifiers & outcomes</summary><dl className={layout.facts}><div><dt>Opportunity ID</dt><dd>{o.id}</dd></div><div><dt>Originating execution</dt><dd>{o.executionId}</dd></div><div><dt>Source agent</dt><dd>{o.sourceAgentId}</dd></div><div><dt>Created / updated</dt><dd>{new Date(o.createdAt).toLocaleString()} / {new Date(o.updatedAt).toLocaleString()}</dd></div></dl><p className={styles.note}>{o.linkedDeliverables.length} linked deliverables · {o.outcomes.length} outcome measurements · {o.publishedUrls.length} live Production URLs. No publication or performance outcome is implied by approval.</p></details>
   </article>;
 }
-export function OpportunityBacklog({demo,onWorkflowChange}:{demo:boolean;onWorkflowChange?:()=>void}){
+export function OpportunityBacklog({demo,onWorkflowChange,onSelected}:{demo:boolean;onWorkflowChange?:()=>void;onSelected?:(opportunity:Opportunity|null)=>void}){
   const router=useRouter(),params=useSearchParams(),selected=params.get('opportunity');
   const [reviewDirty,setReviewDirty]=useState(false);
   const [closedSelection,setClosedSelection]=useState<string|null>(null);
@@ -59,9 +59,9 @@ export function OpportunityBacklog({demo,onWorkflowChange}:{demo:boolean;onWorkf
   const load=useCallback(async(signal?:AbortSignal)=>{
     if(demo)return;setBusy(true);
     const read=async(path:string)=>{const r=await fetch(path,{cache:'no-store',signal});if(r.status===401||r.status===403){router.replace('/admin/login');throw Error('Please sign in to review opportunities.');}const body=await r.json();if(!r.ok)throw Error(body.error||'Opportunities are unavailable.');return body;};
-    try{const [list,chosen]=await Promise.all([read('/api/admin/marketing/opportunities?'+new URLSearchParams(filters)),selected?read('/api/admin/marketing/opportunities?id='+encodeURIComponent(selected)):Promise.resolve(null)]);if(signal?.aborted)return;setData(list);setDetail(chosen);setError('');}
+    try{const [list,chosen]=await Promise.all([read('/api/admin/marketing/opportunities?'+new URLSearchParams(filters)),selected?read('/api/admin/marketing/opportunities?id='+encodeURIComponent(selected)):Promise.resolve(null)]);if(signal?.aborted)return;setData(list);setDetail(chosen);onSelected?.(chosen?.opportunity??null);setError('');}
     catch(e){if(!signal?.aborted)setError(e instanceof Error?e.message:'Opportunities are unavailable.');}finally{if(!signal?.aborted)setBusy(false);}
-  },[demo,selected,router,filters]);
+  },[demo,selected,router,filters,onSelected]);
   useEffect(()=>{const abort=new AbortController();void Promise.resolve().then(()=>load(abort.signal));return()=>abort.abort();},[load]);
   if(demo)return <section className={styles.panel}><h2>Opportunity Backlog</h2><p className={styles.muted}>Live research and review controls are hidden in Demo Mode. No simulated approvals or production writes are available.</p></section>;
   return <><div className={styles.sectionHeading}><div><h2>Existing opportunities</h2></div><button className={styles.secondary} onClick={()=>void load()}>Refresh backlog</button></div>
