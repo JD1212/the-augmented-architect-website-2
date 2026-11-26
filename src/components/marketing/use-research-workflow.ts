@@ -10,6 +10,6 @@ export function useResearchWorkflow(demo:boolean){
  useEffect(()=>{const a=new AbortController();void Promise.resolve().then(()=>refresh(a.signal));return()=>a.abort();},[refresh]);
  const selected=data?.plans.find(p=>p.id===planId),authorization=data?.authorizations?.filter(a=>a.planId===planId).at(-1);
  const evidence=(data?.evidence??[]).filter(e=>e.planId===planId||e.planIds?.includes(planId)||selected?.plan.steps.some(s=>s.cachedResearchIds.includes(e.id)));
- function choose(id:string,ids:string[]=[]){const next=new URLSearchParams(params);id?next.set('plan',id):next.delete('plan');ids.length?next.set('evidence',ids.join(',')):next.delete('evidence');router.replace('?'+next.toString(),{scroll:false});}
+ function choose(id:string,ids:string[]=[]){const next=new URLSearchParams(params);if(id)next.set('plan',id);else next.delete('plan');if(ids.length)next.set('evidence',ids.join(','));else next.delete('evidence');router.replace('?'+next.toString(),{scroll:false});}
  return {data,error,refresh,planId,researchIds,selected,authorization,evidence,choose,ready:selected?.decision==='approved'&&researchIds.every(id=>evidence.some(e=>e.id===id&&e.eligible))};
 }
