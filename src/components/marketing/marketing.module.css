@@ -19,3 +19,6 @@
 
 /* Owner workspace consolidation: existing dark tokens, distinct functional accents. */
 .panel[data-chart-tone=violet]{--chart-tone:#b7a7ed}.panel[data-chart-tone=blue]{--chart-tone:#8ebbf1}.panel[data-chart-tone=amber]{--chart-tone:#e7c780}.panel[data-chart-tone=cyan]{--chart-tone:#71dcd2}.panel[data-chart-tone] .trend{color:var(--chart-tone)}.panel[data-chart-tone] .chartLegend::before{background:var(--chart-tone)}.seoFinding>summary{font-size:17px;line-height:1.5;cursor:pointer;padding:6px 0;color:var(--app-ink);min-height:44px}.settingsList{margin:0}.settingsList>div{padding:14px 0}.connectionCard{border-top:2px solid var(--app-blue)}
+
+/* Second owner pass: consistent functional stage accents. */
+.app{--stage-discover:#8ebbf1;--stage-create:#b7a7ed;--stage-publish:#71dcd2;--stage-measure:#e7c780}.workspace[data-stage=measure]{--stage-color:var(--stage-measure)}.stageTabs a[aria-current]{box-shadow:inset 0 -2px var(--stage-color)}

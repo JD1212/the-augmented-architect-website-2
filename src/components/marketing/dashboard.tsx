@@ -8,17 +8,16 @@ import { demoReport } from './demo';
 import { comparison, eventValue, formatted, metric } from './report-utils';
 import { ChannelBars, ReportTableView, Sparkline, TrendChart } from './charts';
 import {useSeoAnalyst} from './use-seo-analyst';
-import {SeoAnalystPanel} from './seo-analyst-panel';
-import {OpportunityBacklog} from './opportunity-backlog';
-import {KeywordIntelligence} from './keyword-intelligence';
+import {DiscoverWorkspace} from './discover-workspace';
 import {workspaceLocation,workspaceLink} from '@/lib/marketing/workspace-navigation';
 import {useWorkflow} from './use-workflow';
-import {WorkflowOverview,WorkflowProgress,MeasurementContext} from './owner-workflow';
-import {ContentStudio} from './content-studio';
+import {WorkflowOverview,MeasurementContext} from './owner-workflow';
+import {ArticleWorkspace} from './article-workspace';
+import {AgentInspector} from './agent-inspector';
 import {ArticlePerformanceView} from './article-performance';
 import {ActivityView} from './activity-view';
 import {FocusPanel} from './workspace-ui';
-import { AgentDetail, AgentTeam } from './agent-team';
+import { AgentTeam } from './agent-team';
 import { WorkspaceIcon } from './workspace-icon';
 import styles from './marketing.module.css';
 
@@ -96,23 +95,21 @@ export function MarketingDashboardView({email}:{email:string}) {
       </>}
       {!showReporting&&!articleView&&<div className={styles.ownerToolbar}><span>{demo?'Demo · private work hidden':workflow.data?.destination??'Private owner workspace'}</span><button disabled={workflow.loading||demo} onClick={()=>setRetry(v=>v+1)}>Refresh workspace</button></div>}
       {busy&&!demo&&showReporting&&<p className={styles.loading} role="status">Retrieving private reports…</p>}{error&&!demo&&showReporting&&<p className={styles.error} role="alert">{error}</p>}
-      {view==='discover'&&<nav className={styles.stageTabs} aria-label="Discover sections">{[['opportunities','Opportunities'],['keywords','Keywords & research'],['analyst','SEO analysis']].map(([key,label])=><Link key={key} href={workspaceLink('discover',opportunity,{section:key})} aria-current={location.section===key?'page':undefined}>{label}</Link>)}</nav>}
+
       {view==='measure'&&<nav className={styles.stageTabs} aria-label="Measurement sections">{[['articles','Articles'],['traffic','Traffic'],['search','Google Search'],['conversions','Consultations & Scout']].map(([key,label])=><Link key={key} href={workspaceLink('measure',opportunity,{section:key})} aria-current={location.section===key?'page':undefined}>{label}</Link>)}</nav>}
-      {opportunity&&view==='publish'&&workItem&&<WorkflowProgress item={workItem} view={view}/>}
+
       {opportunity&&['discover','create','publish','measure'].includes(view)&&workflow.error&&<p role="alert" className={styles.error}>{workflow.error}</p>}
       {view==='measure'&&!articleView&&workItem&&<details className={styles.ownerDetails}><summary>Advanced Details · selected opportunity</summary><MeasurementContext item={workItem}/></details>}
       <div aria-busy={showReporting&&busy&&!demo} className={styles.viewContent}>
       {articleView&&<ArticlePerformanceView demo={demo} days={days} onDaysChange={setDays}/>}
-      {panel==='keywords'&&<KeywordIntelligence demo={demo} days={days}/>}
-      {panel==='opportunities'&&<OpportunityBacklog demo={demo} onWorkflowChange={refreshWorkflow}/>}
       {view==='overview'&&<><WorkflowOverview snapshot={workflow.data} loading={workflow.loading} error={workflow.error} demo={demo} opportunity={opportunity} activity={<details className={styles.ownerDetails}><summary>Recent audit activity</summary><ActivityView demo={demo} compact/></details>}><><Kpis source={ga} prior={demo?undefined:prior?.ga4} kind="ga4" demo={demo}/><div className={styles.chartGrid}><TrendChart title="Website sessions" table={ga?.data?.daily} metric="Sessions" source={demo?'SIMULATED · DEMO':'GOOGLE ANALYTICS 4'}/><ChannelBars table={ga?.data?.acquisition} demo={demo}/></div><Kpis source={search} prior={demo?undefined:prior?.search} kind="search" demo={demo}/><Link href={workspaceLink('measure',opportunity)}>Open Measure →</Link></></WorkflowOverview></>}
 
-      {panel==='analyst'&&<SeoAnalystPanel controller={seo} days={days} demo={demo} opportunity={opportunity}/>}
-      {(view==='create'||view==='publish')&&<ContentStudio drafts={workflow.data?.items.filter(i=>i.hasDraft).map(i=>({id:i.id,title:i.title}))} demo={demo} stage={view} onWorkflowChange={refreshWorkflow}/>}
+      {view==='discover'&&<DiscoverWorkspace demo={demo} days={days} section={location.section} seo={seo} refresh={refreshWorkflow}/>}
+      {(view==='create'||view==='publish')&&<ArticleWorkspace demo={demo} stage={view} snapshot={workflow.data} refresh={refreshWorkflow}/>}
       {panel==='analytics'&&<><Kpis source={ga} prior={demo?undefined:prior?.ga4} kind="ga4" demo={demo}/><div className={styles.chartGrid}><TrendChart title="Daily traffic" table={ga?.data?.daily} metric="Sessions" source={demo?'SIMULATED · DEMO':'GA4'}/><ChannelBars table={ga?.data?.acquisition} demo={demo}/></div><div className={styles.grid}><ReportTableView title="Top landing pages" table={ga?.data?.pages} label="Landing page"/><ReportTableView title="Service-page engagement" table={ga?.data?.services} label="Service page"/><ReportTableView title="Traffic sources & channels" table={ga?.data?.acquisition}/><SourceNotes name="Google Analytics 4" source={ga} demo={demo}/></div></>}
       {panel==='search'&&<><Kpis source={search} prior={demo?undefined:prior?.search} kind="search" demo={demo}/><div className={styles.grid}><TrendChart title="Search clicks" table={search?.data?.daily} metric="Clicks" source={demo?'SIMULATED · DEMO':'SEARCH CONSOLE'}/><TrendChart title="Search impressions" table={search?.data?.daily} metric="Impressions" source={demo?'SIMULATED · DEMO':'SEARCH CONSOLE'}/><ReportTableView title="Top search queries" table={search?.data?.queries} label="Search query"/><ReportTableView title="Search landing-page performance" table={search?.data?.pages} label="Page"/></div><SourceNotes name="Google Search Console" source={search} demo={demo}/><div className={styles.context}><WorkspaceIcon name="search"/><p>Search clicks describe Google Search activity; GA4 sessions describe consented website visits. Paths are normalized for comparison, but coverage, dates, and metrics differ. Neither alone explains why a result changed.</p></div></>}
       {panel==='conversions'&&<><ConversionView table={ga?.data?.conversions} daily={ga?.data?.conversionDaily} demo={demo}/><SourceNotes name="Google Analytics 4" source={ga} demo={demo}/></>}
-      {view==='agents'&&<><AgentTeam onSelect={id=>{if(id===agent?.id)setClosedAgent(null);}} seo={seo.data} demo={demo} activity={activity} opportunity={opportunity}/>{activityError&&<p className={styles.error} role="alert">{activityError}</p>}<FocusPanel open={Boolean(agent&&closedAgent!==agent.id)} title={agent?.name??'Agent details'} onClose={closeAgent} busy={seo.running||seo.submitting}>{agent&&(agent.id==='seo-analyst'?<SeoAnalystPanel controller={seo} days={days} demo={demo} opportunity={opportunity}/>:agent.id==='content-strategist'?<ContentStudio demo={demo} onWorkflowChange={refreshWorkflow}/>:<AgentDetail agent={agent} activity={demo?null:activity} opportunity={opportunity}/>)}</FocusPanel></>}
+      {view==='agents'&&<><AgentTeam onSelect={id=>{if(id===agent?.id)setClosedAgent(null);}} seo={seo.data} demo={demo} activity={activity} opportunity={opportunity}/>{activityError&&<p className={styles.error} role="alert">{activityError}</p>}<FocusPanel open={Boolean(agent&&closedAgent!==agent.id)} title={agent?.name??'Agent details'} onClose={closeAgent} busy={seo.running||seo.submitting}>{agent&&<AgentInspector key={agent.id} agent={agent} seo={seo} activity={demo?null:activity} demo={demo} days={days} opportunity={opportunity}/>}</FocusPanel></>}
 
       {view==='activity'&&<ActivityView demo={demo}/>}
       {view==='integrations'&&<><div className={styles.grid}><SourceNotes name="Google Analytics 4" source={ga} demo={demo}/><SourceNotes name="Google Search Console" source={search} demo={demo}/></div><section className={styles.panel}><details><summary>Advanced Details · provider configuration & permissions</summary><p className={styles.eyebrow}>A SECURE REPORTING FOUNDATION</p><h2>Read-only access. No permanent Google keys.</h2><div className={styles.integrationFacts}><div><WorkspaceIcon name="shield"/><h3>Keyless federation</h3><p>Vercel workload identity and short-lived service-account impersonation. Credentials remain server-side.</p></div><div><WorkspaceIcon name="analytics"/><h3>Reporting, not collection</h3><p>GA4 property 564904776. Existing consent-aware website collection remains separate and unchanged.</p></div><div><WorkspaceIcon name="search"/><h3>Verified domain property</h3><p>Search Console: sc-domain:theaugmentedarchitect.com. Final web search data; recent days can lag.</p></div></div></details></section></>}

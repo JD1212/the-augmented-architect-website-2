@@ -24,3 +24,5 @@
 .readinessGrid,.runSummary { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:24px; margin:20px 0; }.readinessGrid > *,.runSummary > * { min-width:0; }.readinessGrid h4,.studio h4 { color:#eef4fc; font-weight:600; }.readinessGrid p { margin-top:8px; }.readinessGrid ul { margin-top:12px; }.limitations { margin-top:12px; }.runSummary p { padding-top:12px; border-top:1px solid #63758c44; }.runSummary strong,.runSummary span { display:block; }.runSummary strong { color:#eef4fc; }.runSummary span { color:#aebed1; font-size:14px; margin-top:4px; }
 @media(max-width:650px){.steps{grid-template-columns:repeat(2,minmax(0,1fr));}.readinessGrid,.runSummary{grid-template-columns:1fr;gap:18px;}}
 .steps li + li { margin-top:0; }.studio > section > h3 { font-size:20px; line-height:1.4; margin-bottom:12px; }.studio .readinessGrid h4 { font-size:16px; }
+
+.studio [hidden]{display:none!important}.studio [data-task-surface]{border-top:2px solid var(--stage-create);padding-top:16px}
