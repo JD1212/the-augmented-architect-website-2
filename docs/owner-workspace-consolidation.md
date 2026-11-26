@@ -53,3 +53,13 @@ Confirmed Preview Article defect: its focused-mode handler previously selected t
 Discover keeps its table and uses Start New Research as the primary action. Saved tools are secondary; the guided sequence and next steps distinguish planning, keyword collection and SEO analysis. Eligibility manifests remain under Advanced Details. No research contract, spending control or agent changes.
 
 Validation: 376 unit tests passed (two live-model checks skipped), TypeScript, lint and production build passed. 45 authenticated local browser checks passed at 1440px and 390px, including the full Select → View Article → Review & Publish → Close flow, the reproduced Preview-button regression, Edit/cancel, live-website/pending-LinkedIn separation and Preview isolation. Browser scenarios invoked no write/approval/publication/model/research operation even through their fixture transport. Actual positive owner-session verification of the deployed protected Preview remains a separate final check; no user impersonation or authorization changes are used to obtain it.
+
+### Functional usability correction — Discover, Create and Publish
+
+- Sidebar Discover and Explore Opportunities open the opportunity list without inheriting the previous article's selection; explicit opportunity deep links still open the finding.
+- Opportunity review prioritizes audience, search opportunity, evidence, next action and decision. Scoring, identifiers and assignment details remain expandable.
+- Create uses Generate Article / Write / Import Article / Continue Draft. Research selection lists approved choices and explains unavailable choices; it never executes an agent. Saved drafts open read-only.
+- Research scope shows evidence sources, availability and an explicit Run research planning button (disabled when not authorized). Saved plans and keyword evidence stay secondary.
+- Fixed the library CSS rule that suppressed styled action buttons. Existing View Article / Edit Article / Review & Publish and separate website/LinkedIn controls are retained.
+- Automated interaction coverage exercises the requested nine steps at desktop/mobile widths, with authenticated local owner API reads and in-memory decision/publication states. It also opens both actual public articles in the browser. No business decisions or content writes occur.
+- Protected Preview still requires the owner's signed-in walkthrough. Local fixture tests and deployment protection checks do not establish positive authenticated behavior in the deployed environment. Do not mark that check complete without confirmation.

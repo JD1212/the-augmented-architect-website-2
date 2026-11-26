@@ -26,7 +26,7 @@ export function PublicationControls({data,dirty,reload,productionUrl}:{productio
  <details><summary>Advanced Details · exact revision</summary><p>{head?.id} · {head?.hash}</p></details><p>Website approval: <strong>{approved?'Exact revision approved':'Approval required'}</strong></p>
  <p>Next: {dirty?'Return to Create and save or review the current revision.':!approved?'Review this revision, then use Approve Website Revision below.':current?'This approved revision is already live in this destination.':!state?.enabled?'Publishing is disabled in this environment.':pending?'Confirm and verify the pending publication.':'Choose a publication date and explicitly confirm publishing below.'}</p>
  {productionUrl&&state?.environment!=='production'&&!live&&!pending?<p role="status">Preview copy: <strong>Not created</strong>. The Production article remains live.</p>:<p role="status">In selected destination: <strong>{pending?'Publishing · verification pending':live?'Live in '+destination:pointer?.payload.status==='unpublished'?'Unpublished':'Not published'}</strong></p>}
- {!state?.enabled&&<p>Publishing is disabled in this read-only Preview. No Production publication authorization is created here.</p>}
+ {!state?.enabled&&<p>Read-only Preview · publishing disabled.</p>}
 
 
  {state?.enabled&&(approved||pending||live)&&<div data-publication-action-fields>{pointer?.payload.firstPublicationDate?<p>Publication date: <time>{pointer.payload.firstPublicationDate}</time>. </p>:<><label htmlFor="direct-publication-date">Publication date</label><input id="direct-publication-date" type="date" value={date} onChange={e=>setDate(e.target.value)}/></>}
@@ -36,6 +36,6 @@ export function PublicationControls({data,dirty,reload,productionUrl}:{productio
  </div>}
  {message&&<p role="status">{message}</p>}
  {state?.environment.startsWith('preview:')&&<details><summary>Advanced Details · verification diagnostics</summary><button className={styles.secondary} disabled={busy} onClick={()=>{setBusy(true);void fetch('/api/admin/marketing/content?opportunityId='+data.opportunity.id+'&diagnostics=1',{cache:'no-store'}).then(async r=>{const result=await r.json();if(!r.ok)throw Error(result.error||'Read-only check failed.');setProbe(result.verificationProbe);}).catch(e=>setMessage(e.message)).finally(()=>setBusy(false));}}>Check verification setup (read only)</button>{probe&&<pre>{JSON.stringify(probe,null,2)}</pre>}<p>This checks Preview configuration and access to robots.txt. It does not publish, retry or change database records.</p></details>}
- <p className={styles.note}>LinkedIn approval and manual posting are separate.</p>
+
  <details><summary>Advanced Details · publication history</summary>{!state?.history.length?<p>No publishing attempts yet.</p>:state.history.map(item=><div className={scoped.history} key={item.id}><p>{item.title} · {String(item.payload.status)} · {new Date(item.created_at).toLocaleString()}</p><details><summary>Revision and verification details</summary><pre>{JSON.stringify(item.payload,null,2)}</pre></details></div>)}</details></section>;
 }
