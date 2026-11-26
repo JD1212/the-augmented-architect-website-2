@@ -79,3 +79,5 @@
 .aboutHero :global(.diagram-connectors circle), .aboutHero :global(.diagram-dot) { fill:var(--brand-cyan); background:var(--brand-cyan); }
 .aboutHero :global(.diagram-core) { border-color:color-mix(in srgb,var(--brand-cyan) 45%,var(--blue)); box-shadow:0 0 28px color-mix(in srgb,var(--brand-cyan) 9%,transparent),inset 0 1px 0 #ffffff18; }
 .aboutHero :global(.diagram-core-icon), .aboutHero :global(.diagram-foundation li > span) { color:color-mix(in srgb,var(--brand-cyan) 45%,var(--gray)); }
+
+.tabPanel[hidden] { display:none; }
