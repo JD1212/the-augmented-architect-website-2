@@ -2,3 +2,5 @@
 @media(max-width:650px){.workspace h2{font-size:22px}.metrics{gap:18px}.actions>*{flex:1}.form textarea{min-height:130px}}
 
 .decisions{display:grid;gap:16px;margin:20px 0}.decisions article{border-left:2px solid var(--app-cyan);padding:2px 0 2px 18px}.decisions h3{margin:0 0 8px}.decisions p{margin:8px 0}.decisions .details{margin:6px 0}
+
+.form input[type=checkbox]{width:auto;margin-right:8px;vertical-align:middle}

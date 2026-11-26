@@ -1,21 +1,31 @@
 'use client';
-import {useState} from 'react';
-import Link from 'next/link';
 import {useSearchParams} from 'next/navigation';
 import {OpportunityBacklog} from './opportunity-backlog';
 import {KeywordIntelligence} from './keyword-intelligence';
 import {ResearchPlanning} from './research-planning';
+import {ResearchSelection} from './research-selection';
 import {SeoAnalystPanel} from './seo-analyst-panel';
+import {useResearchWorkflow} from './use-research-workflow';
 import type {SeoController} from './use-seo-analyst';
-import {FocusPanel} from './workspace-ui';
-import {workspaceLink} from '@/lib/marketing/workspace-navigation';
-import ui from './workspace-ui.module.css';
-import styles from './marketing.module.css';
+import {WorkspaceTabs} from './workspace-ui';
+
 export function DiscoverWorkspace({demo,days,section,seo,refresh}:{demo:boolean;days:7|28|90;section:string;seo:SeoController;refresh:()=>void}){
- const params=useSearchParams(),opportunity=params.get('opportunity'),[research,setResearch]=useState(false),[step,setStep]=useState(1),[service,setService]=useState('Business-wide objective'),[goal,setGoal]=useState(''),[plans,setPlans]=useState(false),[scope,setScope]=useState<{maximumRequests:number;maximumCostUsd:number;ready:boolean}|null>(null),[scopeError,setScopeError]=useState('');
- function start(){setStep(1);setResearch(true);setScopeError('');if(demo)return;void fetch('/api/admin/marketing/intelligence',{cache:'no-store'}).then(async r=>{const b=await r.json();if(!r.ok)throw Error('Keyword scope is unavailable.');setScope({maximumRequests:b.approval?.maximumRequests??0,maximumCostUsd:b.approval?.maximumCostUsd??0,ready:Boolean(b.connections?.some((c:{ready:boolean})=>c.ready))});}).catch(()=>setScopeError('Keyword availability could not be verified. No paid request can start from this wizard.'));}
- return <section data-discover-workspace><div className={ui.actions}><button className={styles.primary} onClick={start} disabled={demo}>Start New Research</button><Link className={styles.secondary} href={workspaceLink('discover')}>Explore Opportunities</Link></div><details className={styles.ownerDetails}><summary>Saved research & analysis</summary><nav className={ui.sectionNav} aria-label="Discover sections"><Link className={styles.secondary} href={workspaceLink('discover')}>Opportunities</Link><Link className={styles.secondary} href={workspaceLink('discover',opportunity,{section:'keywords',plan:params.get('plan')??'',evidence:params.get('evidence')??''})}>Saved keyword evidence</Link><button onClick={()=>setPlans(true)}>Saved research plans</button><Link className={styles.secondary} href={workspaceLink('discover',opportunity,{section:'analyst',plan:params.get('plan')??'',evidence:params.get('evidence')??''})}>SEO analysis</Link></nav></details>
- {section==='keywords'?<KeywordIntelligence demo={demo} days={days}/>:section==='analyst'?<SeoAnalystPanel controller={seo} days={days} demo={demo} opportunity={opportunity}/>:<OpportunityBacklog demo={demo} onWorkflowChange={refresh}/>}
- <FocusPanel open={research} title={step===1?'Start new research':'Review research scope'} dirty={Boolean(goal.trim())} onClose={()=>{setResearch(false);setGoal('');}}><p className={ui.compact}>1. Plan research → 2. Review keyword data → 3. SEO analysis</p>{step===1?<div className={ui.filters}><label>Business service<select value={service} onChange={e=>setService(e.target.value)}>{['Business-wide objective','AI Solutions','Salesforce Modernization','Custom Business Applications'].map(s=><option key={s}>{s}</option>)}</select></label><label style={{flexBasis:'100%'}}>What would you like to investigate?<textarea aria-label="Research goal" rows={5} maxLength={1300} value={goal} onChange={e=>setGoal(e.target.value)}/></label><button className={styles.primary} disabled={goal.trim().length<10} onClick={()=>setStep(2)}>Review scope</button></div>:<><button className={styles.secondary} onClick={()=>setStep(1)}>Back to goal</button><p className={ui.notice}>{service} · {goal}</p><h3>Evidence sources</h3><p>Website · GA4 · Google Search Console · saved keyword evidence · previous research.</p><p>{days} complete days · existing evidence only.</p><p>Keyword collection: <strong>{scope?.ready?'Separate approval required':'Unavailable'}</strong></p>{scopeError&&<p role="status">{scopeError}</p>}<ResearchPlanning key={service+goal} creationMode onContinue={()=>{setResearch(false);setGoal('');}} initialObjective={service+': '+goal} demo={demo} days={days} opportunity={opportunity}/><details><summary>Saved research & next steps</summary><Link className={styles.textLink} href={workspaceLink('discover',opportunity,{section:'keywords',plan:params.get('plan')??'',evidence:params.get('evidence')??''})}>Review keyword evidence</Link><br/><Link className={styles.textLink} href={workspaceLink('discover',opportunity,{section:'analyst',plan:params.get('plan')??'',evidence:params.get('evidence')??''})}>Inspect SEO analysis</Link></details></>}</FocusPanel>
- <FocusPanel open={plans} title="Saved research plans" onClose={()=>setPlans(false)}><ResearchPlanning onContinue={()=>setPlans(false)} demo={demo} days={days} opportunity={opportunity}/></FocusPanel></section>;
+ const params=useSearchParams(),opportunity=params.get('opportunity'),workflow=useResearchWorkflow(demo);
+ const active=params.get('section')==='plans'?'keywords':!params.get('section')&&!opportunity?'keywords':section;
+ function navigate(value:string,id?:string){
+  const next=new URLSearchParams(params);next.set('view','discover');next.set('section',value);
+  if(id&&id!==workflow.planId){next.set('plan',id);next.delete('evidence');}
+  window.history.pushState(null,'','?'+next.toString()+(id?'#keyword-collection':''));
+  if(id)requestAnimationFrame(()=>{const collection=document.getElementById('keyword-collection');collection?.scrollIntoView({block:'start'});collection?.focus({preventScroll:true});});
+ }
+ function changed(id?:string){if(id)workflow.choose(id,id===workflow.planId?workflow.researchIds:[]);void workflow.refresh();}
+ return <section data-discover-workspace>
+  <WorkspaceTabs value={active} onChange={value=>navigate(value)} items={[["keywords","Research"],["analyst","SEO analysis"],["opportunities","Opportunities"]]} label="Discover sections">
+   {active==='keywords'?<>
+    <ResearchPlanning inline demo={demo} days={days} opportunity={opportunity} selectedPlanId={workflow.planId} onSelectPlan={id=>workflow.choose(id,id===workflow.planId?workflow.researchIds:[])} onChanged={changed} onCollectPlan={id=>navigate('keywords',id)}/>
+    {!demo&&<ResearchSelection workflow={workflow}/>}
+    <KeywordIntelligence demo={demo} days={days} workflow={workflow} connected/>
+   </>:active==='analyst'?<>{!demo&&<ResearchSelection workflow={workflow}/>}<SeoAnalystPanel controller={seo} days={days} demo={demo} opportunity={opportunity} workflow={workflow} connected/></>:<OpportunityBacklog demo={demo} onWorkflowChange={refresh}/>}
+  </WorkspaceTabs>
+ </section>;
 }
