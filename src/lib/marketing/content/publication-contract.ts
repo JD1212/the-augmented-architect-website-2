@@ -4,11 +4,7 @@ import {z} from 'zod';
 import type {Article} from '@/content/articles/types';
 import {validateArticles} from '@/lib/articles';
 export const pointerWorkflow='website-publication-pointer/v1';
-export function publicationEnvironment(env=process.env){
- if(env.VERCEL_ENV==='production')return 'production';
- if(env.VERCEL_ENV==='preview'&&env.VERCEL_GIT_COMMIT_REF)return 'preview:'+createHash('sha256').update(env.VERCEL_GIT_COMMIT_REF).digest('hex').slice(0,16);
- return 'development';
-}
+export {publicationEnvironment} from '../environment';
 export function publishingEnabled(env=process.env){return env.ARTICLE_PUBLISHING_ENABLED==='true'&&Boolean(env.SUPABASE_SECRET_KEY)&&(env.VERCEL_ENV==='production'||env.VERCEL_ENV==='preview'&&env.VERCEL_GIT_COMMIT_REF==='feature/content-strategist'||env.NODE_ENV!=='production'&&!env.VERCEL_ENV);}
 const link=z.object({label:z.string().min(1).max(160),url:z.string().max(1000)}).strict();
 const annotation={links:z.array(link).max(5).optional(),citationIds:z.array(z.string().max(100)).max(8).optional()};

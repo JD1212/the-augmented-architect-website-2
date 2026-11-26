@@ -6,7 +6,7 @@ import {readFileSync} from 'node:fs';
 import * as pkg from '@augmented-architect/seo-analyst';
 import {loadScoutModule as load} from './helpers/scout-loader.mjs';
 const config=load('src/lib/marketing/config.ts'),tenant=config.marketingTenant,actor='a2eba199-7949-49c9-828e-9d755e2e345b';
-const overrides={'@augmented-architect/content-strategist':phase3Content,'@augmented-architect/seo-analyst':pkg,'./planning-policy':{requirePlanningExecution:()=>{}},'@/lib/marketing/seo/planning-policy':{planningExecutionEnabled:()=>true,requirePlanningExecution:()=>{}},'../config':config,'./config':config};
+const overrides={'@augmented-architect/content-strategist':phase3Content,'@augmented-architect/seo-analyst':pkg,'./planning-policy':{requirePlanningExecution:()=>{}},'@/lib/marketing/seo/planning-policy':{planningExecutionEnabled:()=>true,requirePlanningExecution:()=>{}},'@/lib/marketing/config':config,'../config':config,'./config':config};
 const service=load('src/lib/marketing/intelligence/service.ts',overrides);
 const helper=load('src/lib/marketing/intelligence/planning-evidence.ts',{...overrides,'./service':service});
 const context=load('src/lib/marketing/seo/context.ts',overrides);
@@ -46,7 +46,7 @@ test('authorized business context covers all three offerings with scope and audi
 test('API passes and persists the exact entered objective including whitespace and AI visibility wording',async()=>{
  let received=null;const objective='  Compare all offerings, including ChatGPT and Gemini visibility.\nUse existing evidence only.  ';
  const api=load('src/app/api/admin/marketing/research-plans/route.ts',{...overrides,'@/lib/marketing/auth':{ownerAuth:async()=>({}),requireOwner:async()=>({tenantId:tenant,user:{id:actor},db:{}})},'@/lib/marketing/seo/planning-service':{prepareSeoResearchPlan:async(_owner,_id,value)=>{received=value;return {executionId:actor};}}});
- const response=await api.POST(new Request('https://example.com/api/admin/marketing/research-plans',{method:'POST',headers:{origin:'https://example.com','content-type':'application/json'},body:JSON.stringify({operation:'prepare',requestId:actor,objective,days:28})}));
+ const response=await api.POST(new Request('https://example.com/api/admin/marketing/research-plans',{method:'POST',headers:{origin:'https://example.com','content-type':'application/json'},body:JSON.stringify({operation:'prepare',requestId:actor,objective,days:28,modelConfirmed:true})}));
  assert.equal(response.status,200);assert.equal(received,objective);
 });
 test('generic application regression testing is not classified or merged as Salesforce testing',()=>{

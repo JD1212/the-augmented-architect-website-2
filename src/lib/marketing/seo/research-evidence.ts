@@ -9,7 +9,7 @@ export function collectResearchSources(response:Pick<OpenAI.Responses.Response,'
   for(const item of response.output){
     if(item.type==='web_search_call'){
       searchCalls++;const action=item.action;
-      if('sources' in action&&Array.isArray(action.sources))for(const s of action.sources){if('url' in s&&typeof s.url==='string'&&safeSource(s.url))discovered.set(s.url,{url:s.url,title:'Discovered research reference'});}
+      if(action&&'sources' in action&&Array.isArray(action.sources))for(const s of action.sources){if('url' in s&&typeof s.url==='string'&&safeSource(s.url))discovered.set(s.url,{url:s.url,title:'Discovered research reference'});}
     }
     if(item.type==='message')for(const content of item.content)if(content.type==='output_text')for(const a of content.annotations)if(a.type==='url_citation'){
       if(!safeSource(a.url))throw new SeoValidationError('UNSAFE_SOURCE_REFERENCE','Unsafe annotated source reference','research.annotations.url');
@@ -19,6 +19,6 @@ export function collectResearchSources(response:Pick<OpenAI.Responses.Response,'
   if(cited.size>15)throw new SeoValidationError('RESEARCH_CITATION_LIMIT','Research citation limit exceeded; cited references were not silently discarded','research.annotations');
   const sources=[...cited.values()];
   for(const source of discovered.values())if(sources.length<15&&!cited.has(source.url))sources.push(source);
-  if(searchCalls!==1||!sources.length)throw new SeoValidationError('RESEARCH_SOURCE_MISSING','Research requires one traceable hosted search call','research.sources');
+  if(searchCalls<1||!sources.length)throw new SeoValidationError('RESEARCH_SOURCE_MISSING','Research requires traceable hosted search sources','research.sources');
   return {sources,searchCalls,mapping:{annotatedUrls:[...cited.keys()],discoveredUrls:[...discovered.keys()].slice(0,100),catalogUrls:sources.map(s=>s.url),omittedUncitedCount:[...discovered.keys()].filter(url=>!sources.some(s=>s.url===url)).length}};
 }

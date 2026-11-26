@@ -28,7 +28,8 @@ export function createSeoStore(db:SupabaseClient,tenantId:string){
   let executionActor:string|undefined;
   let executionEvidence:unknown;
   function evidenceContext(selection:unknown){executionEvidence=selection;}
-  let executionAssignment:{objective:string;mode:"research_plan"}|undefined;
+  type Assignment={objective:string;mode:'research_plan'|'analysis';researchWorkflow?:import('../intelligence/workflow-binding').ResearchBinding};
+  let executionAssignment:Assignment|undefined;
   async function findAgent():Promise<AgentRow|null>{const r=await db.from('marketing_agents').select('id,tenant_id,name,version,enabled,config').eq('tenant_id',tenantId).eq('name',seoRegistration.name).order('created_at',{ascending:false}).limit(1).maybeSingle();if(r.error)fail();return r.data as AgentRow|null;}
   async function register():Promise<AgentRow>{
     const existing=await findAgent();
@@ -47,7 +48,7 @@ export function createSeoStore(db:SupabaseClient,tenantId:string){
     const r=await db.from('marketing_agents').insert({tenant_id:tenantId,...seoRegistration,config:{slug:'seo-analyst',executionMode:'manual',runtime:'OpenAI Agents SDK',sourceRepository:'JD1212/augarch-seo-analyst',recentStarts:[],readOnly:true,...(seoRegistrationScope?{registrationScope:seoRegistrationScope}:{})}}).select('id,tenant_id,name,version,enabled,config').single();
     if(r.error){if(r.error.code==='23505'){const found=await findAgent();if(found)return found;}fail();}return r.data as AgentRow;
   }
-  async function claim(id:string,actorId:string,days:number,assignment?:{objective:string;mode:'research_plan'}){
+  async function claim(id:string,actorId:string,days:number,assignment?:Assignment){
     executionActor=actorId;executionAssignment=assignment;
     const agent=await register();if(!agent.enabled)throw new MarketingError(403,'SEO Analyst has been disabled by the workspace administrator.');
     const existing=await db.from('marketing_executions').select('id,state,diagnostics').eq('id',id).eq('tenant_id',tenantId).eq('agent_id',agent.id).maybeSingle();if(existing.error)fail();if(existing.data){if(assignment&&JSON.stringify(existing.data.diagnostics?.assignment)!==JSON.stringify(assignment))throw new MarketingError(409,'Execution ID belongs to a different objective or mode.');return {agent,reused:true};}
@@ -75,24 +76,24 @@ export function createSeoStore(db:SupabaseClient,tenantId:string){
     const reportIds=new Map<string,string>();
     for(const s of snapshots){const reportId=uuid(id+':'+s.source),r=await db.from('marketing_reports').upsert({id:reportId,tenant_id:tenantId,source:s.source,property_id:s.propertyId,start_date:s.range.start,end_date:s.range.end,extracted_at:s.retrievedAt,payload:s.data},{onConflict:'id'});if(r.error)fail();reportIds.set(s.evidenceId,reportId);}
     const bundleId=uuid(id+':evidence');
-    const bundle=await db.from('marketing_artifacts').upsert({id:bundleId,tenant_id:tenantId,kind:'measurement',title:'SEO research evidence bundle',execution_id:id,actor_id:actorId,payload:{...(evidenceSelection?{evidenceSelection}:{}),documents:result.evidence,analysis:result.analysis,packageVersion:result.packageVersion,instructionsVersion:result.instructionsVersion,readOnly:true,requiresOwnerReview:true}},{onConflict:'id'});if(bundle.error)fail();
+    const bundle=await db.from('marketing_artifacts').upsert({id:bundleId,tenant_id:tenantId,kind:'measurement',title:'SEO research evidence bundle',execution_id:id,actor_id:actorId,payload:{...(executionAssignment?.researchWorkflow?{researchWorkflow:executionAssignment.researchWorkflow}:{}),...(evidenceSelection?{evidenceSelection}:{}),documents:result.evidence,analysis:result.analysis,packageVersion:result.packageVersion,instructionsVersion:result.instructionsVersion,readOnly:true,requiresOwnerReview:true}},{onConflict:'id'});if(bundle.error)fail();
     for(const o of result.analysis.opportunities){
       const matched=reconcileFinding(o,working);
       const previousBundle=matched.opportunity?.observations?.at(-1)?.evidenceArtifactId;
       if(matched.opportunity&&!materiallyChanged(o,matched.opportunity.finding)&&!measuredEvidenceChanged(o,result.evidence,previousBundle?backlog.evidence[previousBundle]??[]:[]))continue;
       const opportunityId=matched.opportunity?.id??uuid(id+':opportunity:'+o.priority),recommendationId=uuid(id+':recommendation:'+o.priority);
       if(!matched.opportunity){
-        const opportunity=await db.from('marketing_artifacts').insert({id:opportunityId,tenant_id:tenantId,kind:'opportunity',title:o.title,execution_id:id,actor_id:actorId,payload:{...o,evidenceArtifactId:bundleId,requiresOwnerReview:true}});if(opportunity.error)fail();
+        const opportunity=await db.from('marketing_artifacts').insert({id:opportunityId,tenant_id:tenantId,kind:'opportunity',title:o.title,execution_id:id,actor_id:actorId,payload:{...o,...(executionAssignment?.researchWorkflow?{researchWorkflow:executionAssignment.researchWorkflow}:{}),evidenceArtifactId:bundleId,requiresOwnerReview:true}});if(opportunity.error)fail();
         working.push({id:opportunityId,finding:o} as Opportunity);
       }else matched.opportunity.finding=o;
-      const recommendation=await db.from('marketing_artifacts').insert({id:recommendationId,tenant_id:tenantId,kind:'recommendation',title:o.title,execution_id:id,parent_id:opportunityId,actor_id:actorId,payload:{...o,evidenceArtifactId:bundleId,requiresOwnerReview:true,continuity:{version:1,reason:matched.reason,previousFindingId:matched.opportunity?.findingId??null}}});if(recommendation.error)fail();
+      const recommendation=await db.from('marketing_artifacts').insert({id:recommendationId,tenant_id:tenantId,kind:'recommendation',title:o.title,execution_id:id,parent_id:opportunityId,actor_id:actorId,payload:{...o,...(executionAssignment?.researchWorkflow?{researchWorkflow:executionAssignment.researchWorkflow}:{}),evidenceArtifactId:bundleId,requiresOwnerReview:true,continuity:{version:1,reason:matched.reason,previousFindingId:matched.opportunity?.findingId??null}}});if(recommendation.error)fail();
       // Google rows anchor measured/empty report context. External sources remain explicit research documents in the bundle.
       const links=[...reportIds].map(([evidenceId,reportId])=>({tenant_id:tenantId,artifact_id:recommendationId,report_id:reportId,observation:{kind:'report_context',evidenceId,status:result.evidence.find(e=>e.id===evidenceId)?.status,externalEvidenceArtifactId:bundleId,doesNotProveDemand:true}}));
       if(links.length){const e=await db.from('marketing_evidence').upsert(links,{onConflict:'tenant_id,artifact_id,report_id'});if(e.error)fail();}
     }
-    const done=await db.from('marketing_executions').update({state:'completed',finished_at:new Date().toISOString(),usage:usageSummary(result.usage),diagnostics:{stage:'completed',packageVersion:result.packageVersion,instructionsVersion:result.instructionsVersion,actorId,opportunities:result.analysis.opportunities.length,...(evidenceSelection?{evidenceSelection}:{})}}).eq('id',id).eq('tenant_id',tenantId).eq('state','running').select('id').single();if(done.error)fail();
+    const done=await db.from('marketing_executions').update({state:'completed',finished_at:new Date().toISOString(),usage:usageSummary(result.usage),diagnostics:{stage:'completed',...(executionAssignment?.researchWorkflow?{researchWorkflow:executionAssignment.researchWorkflow}:{}),packageVersion:result.packageVersion,instructionsVersion:result.instructionsVersion,actorId,opportunities:result.analysis.opportunities.length,...(evidenceSelection?{evidenceSelection}:{})}}).eq('id',id).eq('tenant_id',tenantId).eq('state','running').select('id').single();if(done.error)fail();
   }
-  async function failed(id:string,receipts:UsageReceipt[],message:string,failure?:{kind:string;status:number|null;code?:string|null;param?:string|null;phase?:string;validation?:unknown}){const r=await db.from('marketing_executions').update({state:'failed',finished_at:new Date().toISOString(),usage:usageSummary(receipts),diagnostics:{stage:'failed',...(executionEvidence?{evidenceSelection:executionEvidence}:{}),...(executionAssignment?{assignment:executionAssignment}:{}),actorId:executionActor,packageVersion:seoRegistration.version,error:message,failure}}).eq('id',id).eq('tenant_id',tenantId).eq('state','running');if(r.error)fail();}
+  async function failed(id:string,receipts:UsageReceipt[],message:string,failure?:{kind:string;status:number|null;code?:string|null;param?:string|null;phase?:string;validation?:unknown;research?:unknown}){const r=await db.from('marketing_executions').update({state:'failed',finished_at:new Date().toISOString(),usage:usageSummary(receipts),diagnostics:{stage:'failed',...(executionEvidence?{evidenceSelection:executionEvidence}:{}),...(executionAssignment?{assignment:executionAssignment}:{}),actorId:executionActor,packageVersion:seoRegistration.version,error:message,failure}}).eq('id',id).eq('tenant_id',tenantId).eq('state','running');if(r.error)fail();}
   async function completePlan(id:string,receipts:UsageReceipt[],assignment:{objective:string;mode:'research_plan'}){
     const result=await db.from('marketing_executions').update({state:'completed',finished_at:new Date().toISOString(),usage:usageSummary(receipts),diagnostics:{stage:'completed',kind:'research_plan',assignment,actorId:executionActor,packageVersion:seoRegistration.version}}).eq('id',id).eq('tenant_id',tenantId).eq('state','running').select('id').single();if(result.error)fail();
   }

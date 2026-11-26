@@ -8,8 +8,9 @@ import type {Artifact} from '../opportunities/contracts';
 import {researchConnections,researchPolicy,googleAdsProvider,dataForSeoProvider,dataForSeoKeywordProvider} from './providers';
 import {dataForSeoApproval,dataForSeoTarget,dataForSeoPrices,DataForSeoError,dataForSeoFailureDiagnostic} from './dataforseo';
 import {approvedBusinessEvidence} from './context';
+import {researchAuthorization} from './workflow-binding';
 
-export type ResearchCommand={requestId:string;provider?:'google_ads'|'dataforseo';locationCode?:number;mode:'ideas'|'historical'|'competition';service:'salesforce'|'ai-solutions'|'custom-applications';seeds:string[];target:{country:string;language:string}};
+export type ResearchCommand={requestId:string;planId?:string;authorizationId?:string;provider?:'google_ads'|'dataforseo';locationCode?:number;mode:'ideas'|'historical'|'competition';service:'salesforce'|'ai-solutions'|'custom-applications';seeds:string[];target:{country:string;language:string}};
 export type SavedResearch={id:string;createdAt:string;query:ResearchCommand;bundle:Intelligence;cached:boolean;scope:string};
 const domain='opportunity-intelligence';
 export async function intelligenceRecords(db:SupabaseClient,tenant:string){return await marketingRows(db,'marketing_artifacts',tenant,domain) as Artifact[];}
@@ -17,8 +18,9 @@ export function savedResearch(rows:Artifact[]):SavedResearch[]{
   return rows.filter(r=>r.payload.workflow==='intelligence-research/v1'&&r.payload.state==='completed').map(r=>({id:r.id,createdAt:r.created_at,query:r.payload.query as ResearchCommand,bundle:intelligenceSchema.parse(r.payload.bundle),cached:Boolean(r.payload.cached),scope:String(r.payload.scope??'unknown')})).sort((a,b)=>b.createdAt.localeCompare(a.createdAt)||a.id.localeCompare(b.id));
 }
 export function parseResearchCommand(value:Record<string,unknown>):ResearchCommand {
-  const keys=['requestId','provider','mode','service','seeds','target'],target=value.target as Record<string,unknown>,configured=dataForSeoTarget();
+  const keys=['requestId','provider','mode','service','seeds','target','planId','authorizationId'],target=value.target as Record<string,unknown>,configured=dataForSeoTarget();
   if(Object.keys(value).some(k=>!keys.includes(k))||value.provider!==undefined&&value.provider!=='dataforseo'||typeof value.requestId!=='string'||!uuidPattern.test(value.requestId)||!['ideas','historical','competition'].includes(String(value.mode))||!['salesforce','ai-solutions','custom-applications'].includes(String(value.service))||!Array.isArray(value.seeds)||!value.seeds.length||value.seeds.length>5||value.seeds.some(s=>typeof s!=='string'||!s.trim()||s.length>80||s.trim().split(/\s+/).length>10||/[@\u0000-\u001f]|https?:|(?:^|\s)(?:site|inurl|intitle|intext|filetype|link|define|id|info|inanchor|allinurl|allintitle|allintext|allinanchor):/i.test(s))||!target||typeof target!=='object'||Array.isArray(target)||Object.keys(target).some(k=>!['country','language'].includes(k))||target.country!==configured.country||target.language!==configured.language)throw new MarketingError(400,'Use an authorized service, up to five plain seed terms, and the configured target. Private contact data and search operators are not accepted.');
+  if(['planId','authorizationId'].some(k=>value[k]!==undefined&&(typeof value[k]!=='string'||!uuidPattern.test(value[k] as string))))throw new MarketingError(400,'Invalid research plan or authorization.');
   if(value.mode==='competition'&&value.seeds.length!==1)throw new MarketingError(400,'Competitive research accepts one term per bounded request.');
   return {...value,provider:'dataforseo',locationCode:configured.locationCode,seeds:value.seeds.map(s=>(s as string).trim())} as ResearchCommand;
 }
@@ -32,15 +34,17 @@ export const cacheFresh=(r:SavedResearch,now:Date)=>{
 export async function executeResearch({db,tenant,actor,command,authorize,keyword,competitive,now=new Date(),enabled}:{db:SupabaseClient;tenant:string;actor:string;command:ResearchCommand;authorize:()=>Promise<void>;keyword?:KeywordResearchProvider;competitive?:CompetitiveResearchProvider;now?:Date;enabled?:boolean}){
   if(tenant!==marketingTenant)throw new MarketingError(403,'Unauthorized research tenant.');await authorize();
   if(isDataForSeo(command)&&command.locationCode!==undefined&&command.locationCode!==dataForSeoTarget().locationCode)throw new MarketingError(400,'Research location no longer matches the server configuration. Refresh before continuing.');
-  const rows=await intelligenceRecords(db,tenant),existing=rows.find(r=>r.id===command.requestId),results=savedResearch(rows),scope=providerScope(tenant,command);
-  if(existing){if(existing.payload.workflow!=='intelligence-request/v1'||existing.actor_id!==actor||existing.payload.scope!==scope||queryKey(existing.payload.query as ResearchCommand)!==queryKey(command))throw new MarketingError(409,'Request ID already belongs to another research command.');const result=results.find(r=>r.id===stableId(command.requestId+':result'));if(result)return {research:result,reused:true};throw new MarketingError(409,'This request was already claimed. Inspect its history; it will not be replayed automatically.');}
-  const cached=results.find(r=>r.scope===scope&&queryKey(r.query)===queryKey(command)&&cacheFresh(r,now));if(cached)return {research:cached,reused:true};
+  const allRows=await marketingRows(db,'marketing_artifacts',tenant) as Artifact[],rows=allRows.filter(r=>r.payload.domain===domain),authorization=command.planId||['production','preview'].includes(process.env.VERCEL_ENV??'')?researchAuthorization(allRows,actor,command):null;
+  const existing=rows.find(r=>r.id===command.requestId),results=savedResearch(rows),scope=providerScope(tenant,command);
+  if(existing){if(existing.payload.workflow!=='intelligence-request/v1'||existing.actor_id!==actor||existing.payload.scope!==scope||(existing.payload.query as ResearchCommand).planId!==command.planId||(existing.payload.query as ResearchCommand).authorizationId!==command.authorizationId||queryKey(existing.payload.query as ResearchCommand)!==queryKey(command))throw new MarketingError(409,'Request ID already belongs to another research command.');const result=results.find(r=>r.id===stableId(command.requestId+':result'));if(result)return {research:result,reused:true};throw new MarketingError(409,'This request was already claimed. Inspect its history; it will not be replayed automatically.');}
+  const cached=results.find(r=>r.scope===scope&&queryKey(r.query)===queryKey(command)&&cacheFresh(r,now));if(cached){if(command.planId){const link=await db.from('marketing_artifacts').insert({id:stableId(tenant+':plan-evidence:'+command.planId+':'+cached.id),tenant_id:tenant,kind:'measurement',parent_id:command.planId,actor_id:actor,title:'Authorized cached research selection',payload:{domain,workflow:'research-plan-evidence/v1',researchId:cached.id}});if(link.error&&link.error.code!=='23505')throw new MarketingError(503,'Cached evidence association could not be saved.');}return {research:cached,reused:true};}
   const providerId=command.mode==='competition'?'dataforseo':command.provider==='dataforseo'?'dataforseo_keywords':'google_ads',connection=researchConnections().find(c=>c.id===providerId)!;
   if(enabled!==true&&!connection.ready)throw new MarketingError(503,connection.message);
   const guards=rows.filter(r=>r.payload.workflow==='intelligence-budget/v1').sort((a,b)=>b.created_at.localeCompare(a.created_at));
   if(guards.some(r=>now.getTime()-Date.parse(r.created_at)<researchPolicy.minimumIntervalMs))throw new MarketingError(429,'Allow one minute between provider requests.');
   if(guards.filter(r=>Date.parse(r.created_at)>now.getTime()-86400000).length>=researchPolicy.maximumDailyRequests)throw new MarketingError(429,'The ten-request daily research budget has been reached.');
   const paid=isDataForSeo(command),approval=dataForSeoApproval(),reservedMaximumUsd=paid?dataForSeoPrices[command.mode]:0;
+  if(authorization){const claims=rows.filter(r=>r.payload.workflow==='intelligence-request/v1'&&(r.payload.query as ResearchCommand)?.authorizationId===command.authorizationId);if(claims.some(r=>queryKey(r.payload.query as ResearchCommand)===queryKey(command)))throw new MarketingError(409,'This authorized keyword request was already attempted. Review its saved result; no repeat purchase is allowed.');if(claims.length>=Number(authorization.approval.payload.maximumRequests)||claims.reduce((n,r)=>n+Number(r.payload.reservedMaximumUsd??1),0)+reservedMaximumUsd>Number(authorization.approval.payload.maximumCostUsd)+.000000001)throw new MarketingError(429,'The owner-approved plan allowance is exhausted.');}
   if(paid&&enabled!==true){
     const claims=rows.filter(r=>r.payload.workflow==='intelligence-request/v1'&&r.payload.approvalId===approval.id);
     if(claims.some(c=>!results.some(r=>r.id===stableId(c.id+':result')))||rows.some(r=>r.payload.workflow==='intelligence-failure/v1'&&r.payload.approvalId===approval.id))throw new MarketingError(409,'This approval has a failed or uncertain request. Review its receipt before authorizing further spending.');
@@ -70,10 +74,10 @@ export async function linkResearch(db:SupabaseClient,tenant:string,actor:string,
 }
 export type EvidenceEligibility={researchId:string;status:'eligible'|'excluded';reasons:string[];includedTerms:string[];includedCompetitionTerms:string[]};
 /** Selection is read-only: account access and freshness never authorize provider spending. */
-export function selectIntelligence(rows:Artifact[],tenant=marketingTenant,now=new Date()){
+export function selectIntelligence(rows:Artifact[],tenant=marketingTenant,now=new Date(),selectedIds?:readonly string[]){
   if(tenant!==marketingTenant||rows.some(r=>r.tenant_id!==tenant))throw new MarketingError(403,'Unauthorized intelligence evidence.');
   const records=savedResearch(rows),eligibility:EvidenceEligibility[]=records.map(r=>{
-    const reasons:string[]=[];
+    const reasons:string[]=[];if(selectedIds&&!selectedIds.includes(r.id))reasons.push('Not selected for this approved research plan.');
     const configured=isDataForSeo(r.query)?Boolean(process.env.DATAFORSEO_LOGIN?.trim()&&process.env.DATAFORSEO_PASSWORD?.trim()):researchConnections().find(c=>c.id==='google_ads')?.state!=='not_connected';
     if(!configured)reasons.push('Provider credentials are unavailable in this environment; saved evidence remains readable but is not eligible for a new execution.');
     else if(r.scope!==providerScope(tenant,r.query))reasons.push('Saved provider-account or market scope does not match this environment.');

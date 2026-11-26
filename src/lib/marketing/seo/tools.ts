@@ -6,6 +6,7 @@ import type {DateRange,ReportingData,ReportTable} from '../types';
 import {approvedWebsiteEvidence} from './context';
 import {seoConfiguration} from './config';
 import {collectResearchSources,type ResearchCatalog} from './research-evidence';
+import {assertResearchComplete,researchBoundary,ResearchBoundaryError} from './research-response';
 
 export type ReportSnapshot={source:'ga4'|'search_console';propertyId:string;range:DateRange;data:ReportingData;retrievedAt:string;evidenceId:string};
 export function completeAgentRange(days:7|28|90,now=new Date()):DateRange {
@@ -31,13 +32,16 @@ export function createSeoTools({tenantId,days,client,authorize,onResearchUsage,o
   return {snapshots,ports:{googleAnalytics:(requested,signal)=>report('ga4',requested,signal),searchConsole:(requested,signal)=>report('search_console',requested,signal),websiteResearch:async signal=>{await authorize();signal.throwIfAborted();return approvedWebsiteEvidence();},externalResearch:async(query,signal)=>{
     await authorize();signal.throwIfAborted();
     if(query.length<10||query.length>300)throw Error('Invalid research query');
-    const response=await client.responses.create({model:config.model,store:false,max_output_tokens:limits.maxResearchOutputTokens,max_tool_calls:1,reasoning:{effort:'low'},tools:[{type:'web_search',search_context_size:'low'}],tool_choice:'required',include:['web_search_call.action.sources'],instructions:externalResearchInstructions,input:query},{signal,timeout:60000,maxRetries:0});
+    let response:OpenAI.Responses.Response|undefined,stage='api_request';
+    try{
+    response=await client.responses.create({model:config.model,store:false,max_output_tokens:limits.maxResearchOutputTokens,max_tool_calls:1,reasoning:{effort:'low'},tools:[{type:'web_search',search_context_size:'low'}],tool_choice:'required',include:['web_search_call.action.sources'],instructions:externalResearchInstructions,input:query},{signal,timeout:60000,maxRetries:0});
     const number=(n:unknown)=>typeof n==='number'&&Number.isInteger(n)&&n>=0?n:null;
     const usage:UsageReceipt={purpose:'research',model:response.model,responseId:response.id,inputTokens:number(response.usage?.input_tokens),outputTokens:number(response.usage?.output_tokens),totalTokens:number(response.usage?.total_tokens),webSearchCalls:response.output.filter(i=>i.type==='web_search_call').length,measuredCost:null};
-    await onResearchUsage(usage);
-    if(response.status!=='completed')throw Error('External research did not complete within budget');
+    stage='usage_persistence';await onResearchUsage(usage);
+    assertResearchComplete(response);stage='source_validation';
     const catalog=collectResearchSources(response);
     onResearchMapping?.(catalog.mapping);
     return {evidence:{id:'external-research',kind:'external_research',title:'Public external research',retrievedAt:new Date().toISOString(),status:'connected',hasActualSearchData:false,content:response.output_text.slice(0,15000),sources:catalog.sources},usage};
+    }catch(error){if(error instanceof ResearchBoundaryError)throw error;const type=error as {name?:string;status?:number};const code=signal.aborted||type.name==='AbortError'?'RESEARCH_INTERRUPTED':stage==='source_validation'?'RESEARCH_SOURCE_VALIDATION_FAILED':stage==='usage_persistence'?'RESEARCH_USAGE_PERSISTENCE_FAILED':type.status===401||type.status===403?'RESEARCH_ACCESS_DENIED':type.status===429?'RESEARCH_RATE_LIMITED':'RESEARCH_TRANSPORT_FAILED';throw new ResearchBoundaryError(code,researchBoundary(response,stage,error),error);}
   }}};
 }

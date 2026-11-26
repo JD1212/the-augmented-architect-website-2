@@ -10,7 +10,8 @@ export async function GET(request:Request){
 export async function POST(request:Request){
   try{
     const owner=await requireOwner(await ownerAuth()),body=await privateBody(request);
-    if(Object.keys(body).some(k=>!['requestId','days'].includes(k))||typeof body.requestId!=='string'||!uuidPattern.test(body.requestId)||![7,28,90].includes(Number(body.days))||typeof body.days!=='number')throw new MarketingError(400,'A valid execution ID and authorized 7, 28, or 90-day window are required.');
-    return privateJson(await executeSeo(owner,body.requestId,body.days as 7|28|90,request.signal));
+    if(Object.keys(body).some(k=>!['requestId','days','planId','researchIds','executionConfirmed'].includes(k))||typeof body.requestId!=='string'||!uuidPattern.test(body.requestId)||![7,28,90].includes(Number(body.days))||typeof body.days!=='number')throw new MarketingError(400,'A valid execution ID and authorized 7, 28, or 90-day window are required.');
+    if(body.executionConfirmed!==true||typeof body.planId!=='string'||!uuidPattern.test(body.planId)||!Array.isArray(body.researchIds)||body.researchIds.length>5||body.researchIds.some(id=>typeof id!=='string'||!uuidPattern.test(id)))throw new MarketingError(400,'Confirm analysis of an approved plan and its explicitly selected evidence.');
+    return privateJson(await executeSeo(owner,body.requestId,body.days as 7|28|90,request.signal,{planId:body.planId,researchIds:body.researchIds as string[]}));
   }catch(error){return marketingFailure(error);}
 }

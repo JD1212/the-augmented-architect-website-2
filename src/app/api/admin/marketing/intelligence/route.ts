@@ -31,8 +31,8 @@ export async function POST(request:Request){
     }
     if(operation!=='research')throw new MarketingError(400,'Choose research or link.');
     const {operation:_operation,...command}=body;void _operation;
-    const parsed=parseResearchCommand(command),connection=researchConnections().find(c=>c.id===(parsed.mode==='competition'?'dataforseo':'dataforseo_keywords'))!;
-    if(!connection.ready)throw new MarketingError(503,connection.message);
+    const parsed=parseResearchCommand(command);const connection=researchConnections().find(c=>c.id===(parsed.mode==='competition'?'dataforseo':'dataforseo_keywords'))!;
+    if(!connection.ready)throw new MarketingError(503,connection.message);if(!parsed.planId||!parsed.authorizationId)throw new MarketingError(403,'Choose an approved plan and confirm its research allowance.');
     return privateJson(await executeResearch({db:seoDatabase(),tenant:owner.tenantId,actor:owner.user.id,command:parsed,authorize}));
   }catch(error){return marketingFailure(error);}
 }

@@ -1,4 +1,6 @@
 import 'server-only';
+import {approvedPlan,quoteHash} from './workflow-binding';
+import {publicationEnvironment} from '../environment';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {researchPlanSchema,normalizedTerm,type ResearchPlan,type ResearchMemory,type Evidence,type UsageReceipt} from '@augmented-architect/seo-analyst';
 import {MarketingError,marketingTenant} from '../config';
@@ -54,4 +56,16 @@ export async function reviewResearchPlan(db:SupabaseClient,tenant:string,actor:s
  const result=await db.from('marketing_artifacts').insert({id,tenant_id:tenant,kind:'approval',parent_id:planId,execution_id:plan.executionId,actor_id:actor,title:`Research plan ${decision}`,payload:{domain,workflow:'seo-research-plan-review/v1',decision,note,spendingAuthorized:false,publishingAuthorized:false}});
  if(result.error)throw new MarketingError(409,'The plan decision could not be saved. Refresh before trying again.');
  return {id,reused:false};
+}
+
+/** Explicit owner spending approval; never makes a provider request. */
+export async function authorizeResearchPlan(db:SupabaseClient,tenant:string,actor:string,input:{planId:string;requestId:string;maximumRequests:number;maximumCostUsd:number}){
+ if(tenant!==marketingTenant)throw new MarketingError(403,'Unauthorized research workspace.');
+ const rows=await marketingRows(db,'marketing_artifacts',tenant) as Artifact[];
+ const selected=approvedPlan(rows,input.planId),plan=selected.plan;
+ if(!Number.isSafeInteger(input.maximumRequests)||input.maximumRequests<1||input.maximumRequests>Math.min(10,plan.maximumRequests)||!Number.isFinite(input.maximumCostUsd)||input.maximumCostUsd<=0||input.maximumCostUsd>Math.min(1,plan.maximumCostUsd))throw new MarketingError(400,'Confirm a request and USD allowance within this plan’s exact quote.');
+ const payload={domain,workflow:'research-spend-approval/v1',environment:publicationEnvironment(),planDecisionId:selected.decisionId,maximumRequests:input.maximumRequests,maximumCostUsd:input.maximumCostUsd,quoteHash:quoteHash(input.planId,plan,input.maximumRequests,input.maximumCostUsd),publishingAuthorized:false};
+ const id=stableId(tenant+':research-plan-allowance:'+input.requestId),existing=rows.find(r=>r.id===id);
+ if(existing){if(existing.actor_id===actor&&existing.parent_id===input.planId&&existing.payload.workflow===payload.workflow&&existing.payload.quoteHash===payload.quoteHash)return {id,reused:true};throw new MarketingError(409,'This allowance request belongs to different work.');}
+ const r=await db.from('marketing_artifacts').insert({id,tenant_id:tenant,kind:'approval',parent_id:input.planId,actor_id:actor,title:'Owner-authorized research allowance',payload});if(r.error)throw new MarketingError(409,'Research allowance changed. Refresh before continuing.');return {id,reused:false};
 }

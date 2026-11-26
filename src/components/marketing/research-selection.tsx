@@ -1,0 +1,6 @@
+'use client';
+import type {useResearchWorkflow} from './use-research-workflow';
+import styles from './marketing.module.css';
+export function ResearchSelection({workflow}:{workflow:ReturnType<typeof useResearchWorkflow>}){
+ return <section aria-label="Selected research workflow" className={styles.panel}><label>Research plan<select aria-label="Selected research plan" value={workflow.planId} onChange={e=>workflow.choose(e.target.value)}><option value="">Choose an approved plan</option>{workflow.data?.plans.map(p=><option key={p.id} value={p.id}>{p.objective} · {p.decision}</option>)}</select></label>{workflow.error&&<p role="alert">{workflow.error}</p>}{workflow.selected&&<><p>{workflow.selected.plan.summary}</p><p>Status: <strong>{workflow.selected.decision}</strong></p>{workflow.evidence.map(e=><label key={e.id}><input type="checkbox" disabled={!e.eligible||workflow.selected?.decision!=='approved'} checked={workflow.researchIds.includes(e.id)} onChange={event=>workflow.choose(workflow.planId,event.target.checked?[...workflow.researchIds,e.id]:workflow.researchIds.filter(id=>id!==e.id))}/>{e.terms.join(', ')} · {e.eligible?'Current evidence':'Unavailable or stale'}</label>)}{!workflow.evidence.length&&<p>No keyword evidence associated yet. Analysis may disclose unknown demand; it will not substitute unrelated research.</p>}</>}</section>;
+}

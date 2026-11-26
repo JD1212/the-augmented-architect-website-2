@@ -1,3 +1,4 @@
+import {bindSelectedEvidence} from '../intelligence/workflow-binding';
 import {ownerArticle} from './import-contract';
 import 'server-only';
 import {executionStatus} from '../execution-status';
@@ -9,7 +10,7 @@ import type {SupabaseClient} from '@supabase/supabase-js';
 import {requireOwner} from '../auth';
 import {MarketingError,marketingTenant} from '../config';
 import {loadBacklog,marketingRows} from '../opportunities/repository';
-import {intelligenceRecords} from '../intelligence/service';
+import {intelligenceRecords,selectIntelligence} from '../intelligence/service';
 import {usageSummary} from '../seo/contracts';
 import {contentConfiguration,contentDatabase,contentCapabilities,contentDomain} from './config';
 import {groundedOpportunity,contentInput} from './grounding';
@@ -36,6 +37,7 @@ export async function generateContent(owner:Awaited<ReturnType<typeof requireOwn
  const state=await contentState(owner.db,owner.tenantId,opportunityId);
  if((state.head?.id??null)!==expectedRevisionId)throw new MarketingError(409,'Refresh the current draft before generating.');
  if(!state.grounding.assignment)throw new MarketingError(403,'The owner must approve this finding for drafting first.');
+ if(state.grounding.researchWorkflow){const workflow=state.grounding.researchWorkflow,rows=await marketingRows(owner.db,'marketing_artifacts',owner.tenantId);bindSelectedEvidence(rows as import('../opportunities/contracts').Artifact[],workflow.planId,workflow.researchIds,28);const selection=selectIntelligence(await intelligenceRecords(owner.db,owner.tenantId),owner.tenantId,new Date(),workflow.researchIds);if(workflow.researchIds.some(id=>selection.records.find(r=>r.researchId===id)?.status!=='eligible'))throw new MarketingError(409,'The approved assignment’s keyword evidence is no longer eligible. Review fresh evidence before a new generation authorization.');}
  if(state.grounding.sources.filter(s=>s.verified).length<2)throw new MarketingError(409,'Review at least two relevant primary sources before model execution.');
  const input=contentInput(state.grounding,config.model,await publishedArticles('production',true));input.context.editorialFeedback=state.feedback.slice(-10).map(r=>String(r.payload.note));input.context.priorDraft=state.head?JSON.stringify(state.head.draft):null;
  const db=contentDatabase(),claim=await claimContentExecution(db,owner.tenantId,owner.user.id,requestId,config.approvalId,opportunityId);if(claim.reused)return {executionId:requestId,reused:true};
