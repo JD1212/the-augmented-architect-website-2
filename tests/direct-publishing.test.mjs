@@ -32,8 +32,9 @@ function fixture(){
  const stable=load('src/lib/marketing/opportunities/identity.ts',base).stableId;db.rows.marketing_artifacts[1].id=stable(revisionId+':publication-approval:website');
  let phase=[];db.rpc=async(name,{p_command:c})=>{assert.equal(name,'marketing_article_transition');phase.push(c.phase);return {error:null,data:{status:c.phase==='begin'?'verifying':c.phase==='failed'?'verification_failed':c.action==='publish'?'live':'unpublished'}};};
  const owner={db,user:{id:ownerId},tenantId:tenant};let authorized=0;
- const opRepo=load('src/lib/marketing/opportunities/repository.ts',base);const api=load('src/lib/marketing/content/direct-publishing.ts',{...base,'../opportunities/repository':{...opRepo,loadBacklog:async()=>({opportunities:[{id:opportunity,status:'approved_for_drafting',reviewId:f.input.assignment.approvalId,findingId:f.input.assignment.findingId}]})},'@/lib/published-articles':{publicationTag:()=> 'test'},'next/cache':{revalidatePath:()=>{},revalidateTag:()=>{}},'../auth':{requireOwner:async()=>{authorized++;return owner;}},'./config':{contentDatabase:()=>db,contentDomain:'content-workflow'}});
- return {db,owner,api,phase,input:{action:'publish',requestId,revisionId,revisionHash:hash,opportunityId:opportunity,publicationDate:'2026-11-24',expectedVersion:0},authorized:()=>authorized};
+ const selected={id:opportunity,status:'approved_for_drafting',reviewId:f.input.assignment.approvalId,findingId:f.input.assignment.findingId,reviews:[]};
+ const opRepo=load('src/lib/marketing/opportunities/repository.ts',base);const api=load('src/lib/marketing/content/direct-publishing.ts',{...base,'../opportunities/repository':{...opRepo,loadBacklog:async()=>({opportunities:[selected]})},'@/lib/published-articles':{publicationTag:()=> 'test'},'next/cache':{revalidatePath:()=>{},revalidateTag:()=>{}},'../auth':{requireOwner:async()=>{authorized++;return owner;}},'./config':{contentDatabase:()=>db,contentDomain:'content-workflow'}});
+ return {db,owner,api,phase,selected,input:{action:'publish',requestId,revisionId,revisionHash:hash,opportunityId:opportunity,publicationDate:'2026-11-24',expectedVersion:0},authorized:()=>authorized};
 }
 test('owner publishing verifies before recording live, preserves approval, and never calls a model',async()=>{
  const restore=withEnv({VERCEL_ENV:'preview',VERCEL_GIT_COMMIT_REF:'feature/content-strategist',ARTICLE_PUBLISHING_ENABLED:'true',SUPABASE_SECRET_KEY:'fixture'});try{const f=fixture();let checked=0;const r=await f.api.changePublication(f.owner,f.input,{verify:async c=>{assert.deepEqual(f.phase,['begin']);assert.equal(c.article.publishedDate,'2026-11-24');assert(!('revisionId' in c.article.publication));checked++;return {pageStatus:200,listStatus:200,sitemapStatus:200,versionMatched:true,canonicalMatched:true,withdrawalVerified:false};},invalidate:()=>{}});assert.equal(r.status,'live');assert.equal(checked,1);assert.deepEqual(f.phase,['begin','verified']);assert.equal(f.authorized(),2);
@@ -96,4 +97,12 @@ test('observed Preview regression: absent environment token redirects legacy req
  // A protection redirect is never accepted as a successful publication.
  await assert.rejects(api.verifyPublication({slug:'approved-guide',action:'publish',publicHash:hash,article:publicFixture},async()=>new Response('',{status:302})),e=>e.diagnostic.rule==='VERIFICATION_CHECK_FAILED'&&e.diagnostic.failedChecks.includes('articleHttp'));
  }finally{if(oldToken===undefined)delete process.env.VERCEL_OIDC_TOKEN;else process.env.VERCEL_OIDC_TOKEN=oldToken;restore();}
+});
+
+test('changed owner brief prevents publishing a previously approved article without altering existing records',async()=>{
+ const restore=withEnv({VERCEL_ENV:'preview',VERCEL_GIT_COMMIT_REF:'feature/content-strategist',ARTICLE_PUBLISHING_ENABLED:'true',SUPABASE_SECRET_KEY:'fixture'});try{const f=fixture(),before=structuredClone(f.db.rows.marketing_artifacts);f.selected.ownerBrief={id:requestId,hash:'b'.repeat(64),findingId:f.selected.findingId};f.selected.reviews=[{action:'approve',findingId:f.selected.findingId,ownerBrief:{id:requestId,hash:'a'.repeat(64)}}];await assert.rejects(f.api.changePublication(f.owner,f.input),/research approval changed/);assert.deepEqual(f.phase,[]);assert.deepEqual(f.db.rows.marketing_artifacts,before);}finally{restore();}
+});
+
+test('a brief changed during verification restores the previous public version instead of marking the article live',async()=>{
+ const restore=withEnv({VERCEL_ENV:'preview',VERCEL_GIT_COMMIT_REF:'feature/content-strategist',ARTICLE_PUBLISHING_ENABLED:'true',SUPABASE_SECRET_KEY:'fixture'});try{const f=fixture();await assert.rejects(f.api.changePublication(f.owner,f.input,{verify:async()=>{f.selected.ownerBrief={id:requestId,hash:'b'.repeat(64),findingId:f.selected.findingId};return {pageStatus:200};},invalidate:()=>{}}),/previous public version was restored/);assert.deepEqual(f.phase,['begin','failed']);}finally{restore();}
 });

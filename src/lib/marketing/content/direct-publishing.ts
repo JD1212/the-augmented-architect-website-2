@@ -1,3 +1,4 @@
+import {currentBriefApproved} from '../opportunities/brief-records';
 import {ownerArticle} from './import-contract';
 import {importedDocument} from './importing';
 import 'server-only';
@@ -67,7 +68,6 @@ export async function changePublication(owner:Awaited<ReturnType<typeof requireO
   if(command.actorId!==owner.user.id||command.environment!==environment||command.revisionId!==input.revisionId||command.revisionHash!==input.revisionHash||command.action!==input.action)throw new MarketingError(409,'This request belongs to a different publication action.');
  }else{
   if(input.action==='publish'&&revisionHead(rows,input.opportunityId)?.id!==revision.id)throw new MarketingError(409,'A newer revision needs review.');
-  if(input.action==='publish'&&!ownerArticle(revision.input)){const backlog=await loadBacklog(owner.db,owner.tenantId),selected=backlog.opportunities.find(o=>o.id===input.opportunityId);if(selected?.status!=='approved_for_drafting'||selected.reviewId!==revision.input.assignment.approvalId||selected.findingId!==revision.input.assignment.findingId)throw new MarketingError(409,'The research approval changed. Review the current finding before publishing.');}
   const approval=approvedRevision(rows,revision,'website');
   if(input.action==='publish'&&!approval)throw new MarketingError(403,'Approve this exact website revision first.');
   if(ownerArticle(revision.input)){const root=rows.find(r=>r.id===revision.opportunityId&&r.payload.workflow==='owner-article/v1');if(!root||root.payload.originalHash!==revision.grounding.originalHash)throw new MarketingError(409,'Imported article provenance is unavailable.');importedDocument(revision);}else validateDraft(revision.draft,revision.input);
@@ -77,10 +77,16 @@ export async function changePublication(owner:Awaited<ReturnType<typeof requireO
   if(article.slug!==slug)throw new MarketingError(409,'The published slug is permanent. Keep it when revising this article.');
   command={tenantId:owner.tenantId,actorId:owner.user.id,environment,slug,requestId:input.requestId,action:input.action,revisionId:revision.id,revisionHash:revision.hash,approvalId:approval?.id??null,article,publicHash:publicArticleHash(article),expectedVersion:input.expectedVersion,canonicalUrl:site.url+articleHref(slug),origin:ownerArticle(revision.input)?'owner-authored':'agent',sourceOpportunityId:ownerArticle(revision.input)?revision.input.assignment.linkedOpportunityId:revision.opportunityId,sourceDocumentId:ownerArticle(revision.input)?revision.opportunityId:null,sourceFindingId:revision.input.assignment.findingId,sourceSnapshotHashes:revision.input.sources.map(s=>({id:s.id,hash:s.snapshotHash})),baselinePeriods:revision.grounding.publicationBaseline??[]};
  }
+ const requireCurrentApproval=async()=>{
+  if(input.action==='publish'&&!ownerArticle(revision.input)){const backlog=await loadBacklog(owner.db,owner.tenantId),selected=backlog.opportunities.find(o=>o.id===input.opportunityId);if(!selected||!currentBriefApproved(selected)||selected.status!=='approved_for_drafting'||selected.reviewId!==revision.input.assignment.approvalId||selected.findingId!==revision.input.assignment.findingId)throw new MarketingError(409,'The research approval changed. Review the current finding before publishing.');}
+ };
+ await requireCurrentApproval();
  const transition=async(phase:string)=>{const r=await db.rpc('marketing_article_transition',{p_command:{...command,phase}});if(r.error)throw new MarketingError(409,'Publication state changed or its exact approval is unavailable. Refresh before continuing.');return r.data;};
  const begun=await transition('begin');if(begun.status!=='verifying')return {status:begun.status,requestId:input.requestId,reused:true};
  const invalidate=ports?.invalidate??invalidatePublication;invalidate(String(command.slug));
- try{command.verificationReceipt=await (ports?.verify??verifyPublication)(command);}catch(error){
+ try{command.verificationReceipt=await (ports?.verify??verifyPublication)(command);
+  try{await requireCurrentApproval();}catch{throw new PublicationVerificationError({phase:'authorization',rule:'DRAFTING_APPROVAL_CHANGED'});}
+ }catch(error){
   command.verificationDiagnostic=error instanceof PublicationVerificationError?error.diagnostic:{phase:'unknown',rule:'VERIFICATION_UNCLASSIFIED'};
   console.warn('publication_verification_failed',JSON.stringify({requestId:input.requestId,diagnostic:command.verificationDiagnostic}));
   await transition('failed');invalidate(String(command.slug));throw new MarketingError(503,'Publication could not be verified. The previous public version was restored; no new Live publication was recorded.');
